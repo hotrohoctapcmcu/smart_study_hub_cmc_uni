@@ -1,0 +1,231 @@
+BANG TRA CUU ENDPOINT MA HOA - PORTAL IU (iu.cmcu.edu.vn)
+Dinh dang: TenHamThat : DoanMaTrongURL   (theo module)
+Quy uoc giai ma: AD(suffix, "A") = XOR tung byte voi 0x41 (chu 'A') roi base64.
+Ten ham duoc doi chieu voi field 'func' (pkg_*.TenHam) trong source -> khop 100%.
+VD URL day du: https://iu.cmcu.edu.vn/sinhvienapi/api/SV_ThongTin_MH/DSA4CiQ1EDQgFSgiKQ00OBUpJC4KKS4o
+Khi goi API: dung NGUYEN doan ma goc (khong dung ten da giai).
+Tong: 109 endpoint (unique theo ten ham; mot so ten xuat hien o nhieu
+module nhung cung suffix, vd LayDSTabThongTinNguoiHoc) | doi chieu dung: 109 | lech: 0
+
+======================================================================
+MODULE: CMS_Chung_MH (1 endpoint)
+======================================================================
+LayDSCauHinh : DSA4BRICIDQJKC8p   # pkg_chung.LayDSCauHinh
+======================================================================
+MODULE: CMS_QuanLyNguoiDung_MH (1 endpoint)
+======================================================================
+LayDSChucNangTheoPhanLoai : DSA4BRICKTQiDyAvJhUpJC4RKSAvDS4gKAPP   # pkg_chung_quanlynguoidung.LayDSChucNangTheoPhanLoai
+======================================================================
+MODULE: D_Chung_MH (1 endpoint)
+======================================================================
+LayDSHanhDongXacNhan : DSA4BRIJIC8pBS4vJhkgIg8pIC8P   # PKG_DIEM_CHUNG.LayDSHanhDongXacNhan
+======================================================================
+MODULE: DKH_Chung_MH (4 endpoint)
+======================================================================
+LayDSChuongTrinh : DSA4BRICKTQuLyYVMygvKQPP   # pkg_dangkyhoc_chung.LayDSChuongTrinh
+LayDSLopHocPhanDangToChuc : DSA4BRINLjEJLiIRKSAvBSAvJhUuAik0IgPP   # pkg_dangkyhoc_chung.LayDSLopHocPhanDangToChuc
+LayKetQuaDangKyLopHocPhan : DSA4CiQ1EDQgBSAvJgo4DS4xCS4iESkgLwPP   # pkg_dangkyhoc_chung.LayKetQuaDangKyLopHocPhan
+LayLichTuanTheoLopHocPhan : DSA4DSgiKRU0IC8VKSQuDS4xCS4iESkgLwPP   # pkg_dangkyhoc_chung.LayLichTuanTheoLopHocPhan
+======================================================================
+MODULE: DKH_DangKyThi_MonThi_Chung_MH (2 endpoint)
+======================================================================
+LayDSChuongTrinhNguoiHoc : DSA4BRICKTQuLyYVMygvKQ8mNC4oCS4i   # pkg_dangkythi_monthi_chung.LayDSChuongTrinhNguoiHoc
+LayDSKeHoachTheoNguoiHoc : DSA4BRIKJAkuICIpFSkkLg8mNC4oCS4i   # pkg_dangkythi_monthi_chung.LayDSKeHoachTheoNguoiHoc
+======================================================================
+MODULE: DKH_DangKyThi_MonThi_ThongTin_MH (3 endpoint)
+======================================================================
+LayDSHocPhanDangKy : DSA4BRIJLiIRKSAvBSAvJgo4   # pkg_dangkythi_monthi_thongtin.LayDSHocPhanDangKy
+ThucHienDangKy : FSk0IgkoJC8FIC8mCjgP   # pkg_dangkythi_monthi_thongtin.ThucHienDangKy
+ThucHienHuyDangKy : FSk0IgkoJC8JNDgFIC8mCjgP   # pkg_dangkythi_monthi_thongtin.ThucHienHuyDangKy
+======================================================================
+MODULE: DKH_NguyenVong_MH (7 endpoint)
+======================================================================
+DangKyNguyenVong : BSAvJgo4DyY0OCQvFy4vJgPP   # pkg_dangky_nguyenvong.DangKyNguyenVong
+HuyDangKyNguyenVong : CTQ4BSAvJgo4DyY0OCQvFy4vJgPP   # pkg_dangky_nguyenvong.HuyDangKyNguyenVong
+LayDSHocPhanChuaDangKy : DSA4BRIJLiIRKSAvAik0IAUgLyYKOAPP   # pkg_dangky_nguyenvong.LayDSHocPhanChuaDangKy
+LayDSHocPhanDaDangKy : DSA4BRIJLiIRKSAvBSAFIC8mCjgP   # pkg_dangky_nguyenvong.LayDSHocPhanDaDangKy
+LayDSKeHoachDangKyNguyenVong : DSA4BRIKJAkuICIpBSAvJgo4DyY0OCQvFy4vJgPP   # pkg_dangky_nguyenvong.LayDSKeHoachDangKyNguyenVong
+LayDSKieuDangKyTheoKeHoach : DSA4BRIKKCQ0BSAvJgo4FSkkLgokCS4gIikP   # pkg_dangky_nguyenvong.LayDSKieuDangKyTheoKeHoach
+LayDSQuyMoLopDangKy : DSA4BRIQNDgMLg0uMQUgLyYKOAPP   # pkg_dangky_nguyenvong.LayDSQuyMoLopDangKy
+======================================================================
+MODULE: DKH_ThongTin_MH (2 endpoint)
+======================================================================
+LayDSKeHoachDangKyCaNhan : DSA4BRIKJAkuICIpBSAvJgo4AiAPKSAv   # pkg_dangkyhoc_thongtin.LayDSKeHoachDangKyCaNhan
+LayThoiGianDangKyCaNhan : DSA4FSkuKAYoIC8FIC8mCjgCIA8pIC8P   # pkg_dangkyhoc_thongtin.LayThoiGianDangKyCaNhan
+======================================================================
+MODULE: DKH_XacNhan_MH (3 endpoint)
+======================================================================
+LayDSDangKy_XacNhan_KetQua : DSA4BRIFIC8mCjgeGSAiDykgLx4KJDUQNCAP   # PKG_DANGKY_XACNHAN.LayDSDangKy_XacNhan_KetQua
+LayDSHanhDongXacNhan : DSA4BRIJIC8pBS4vJhkgIg8pIC8P   # PKG_DANGKY_XACNHAN.LayDSHanhDongXacNhan
+Them_DangKy_XacNhan_KetQua : FSkkLB4FIC8mCjgeGSAiDykgLx4KJDUQNCAP   # PKG_DANGKY_XACNHAN.Them_DangKy_XacNhan_KetQua
+======================================================================
+MODULE: KHCT_ThongTin_MH (3 endpoint)
+======================================================================
+LayDSDinhHuongCaNhan : DSA4BRIFKC8pCTQuLyYCIA8pIC8P   # pkg_kehoach_thongtin.LayDSDinhHuongCaNhan
+Them_DaoTao_CT_DinhHuong_NH : FSkkLB4FIC4VIC4eAhUeBSgvKQk0Li8mHg8J   # pkg_kehoach_thongtin.Them_DaoTao_CT_DinhHuong_NH
+Xoa_DaoTao_CT_DinhHuong_NH : GS4gHgUgLhUgLh4CFR4FKC8pCTQuLyYeDwkP   # pkg_kehoach_thongtin.Xoa_DaoTao_CT_DinhHuong_NH
+======================================================================
+MODULE: NS_DKH_CHUNG2_MH (1 endpoint)
+======================================================================
+LayDSKeHoachDangKyHoc : DSA4BRIKJAkuICIpBSAvJgo4CS4i   # pkg_dangkyhoc_chung2.LayDSKeHoachDangKyHoc
+======================================================================
+MODULE: NS_ThongTinCanBo_MH (1 endpoint)
+======================================================================
+LayDSDangKyHoc_2 : DSA4BRIFIC8mCjgJLiIecwPP   # pkg_congthongtincanbo.LayDSDangKyHoc_2
+======================================================================
+MODULE: SV_CamXuc_MH (5 endpoint)
+======================================================================
+Giam_CamXuc : BiggLB4CICwZNCIP   # pkg_dg_camxuc_nguoihoc.Giam_CamXuc
+LayDSCamXuc : DSA4BRICICwZNCIP   # pkg_dg_camxuc_nguoihoc.LayDSCamXuc
+LayTTMacDinh : DSA4FRUMICIFKC8p   # pkg_dg_camxuc_nguoihoc.LayTTMacDinh
+Tang_CamXuc : FSAvJh4CICwZNCIP   # pkg_dg_camxuc_nguoihoc.Tang_CamXuc
+ThayDoi_CamXuc : FSkgOAUuKB4CICwZNCIP   # pkg_dg_camxuc_nguoihoc.ThayDoi_CamXuc
+======================================================================
+MODULE: SV_DVMC_Chung_MH (1 endpoint)
+======================================================================
+LayDSTinhTrangXuLy : DSA4BRIVKC8pFTMgLyYZNA04   # pkg_dvmc_chung.LayDSTinhTrangXuLy
+======================================================================
+MODULE: SV_HCMC_Chung_MH (2 endpoint)
+======================================================================
+LayDSDanhMucMoRong : DSA4BRIFIC8pDDQiDC4TLi8m   # pkg_hanhchinhmotcua_chung.LayDSDanhMucMoRong
+LayDSMotCua_DanhMuc_PhanLoai : DSA4BRIMLjUCNCAeBSAvKQw0Ih4RKSAvDS4gKAPP   # pkg_hanhchinhmotcua_chung.LayDSMotCua_DanhMuc_PhanLoai
+======================================================================
+MODULE: SV_HCMC_ThongTin_MH (4 endpoint)
+======================================================================
+DanhGia_MotCua_NguoiHoc_YeuCau : BSAvKQYoIB4MLjUCNCAeDyY0LigJLiIeGCQ0AiA0   # pkg_hanhchinhmotcua_thongtin.DanhGia_MotCua_NguoiHoc_YeuCau
+LayDSMotCua_NH_YC_XL_PhanHoi : DSA4BRIMLjUCNCAeDwkeGAIeGQ0eESkgLwkuKAPP   # pkg_hanhchinhmotcua_thongtin.LayDSMotCua_NH_YC_XL_PhanHoi
+Them_MotCua_NH_YC_XL_PhanHoi : FSkkLB4MLjUCNCAeDwkeGAIeGQ0eESkgLwkuKAPP   # pkg_hanhchinhmotcua_thongtin.Them_MotCua_NH_YC_XL_PhanHoi
+Xoa_MotCua_NH_YC_XL_PhanHoi : GS4gHgwuNQI0IB4PCR4YAh4ZDR4RKSAvCS4o   # pkg_hanhchinhmotcua_thongtin.Xoa_MotCua_NH_YC_XL_PhanHoi
+======================================================================
+MODULE: SV_HoSoHocVien_MH (1 endpoint)
+======================================================================
+Sua_QLSV_NguoiHoc_1 : EjQgHhANEhceDyY0LigJLiIecAPP   # pkg_hosohocvien.Sua_QLSV_NguoiHoc_1
+======================================================================
+MODULE: SV_Custom (1 endpoint)
+======================================================================
+LayThongTinChiTietHoSo : DSA4FSkuLyYVKC8CKSgVKCQ1CS4SLgPP   # pkg_hosohocvien.LayThongTinChiTietHoSo
+======================================================================
+MODULE: SV_HoSoHocVien_Quyen_MH (2 endpoint)
+======================================================================
+LayDSHoSoChoPhepCBNhap : DSA4BRIJLhIuAikuESkkMQIDDykgMQPP   # pkg_hosohocvien_quyen.LayDSHoSoChoPhepCBNhap
+LayDSTabThongTinNguoiHoc : DSA4BRIVICMVKS4vJhUoLw8mNC4oCS4i   # pkg_hosohocvien_quyen.LayDSTabThongTinNguoiHoc
+======================================================================
+MODULE: SV_KeHoach_MH (4 endpoint)
+======================================================================
+LayDSHoSoChoPhepSVNhap : DSA4BRIJLhIuAikuESkkMRIXDykgMQPP   # pkg_hososinhvien_kehoach.LayDSHoSoChoPhepSVNhap
+LayDSKeHoachNhapHoSo : DSA4BRIKJAkuICIpDykgMQkuEi4P   # pkg_hososinhvien_kehoach.LayDSKeHoachNhapHoSo
+LayDSTabThongTinNguoiHoc : DSA4BRIVICMVKS4vJhUoLw8mNC4oCS4i   # pkg_hososinhvien_kehoach.LayDSTabThongTinNguoiHoc
+Them_QLSV_KeHoach_DuLieu : FSkkLB4QDRIXHgokCS4gIikeBTQNKCQ0   # pkg_hososinhvien_kehoach.Them_QLSV_KeHoach_DuLieu
+======================================================================
+MODULE: SV_MotCua_ThongTin_MH (7 endpoint)
+======================================================================
+LayDSMotCua_DanhMuc : DSA4BRIMLjUCNCAeBSAvKQw0IgPP   # pkg_hanhchinhmotcua_thongtin.LayDSMotCua_DanhMuc
+LayDSYeuCauChuaXuLy : DSA4BRIYJDQCIDQCKTQgGTQNOAPP   # pkg_hanhchinhmotcua_thongtin.LayDSYeuCauChuaXuLy
+LayDSYeuCauTheoTinhTrangXuLy : DSA4BRIYJDQCIDQVKSQuFSgvKRUzIC8mGTQNOAPP   # pkg_hanhchinhmotcua_thongtin.LayDSYeuCauTheoTinhTrangXuLy
+Them_MotCua_DanhMuc_DuLieu : FSkkLB4MLjUCNCAeBSAvKQw0Ih4FNA0oJDQP   # pkg_hanhchinhmotcua_thongtin.Them_MotCua_DanhMuc_DuLieu
+Them_MotCua_NguoiHoc_YeuCau : FSkkLB4MLjUCNCAeDyY0LigJLiIeGCQ0AiA0   # pkg_hanhchinhmotcua_thongtin.Them_MotCua_NguoiHoc_YeuCau
+Xoa_MotCua_DanhMuc : GS4gHgwuNQI0IB4FIC8pDDQi   # pkg_hanhchinhmotcua_thongtin.Xoa_MotCua_DanhMuc
+Xoa_MotCua_NguoiHoc_YeuCau : GS4gHgwuNQI0IB4PJjQuKAkuIh4YJDQCIDQP   # pkg_hanhchinhmotcua_thongtin.Xoa_MotCua_NguoiHoc_YeuCau
+======================================================================
+MODULE: SV_ThongTin_MH (19 endpoint)
+======================================================================
+KetQuaHocTapCaNhan : CiQ1EDQgCS4iFSAxAiAPKSAv   # pkg_congthongtin_hssv_thongtin.KetQuaHocTapCaNhan
+LatKetQuaDiemCaNhanTheoLop : DSA1CiQ1EDQgBSgkLAIgDykgLxUpJC4NLjEP   # pkg_congthongtin_hssv_thongtin.LatKetQuaDiemCaNhanTheoLop
+LatKetQuaDiemDanh : DSA1CiQ1EDQgBSgkLAUgLykP   # pkg_congthongtin_hssv_thongtin.LatKetQuaDiemDanh
+LatKetQuaDiemQuaTrinh : DSA1CiQ1EDQgBSgkLBA0IBUzKC8p   # pkg_congthongtin_hssv_thongtin.LatKetQuaDiemQuaTrinh
+LayDSDiemThanhPhanTheoTKHP : DSA4BRIFKCQsFSkgLykRKSAvFSkkLhUKCREP   # pkg_congthongtin_hssv_thongtin.LayDSDiemThanhPhanTheoTKHP
+LayDSHocPhanLichThi : DSA4BRIJLiIRKSAvDSgiKRUpKAPP   # pkg_congthongtin_hssv_thongtin.LayDSHocPhanLichThi
+LayDSKetQuaXuLyHocVu : DSA4BRIKJDUQNCAZNA04CS4iFzQP   # pkg_congthongtin_hssv_thongtin.LayDSKetQuaXuLyHocVu
+LayDSLichCaNhan : DSA4BRINKCIpAiAPKSAv   # pkg_congthongtin_hssv_thongtin.LayDSLichCaNhan
+LayDSQDCaNhan : DSA4BRIQBQIgDykgLwPP   # pkg_congthongtin_hssv_thongtin.LayDSQDCaNhan
+LayDSThoiGianLichHoc : DSA4BRIVKS4oBiggLw0oIikJLiIP   # pkg_congthongtin_hssv_thongtin.LayDSThoiGianLichHoc
+LayDSLichThi_KeHoachThi : DSA4BRINKCIpFSkoHgokCS4gIikVKSgP   # pkg_congthongtin_hssv_thongtin.LayDSLichThi_KeHoachThi
+LayDSThoiGianLichThi : DSA4BRIVKS4oBiggLw0oIikVKSgP   # pkg_congthongtin_hssv_thongtin.LayDSThoiGianLichThi
+LayDSTN_KetQua_CongNhan_VB : DSA4BRIVDx4KJDUQNCAeAi4vJg8pIC8eFwMP   # pkg_congthongtin_hssv_thongtin.LayDSTN_KetQua_CongNhan_VB
+LayKetQuaDangKyHocCaNhan : DSA4CiQ1EDQgBSAvJgo4CS4iAiAPKSAv   # pkg_congthongtin_hssv_thongtin.LayKetQuaDangKyHocCaNhan
+LayKetQuaTichLuyTheoKhoi : DSA4CiQ1EDQgFSgiKQ00OBUpJC4KKS4o   # pkg_congthongtin_hssv_thongtin.LayKetQuaTichLuyTheoKhoi
+LayKQRenLuyenCaNhan : DSA4ChATJC8NNDgkLwIgDykgLwPP   # pkg_congthongtin_hssv_thongtin.LayKQRenLuyenCaNhan
+LayThongTinChuongTrinhHoc : DSA4FSkuLyYVKC8CKTQuLyYVMygvKQkuIgPP   # pkg_congthongtin_hssv_thongtin.LayThongTinChuongTrinhHoc
+LayTKBLopKhongCoLichChiTiet : DSA4FQoDDS4xCikuLyYCLg0oIikCKSgVKCQ1   # PKG_CONGTHONGTIN_HSSV_THONGTIN.LayTKBLopKhongCoLichChiTiet
+LayTTLichThi : DSA4FRUNKCIpFSko   # pkg_congthongtin_hssv_thongtin.LayTTLichThi
+======================================================================
+MODULE: SV_VeThang_MH (1 endpoint)
+======================================================================
+LayDSQLSV_KeHoach_Ve_DangKy : DSA4BRIQDRIXHgokCS4gIikeFyQeBSAvJgo4   # pkg_hososinhvien_vethang.LayDSQLSV_KeHoach_Ve_DangKy
+======================================================================
+MODULE: TC_ThongTin_MH (15 endpoint)
+======================================================================
+LayDSDienDaiChiTietMien : DSA4BRIFKCQvBSAoAikoFSgkNQwoJC8P   # pkg_taichinh_thongtin.LayDSDienDaiChiTietMien
+LayDSDienDaiChiTietPhaiNop : DSA4BRIFKCQvBSAoAikoFSgkNREpICgPLjEP   # pkg_taichinh_thongtin.LayDSDienDaiChiTietPhaiNop
+LayDSKhoanDaNop : DSA4BRIKKS4gLwUgDy4x   # pkg_taichinh_thongtin.LayDSKhoanDaNop
+LayDSKhoanDaRut : DSA4BRIKKS4gLwUgEzQ1   # pkg_taichinh_thongtin.LayDSKhoanDaRut
+LayDSKhoanDuChung : DSA4BRIKKS4gLwU0Aik0LyYP   # pkg_taichinh_thongtin.LayDSKhoanDuChung
+LayDSKhoanDuRieng : DSA4BRIKKS4gLwU0EygkLyYP   # pkg_taichinh_thongtin.LayDSKhoanDuRieng
+LayDSKhoanMien : DSA4BRIKKS4gLwwoJC8P   # pkg_taichinh_thongtin.LayDSKhoanMien
+LayDSKhoanNoChung : DSA4BRIKKS4gLw8uAik0LyYP   # pkg_taichinh_thongtin.LayDSKhoanNoChung
+LayDSKhoanNoRieng : DSA4BRIKKS4gLw8uEygkLyYP   # pkg_taichinh_thongtin.LayDSKhoanNoRieng
+LayDSKhoanPhaiNop : DSA4BRIKKS4gLxEpICgPLjEP   # pkg_taichinh_thongtin.LayDSKhoanPhaiNop
+LayDSPhieuDaRut : DSA4BRIRKSgkNAUgEzQ1   # pkg_taichinh_thongtin.LayDSPhieuDaRut
+LayDSPhieuDaThu : DSA4BRIRKSgkNAUgFSk0   # pkg_taichinh_thongtin.LayDSPhieuDaThu
+LayDSPhieuHoaDon : DSA4BRIRKSgkNAkuIAUuLwPP   # pkg_taichinh_thongtin.LayDSPhieuHoaDon
+LayDSTinhTrangTaiChinh : DSA4BRIVKC8pFTMgLyYVICgCKSgvKQPP   # pkg_taichinh_thongtin.LayDSTinhTrangTaiChinh
+LayDSTinhTrangTaiChinhDKH : DSA4BRIVKC8pFTMgLyYVICgCKSgvKQUKCQPP   # pkg_taichinh_thongtin.LayDSTinhTrangTaiChinhDKH
+======================================================================
+MODULE: TC_ThuChi_MH (1 endpoint)
+======================================================================
+LayDSCacKhoanThu : DSA4BRICICIKKS4gLxUpNAPP   # pkg_taichinh_thuchi.LayDSCacKhoanThu
+======================================================================
+MODULE: TC_TinhTien_MH (1 endpoint)
+======================================================================
+LayDSPhiTheoHocPhan : DSA4BRIRKSgVKSQuCS4iESkgLwPP   # pkg_taichinh_tinhtien.LayDSPhiTheoHocPhan
+======================================================================
+MODULE: TN_DKH_CHUNG4_MH (1 endpoint)
+======================================================================
+LayDSLopHocPhanDangToChuc : DSA4BRINLjEJLiIRKSAvBSAvJhUuAik0IgPP   # pkg_dangkyhoc_chung4.LayDSLopHocPhanDangToChuc
+======================================================================
+MODULE: TS_DKH_CHUNG1_MH (1 endpoint)
+======================================================================
+LayDSChuongTrinh : DSA4BRICKTQuLyYVMygvKQPP   # PKG_DANGKYHOC_CHUNG1.LayDSChuongTrinh
+======================================================================
+MODULE: TS_DKH_CHUNG7_MH (3 endpoint)
+======================================================================
+LayDSLopHocPhanDangToChuc : DSA4BRINLjEJLiIRKSAvBSAvJhUuAik0IgPP   # PKG_DANGKYHOC_CHUNG7.LayDSLopHocPhanDangToChuc
+LayDSLopHocPhanTheoNhomKS : DSA4BRINLjEJLiIRKSAvFSkkLg8pLiwKEgPP   # PKG_DANGKYHOC_CHUNG7.LayDSLopHocPhanTheoNhomKS
+LayLichTuanTheoLopHocPhan : DSA4DSgiKRU0IC8VKSQuDS4xCS4iESkgLwPP   # PKG_DANGKYHOC_CHUNG7.LayLichTuanTheoLopHocPhan
+======================================================================
+MODULE: TS_TinTuc_MH (1 endpoint)
+======================================================================
+LayDSTinTuc_BangTin_NguoiDung : DSA4BRIVKC8VNCIeAyAvJhUoLx4PJjQuKAU0LyYP   # pkg_tintuc.LayDSTinTuc_BangTin_NguoiDung
+======================================================================
+MODULE: XLHV_CC_ThongTin_MH (1 endpoint)
+======================================================================
+LayKetQuaTheoKieuChuyenCan : DSA4CiQ1EDQgFSkkLgooJDQCKTQ4JC8CIC8P   # PKG_CHUYENCAN_THONGTIN.LayKetQuaTheoKieuChuyenCan
+======================================================================
+MODULE: XLHV_DKH_CHUNG3_MH (1 endpoint)
+======================================================================
+LayDSHocPhanDangToChuc : DSA4BRIJLiIRKSAvBSAvJhUuAik0IgPP   # pkg_dangkyhoc_chung3.LayDSHocPhanDangToChuc
+======================================================================
+MODULE: XLHV_DKH_CHUNG6_MH (3 endpoint)
+======================================================================
+LayGiangVienTheoHocPhan : DSA4BiggLyYXKCQvFSkkLgkuIhEpIC8P   # PKG_DANGKYHOC_CHUNG6.LayGiangVienTheoHocPhan
+LayKetQuaDangKyLopHocPhan : DSA4CiQ1EDQgBSAvJgo4DS4xCS4iESkgLwPP   # PKG_DANGKYHOC_CHUNG6.LayKetQuaDangKyLopHocPhan
+LayThuHocTheoHocPhan : DSA4FSk0CS4iFSkkLgkuIhEpIC8P   # PKG_DANGKYHOC_CHUNG6.LayThuHocTheoHocPhan
+======================================================================
+MODULE: XLHV_RL_TinhToan_MH (4 endpoint)
+======================================================================
+LayDSDRL_CauTrucHienThi : DSA4BRIFEw0eAiA0FTM0IgkoJC8VKSgP   # pkg_diemrenluyen_tinhtoan.LayDSDRL_CauTrucHienThi
+LayDSKeHoach : DSA4BRIKJAkuICIp   # pkg_diemrenluyen_tinhtoan.LayDSKeHoach
+LayDSKetQua : DSA4BRIKJDUQNCAP   # pkg_diemrenluyen_tinhtoan.LayDSKetQua
+Them_DRL_CauTrucHienThi_KetQua : FSkkLB4FEw0eAiA0FTM0IgkoJC8VKSgeCiQ1EDQg   # pkg_diemrenluyen_tinhtoan.Them_DRL_CauTrucHienThi_KetQua
+======================================================================
+MODULE: XLHV_TP_PhanCong_MH (1 endpoint)
+======================================================================
+LayDSThiTheoDotThi : DSA4BRIVKSgVKSQuBS41FSko   # pkg_thi_phancong.LayDSThiTheoDotThi
+======================================================================
+MODULE: XLHV_TP_PhucKhao_MH (5 endpoint)
+======================================================================
+DangKyPhucKhao : BSAvJgo4ESk0IgopIC4P   # pkg_thi_phach_phuckhao.DangKyPhucKhao
+HuyDangKyPhucKhao : CTQ4BSAvJgo4ESk0IgopIC4P   # pkg_thi_phach_phuckhao.HuyDangKyPhucKhao
+LayDSLichSuPhucKhao : DSA4BRINKCIpEjQRKTQiCikgLgPP   # pkg_thi_phach_phuckhao.LayDSLichSuPhucKhao
+LayDSThiPhucKhaoCaNhan : DSA4BRIVKSgRKTQiCikgLgIgDykgLwPP   # pkg_thi_phach_phuckhao.LayDSThiPhucKhaoCaNhan
+LayThoiGian : DSA4FSkuKAYoIC8P   # pkg_thi_phach_phuckhao.LayThoiGian

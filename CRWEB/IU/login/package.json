@@ -1,0 +1,7 @@
+{
+  "name": "iu-login",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cum DANG NHAP portal IU (SSO Microsoft, Electron main process). Dung qua index.js. Dependencies (electron) cai o package.json goc IU/ — xem bao_cao.txt goc de biet cau truc cac cum.",
+  "main": "index.js"
+}
