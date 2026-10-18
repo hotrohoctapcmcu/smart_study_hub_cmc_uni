@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#5b21b6" />
+    <meta
+      name="description"
+      content="UniStudy CMC – Trợ lý học tập thông minh dành cho sinh viên CMC University. Quản lý thời khóa biểu, deadline, cảnh báo xung đột và kế hoạch ôn thi."
+    />
+    <title>UniStudy CMC · Trợ lý học tập thông minh</title>
+    
+    <!-- Google Fonts: Roboto chuẩn theo yêu cầu tài liệu -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet" />
+    
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%235b21b6'/%3E%3Cpath d='M18 18v18c0 9 5.8 14 14 14s14-5 14-14V18h-8v18c0 4.5-2.2 7-6 7s-6-2.5-6-7V18z' fill='white'/%3E%3Ccircle cx='50' cy='14' r='6' fill='%23f97316'/%3E%3C/svg%3E"
+    />
+
+    <!-- Stylesheets chuẩn theo kiến trúc module -->
+    <link rel="stylesheet" href="src/shared/styles/tokens.css?v=9" />
+    <link rel="stylesheet" href="src/shared/styles/base.css?v=9" />
+    <link rel="stylesheet" href="src/shared/styles/layout.css?v=9" />
+    <link rel="stylesheet" href="src/shared/styles/components.css?v=9" />
+    <link rel="stylesheet" href="src/features/sync/sync.css?v=9" />
+    <link rel="stylesheet" href="src/features/dashboard/dashboard.css?v=9" />
+    <link rel="stylesheet" href="src/features/schedule/schedule.css?v=9" />
+    <link rel="stylesheet" href="src/features/tasks/tasks.css?v=9" />
+    <link rel="stylesheet" href="src/features/notifications/notifications.css?v=9" />
+    <link rel="stylesheet" href="src/features/exams/exams.css?v=9" />
+    <link rel="stylesheet" href="src/features/profile/profile.css?v=9" />
+    <link rel="stylesheet" href="src/features/study-planner/study-planner.css?v=9" />
+    <link rel="stylesheet" href="src/features/pomodoro/pomodoro.css?v=9" />
+
+    <!-- Cache Prevention -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <!-- Application Script (ES Modules) -->
+    <script type="module" src="src/app.js?v=7"></script>
+  </head>
+  <body>
+    <!-- Điểm gắn ứng dụng tối thiểu -->
+    <div id="app" aria-live="polite"></div>
+
+    <!-- Hệ thống SVG Icon Sprite -->
+    <svg class="svg-sprite" aria-hidden="true">
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+      <symbol id="i-cap" viewBox="0 0 24 24"><path d="m2.5 8.5 9.5-5 9.5 5-9.5 5z"/><path d="M6 10.5v5.2c3.7 2.8 8.3 2.8 12 0v-5.2M21.5 9v6"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M6 2v4M18 2v4M3 9h18"/><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 13h3M14 13h2M8 17h2"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+      <symbol id="i-tasks" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="m8 9 1.5 1.5L12 8M14 10h3M8 15h2M13 15h4"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/></symbol>
+      <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5zM19 16l.7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7z"/></symbol>
+      <symbol id="i-plan" viewBox="0 0 24 24"><path d="M6 3v3M18 3v3M4 9h16M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/><path d="m8 14 2 2 5-5"/></symbol>
+      <symbol id="i-exam" viewBox="0 0 24 24"><path d="M7 3h10v4H7zM5 5H4a2 2 0 0 0-2 2v1c0 2.2 1.8 4 4 4h1M17 5h3a2 2 0 0 1 2 2v1c0 2.2-1.8 4-4 4h-1M12 7v9M8 21h8M9 16h6v5H9z"/></symbol>
+      <symbol id="i-quiz" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.3 2.3 0 1 1 3.3 2c-.8.4-1.1.9-1.1 1.8M12 16.8v.2"/></symbol>
+      <symbol id="i-cards" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="3"/><path d="m8 8 8 8M16 8l-8 8"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v5l3 2M9 2h6"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-send" viewBox="0 0 24 24"><path d="m3 4 18 8-18 8 4-8zM7 12h14"/></symbol>
+      <symbol id="i-logout" viewBox="0 0 24 24"><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5M14 8l4 4-4 4M8 12h10"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 6v5h-5M4 18v-5h5M18.5 9A7 7 0 0 0 6 6.5L4 9M5.5 15A7 7 0 0 0 18 17.5l2-2.5"/></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+      <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+      <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    </svg>
+  </body>
+</html>

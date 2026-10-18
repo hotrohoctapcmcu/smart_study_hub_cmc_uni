@@ -1,0 +1,330 @@
+/**
+ * UniStudy CMC - Schedule Feature Styles (Theo Ảnh 06, 07, 08)
+ */
+.schedule-container {
+  max-width: 1260px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.schedule-header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: white;
+  padding: 16px 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--ink-200);
+}
+
+.view-mode-tabs {
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  background: var(--page);
+  padding: 3px;
+  border-radius: 10px;
+  gap: 2px;
+  box-sizing: border-box;
+}
+
+.view-mode-btn {
+  height: 32px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-600);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: all 0.15s ease;
+}
+
+.view-mode-btn.active {
+  background: white;
+  color: var(--violet-700);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Cụm điều hướng ngày: [‹] [Ô chọn ngày 📅] [›] căn cùng chiều cao 38px */
+.schedule-date-navigator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.schedule-nav-arrow {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid var(--ink-200);
+  background: white;
+  color: var(--ink-800);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.schedule-nav-arrow:hover {
+  background: var(--violet-50);
+  color: var(--violet-700);
+  border-color: var(--violet-300);
+}
+
+.schedule-nav-arrow svg {
+  width: 18px;
+  height: 18px;
+}
+
+.schedule-date-input {
+  height: 38px;
+  border: 1px solid var(--ink-200);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 0.88rem;
+  background: white;
+  color: var(--ink-950);
+  outline: none;
+  transition: border-color 0.15s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.schedule-date-input:focus {
+  border-color: var(--violet-600);
+}
+
+.schedule-period-badge {
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: #f2eff6;
+  color: var(--ink-800);
+  font-size: 0.88rem;
+  font-weight: 700;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+/* Banner Cảnh báo xung đột (Khắc phục lỗi Ảnh 08) */
+.schedule-conflict-banner {
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  background: #fee2e2;
+  border: 1px solid var(--red-600);
+  color: #991b1b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  animation: fadeIn 0.2s ease;
+}
+
+.schedule-conflict-banner strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Lưới Lịch tuần (Week Grid) */
+.schedule-week-grid {
+  display: grid;
+  grid-template-columns: 80px repeat(7, 1fr);
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--ink-200);
+  overflow-x: auto;
+  box-shadow: var(--shadow-sm);
+}
+
+.grid-day-header {
+  padding: 14px 10px;
+  text-align: center;
+  border-bottom: 2px solid var(--ink-200);
+  border-left: 1px solid var(--ink-100);
+  background: #fbfaff;
+}
+
+.grid-day-header.today {
+  background: var(--violet-50);
+  border-bottom-color: var(--violet-600);
+}
+
+.grid-day-header strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--ink-950);
+}
+
+.grid-day-header span {
+  font-size: 0.76rem;
+  color: var(--ink-600);
+}
+
+.grid-time-slot-label {
+  padding: 12px 8px;
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--ink-500);
+  border-bottom: 1px solid var(--ink-100);
+  font-weight: 600;
+}
+
+.grid-day-column {
+  border-left: 1px solid var(--ink-100);
+  position: relative;
+  min-height: 480px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Thẻ sự kiện trong lịch (Event Card) */
+.event-card {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+  border-left: 4px solid transparent;
+}
+
+.event-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 1. Lịch trường: Vàng */
+.event-card.school {
+  background: #fef9c3;
+  color: #713f12;
+  border-left-color: #ca8a04;
+}
+
+/* 2. Lịch tự học: Xanh lá */
+.event-card.study {
+  background: #dcfce7;
+  color: #14532d;
+  border-left-color: #16a34a;
+}
+
+/* 3. Lịch xung đột: Đỏ (Ưu tiên cao nhất) */
+.event-card.conflict {
+  background: #fee2e2 !important;
+  color: #7f1d1d !important;
+  border-left-color: #dc2626 !important;
+  box-shadow: 0 0 0 1px #dc2626;
+}
+
+.event-card-title {
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.event-card-time {
+  font-size: 0.74rem;
+  opacity: 0.85;
+}
+
+.event-card-tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-top: 4px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* View Lịch ngày (Theo Ảnh 07) */
+.schedule-day-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.day-event-row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 22px;
+  background: white;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--ink-200);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.day-event-row:hover {
+  border-color: var(--violet-300);
+  box-shadow: var(--shadow-md);
+}
+
+.day-event-row:focus-visible,
+.event-card:focus-visible {
+  outline: 2px solid var(--violet-600);
+  outline-offset: 2px;
+}
+
+.day-event-row.conflict {
+  border-color: var(--red-600);
+  background: #fff5f5;
+}
+
+/* Modals đặc thù của Schedule */
+.event-detail-dialog .modal-dialog,
+.confirm-delete-dialog .modal-dialog {
+  max-width: 480px;
+  width: 92%;
+}
+
+@media (max-width: 640px) {
+  .schedule-header-controls {
+    padding: 12px 14px;
+    gap: 12px;
+  }
+
+  .schedule-date-navigator {
+    gap: 4px;
+    flex-wrap: nowrap;
+  }
+
+  .schedule-date-input {
+    max-width: 135px;
+    font-size: 0.82rem;
+    padding: 0 6px;
+  }
+
+  .schedule-period-badge {
+    font-size: 0.82rem;
+    padding: 0 8px;
+  }
+
+  .day-event-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .event-card {
+    min-height: 48px;
+    padding: 8px 10px;
+  }
+}

@@ -1,0 +1,117 @@
+/**
+ * UniStudy CMC - Dashboard Styles (Theo Ảnh 02 và 04)
+ */
+.dashboard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard-hero-banner {
+  min-height: 180px;
+  border-radius: var(--radius-xl);
+  padding: 32px 36px;
+  background: linear-gradient(125deg, #4c1d95, #6d28d9, #4f46e5);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 14px 40px rgba(76, 29, 149, 0.25);
+}
+
+.dashboard-hero-banner::after {
+  content: "";
+  position: absolute;
+  right: -50px;
+  top: -50px;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.dashboard-hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 600px;
+}
+
+.dashboard-hero-fox {
+  width: 140px;
+  height: 140px;
+  position: relative;
+  z-index: 2;
+}
+
+.dashboard-hero-fox img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.dashboard-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 992px) {
+  .dashboard-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dash-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--ink-200);
+  box-shadow: var(--shadow-sm);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ink-100);
+}
+
+.dash-card-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink-950);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dash-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--page);
+  margin-bottom: 8px;
+}
+
+.dash-item-title {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--ink-950);
+}
+
+.dash-item-subtitle {
+  font-size: 0.76rem;
+  color: var(--ink-600);
+}

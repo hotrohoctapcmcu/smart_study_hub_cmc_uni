@@ -1,0 +1,74 @@
+/**
+ * UniStudy CMC - Design Tokens
+ * Định nghĩa tập trung toàn bộ biến màu sắc, kích thước, khoảng cách và hiệu ứng
+ */
+:root {
+  color-scheme: light;
+
+  /* Bảng màu Violet CMC */
+  --violet-950: #2e1065;
+  --violet-900: #3b0764;
+  --violet-800: #4c1d95;
+  --violet-700: #5b21b6;
+  --violet-600: #6d28d9;
+  --violet-500: #7c3aed;
+  --violet-400: #8b5cf6;
+  --violet-300: #a78bfa;
+  --violet-200: #c4b5fd;
+  --violet-100: #ede9fe;
+  --violet-50: #f5f3ff;
+
+  --indigo-600: #4f46e5;
+  --orange-500: #f97316;
+  --orange-100: #ffedd5;
+  --red-600: #dc2626;
+  --red-100: #fee2e2;
+  --amber-600: #d97706;
+  --amber-100: #fef3c7;
+  --green-600: #16a34a;
+  --green-100: #dcfce7;
+  --sky-600: #0284c7;
+  --sky-100: #e0f2fe;
+
+  /* Ink / Văn bản */
+  --ink-950: #171229;
+  --ink-800: #2b2440;
+  --ink-600: #615a72;
+  --ink-500: #7b748c;
+  --ink-300: #c9c4d5;
+  --ink-200: #e4e0eb;
+  --ink-100: #f2eff6;
+
+  /* Nền và Bề mặt */
+  --surface: #ffffff;
+  --page: #f7f6fb;
+
+  /* Kích thước Khung chung theo AGENTS.md & UI_REFERENCE.md */
+  --sidebar-width: 270px;
+  --sidebar-compact-width: 72px;
+  --shell-top-height: 64px;
+  --shell-topbar-height: var(--shell-top-height);
+  --workspace-tabs-height: var(--shell-top-height);
+  --page-inline-gap: 24px;
+  --control-height: 46px;
+
+  /* Bo góc & Đổ bóng */
+  --radius-xl: 24px;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+
+  --shadow-sm: 0 4px 16px rgba(46, 16, 101, 0.06);
+  --shadow-md: 0 12px 36px rgba(46, 16, 101, 0.12);
+  --shadow-lg: 0 24px 64px rgba(46, 16, 101, 0.2);
+
+  /* Font chữ bắt buộc Roboto với fallback */
+  --font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-family: var(--font-family);
+}
+
+@media (max-width: 768px) {
+  :root {
+    --shell-top-height: 56px;
+  }
+}

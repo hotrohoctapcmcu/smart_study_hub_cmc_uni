@@ -1,0 +1,83 @@
+/**
+ * UniStudy CMC - Sync Feature Styles (Theo Ảnh 03)
+ */
+.sync-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 10px 0;
+}
+
+.sync-layout-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 32px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .sync-layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sync-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--ink-200);
+  box-shadow: var(--shadow-sm);
+  padding: 28px;
+}
+
+.sync-visual-card {
+  background: linear-gradient(135deg, var(--violet-900), var(--violet-700));
+  color: white;
+  border-radius: var(--radius-xl);
+  padding: 32px 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sync-fox-wrap {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sync-status-banner {
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  background: var(--amber-100);
+  border: 1px solid var(--amber-600);
+  color: #78350f;
+  margin-top: 20px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.sync-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .sync-card {
+    padding: 18px 16px;
+  }
+  .sync-actions-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .sync-actions-row button {
+    width: 100%;
+    justify-content: center;
+  }
+}

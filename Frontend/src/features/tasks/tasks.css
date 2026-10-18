@@ -1,0 +1,172 @@
+/**
+ * UniStudy CMC - Tasks Feature Styles (Theo Bố cục Bảng Ảnh 09)
+ */
+.tasks-container {
+  max-width: 1260px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tasks-tabs-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid var(--ink-200);
+  padding-bottom: 4px;
+}
+
+.tasks-tab-btn {
+  padding: 10px 18px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--ink-600);
+  border-radius: 8px 8px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -6px;
+}
+
+.tasks-tab-btn:hover {
+  color: var(--violet-700);
+  background: var(--violet-50);
+}
+
+.tasks-tab-btn.active {
+  color: var(--violet-700);
+  border-bottom-color: var(--violet-700);
+  font-weight: 700;
+}
+
+.tasks-tab-badge {
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: var(--ink-200);
+  color: var(--ink-800);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.tasks-tab-btn.active .tasks-tab-badge {
+  background: var(--violet-100);
+  color: var(--violet-700);
+}
+
+.tasks-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: white;
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--ink-200);
+}
+
+/* Bảng Công việc (Tasks Table theo Ảnh 09) */
+.tasks-table-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--ink-200);
+  overflow-x: auto;
+  box-shadow: var(--shadow-sm);
+}
+
+.tasks-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.tasks-table th {
+  background: #fbfaff;
+  padding: 14px 18px;
+  font-weight: 700;
+  color: var(--ink-600);
+  border-bottom: 1px solid var(--ink-200);
+  white-space: nowrap;
+}
+
+.tasks-table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--ink-100);
+  color: var(--ink-950);
+  vertical-align: middle;
+}
+
+.tasks-table tr:hover td {
+  background: var(--page);
+}
+
+.tasks-table tr.completed-row td {
+  opacity: 0.65;
+}
+
+.task-title-cell strong {
+  display: block;
+  font-size: 0.92rem;
+  color: var(--ink-950);
+  margin-bottom: 2px;
+}
+
+.task-title-cell span {
+  font-size: 0.76rem;
+  color: var(--ink-600);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.status-badge.not-started {
+  background: var(--ink-200);
+  color: var(--ink-800);
+}
+
+.status-badge.in-progress {
+  background: var(--sky-100);
+  color: var(--sky-600);
+}
+
+.status-badge.completed {
+  background: var(--green-100);
+  color: var(--green-600);
+}
+
+.priority-tag {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.priority-tag.high { color: var(--red-600); }
+.priority-tag.medium { color: var(--amber-600); }
+.priority-tag.low { color: var(--green-600); }
+
+/* Checklist trong modal task */
+.checklist-item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--page);
+  margin-bottom: 6px;
+}
+
+.checklist-item-row.done span {
+  text-decoration: line-through;
+  opacity: 0.6;
+}

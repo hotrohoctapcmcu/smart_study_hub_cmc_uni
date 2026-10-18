@@ -1,0 +1,110 @@
+/**
+ * UniStudy CMC - Exams Feature Styles (Theo Ảnh 10 và 11)
+ */
+.exams-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.exams-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.exam-card-item {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--ink-200);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.exam-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.exam-subject-title {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ink-950);
+}
+
+.exam-meta-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.exam-meta-pill {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--page);
+  color: var(--ink-800);
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Lộ trình ôn thi (Roadmap Milestone theo Ảnh 10) */
+.roadmap-container {
+  border-top: 1px solid var(--ink-100);
+  padding-top: 16px;
+}
+
+.roadmap-timeline {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+
+.roadmap-milestone-card {
+  min-width: 220px;
+  background: #fbf9ff;
+  border: 1px solid var(--violet-200);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.roadmap-milestone-card strong {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--violet-900);
+  margin-bottom: 4px;
+}
+
+.roadmap-milestone-card p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ink-600);
+}
+
+/* Panel Mức độ sẵn sàng */
+.readiness-box {
+  background: var(--page);
+  border: 1px dashed var(--ink-300);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  color: var(--ink-600);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

@@ -1,0 +1,135 @@
+/**
+ * UniStudy CMC - Application Shell & Workspace Router
+ */
+import { state } from "./state.js";
+import { getActiveTab, saveActiveTabScroll } from "./workspace.js";
+import { getRouteById } from "./routes.js";
+import { renderSidebar, attachSidebarEvents } from "../shared/components/sidebar.js";
+import { renderWorkspaceTabs, attachWorkspaceTabsEvents } from "../shared/components/workspace-tabs.js?v=2";
+import { renderFloatingActions, attachFloatingActionsEvents } from "../shared/components/floating-actions.js";
+import { renderTabPickerModal, attachTabPickerEvents } from "../shared/components/tab-picker.js";
+
+// Feature Mounts
+import { mountDashboard } from "../features/dashboard/dashboard.js";
+import { mountSchedule } from "../features/schedule/schedule.js";
+import { mountTasks } from "../features/tasks/tasks.js";
+import { mountStudyPlanner } from "../features/study-planner/study-planner.js";
+import { mountExams } from "../features/exams/exams.js";
+import { mountNotifications } from "../features/notifications/notifications.js";
+import { mountSync } from "../features/sync/sync.js";
+import { mountProfile } from "../features/profile/profile.js?v=5";
+import { mountPomodoro } from "../features/pomodoro/pomodoro.js?v=4";
+import { renderEmptyState } from "../shared/components/empty-state.js";
+
+export function renderShell(appEl) {
+  // Không gian làm việc Workspace (vào thẳng trang chủ)
+  const activeTab = getActiveTab();
+  const currentRouteId = activeTab?.routeId || "dashboard";
+
+  // Lưu vị trí cuộn của tab hiện tại vào tabState
+  const oldContentPane = appEl.querySelector("#workspaceContentPane");
+  if (oldContentPane) {
+    saveActiveTabScroll(oldContentPane.scrollTop, oldContentPane.scrollLeft);
+  }
+
+  appEl.innerHTML = `
+    <div class="app-shell ${state.sidebarCollapsed ? "sidebar-collapsed" : ""}">
+      <!-- Sidebar -->
+      ${renderSidebar()}
+
+      <!-- Workspace Container -->
+      <main class="workspace-main">
+        <!-- Thanh Tab nối liền phía trên -->
+        ${renderWorkspaceTabs()}
+
+        <!-- Vùng chèn nội dung tính năng ngay dưới thanh Tab -->
+        <div class="workspace-content-pane" id="workspaceContentPane" role="region" aria-label="Nội dung trang"></div>
+      </main>
+
+      <!-- Cụm nút thao tác nổi góc dưới phải (Chuông thông báo & Trợ lý AI) -->
+      ${renderFloatingActions()}
+    </div>
+
+    <!-- Modal Root chung nằm ngoài app-shell để overlay phủ 100% viewport -->
+    <div id="tabPickerModalHost">
+      ${state.tabPickerOpen ? renderTabPickerModal() : ""}
+    </div>
+  `;
+
+  // Gắn sự kiện các thành phần dùng chung
+  attachSidebarEvents(appEl);
+  attachWorkspaceTabsEvents(appEl);
+  attachFloatingActionsEvents(appEl);
+
+  if (state.tabPickerOpen) {
+    const pickerHost = appEl.querySelector("#tabPickerModalHost");
+    attachTabPickerEvents(pickerHost);
+  }
+
+  // Mount Feature View vào Content Pane và khôi phục vị trí cuộn
+  const contentPane = appEl.querySelector("#workspaceContentPane");
+  if (contentPane) {
+    mountCurrentFeature(currentRouteId, contentPane);
+    const targetScrollTop = activeTab?.tabState?.scrollTop || 0;
+    const targetScrollLeft = activeTab?.tabState?.scrollLeft || 0;
+    if (targetScrollTop || targetScrollLeft) {
+      contentPane.scrollTop = targetScrollTop;
+      contentPane.scrollLeft = targetScrollLeft;
+    }
+  }
+}
+
+function mountCurrentFeature(routeId, contentPane) {
+  switch (routeId) {
+    case "dashboard":
+      mountDashboard(contentPane);
+      break;
+    case "schedule":
+      mountSchedule(contentPane);
+      break;
+    case "tasks":
+      mountTasks(contentPane);
+      break;
+    case "study-planner":
+      mountStudyPlanner(contentPane);
+      break;
+    case "exams":
+      mountExams(contentPane);
+      break;
+    case "notifications":
+      mountNotifications(contentPane);
+      break;
+    case "sync":
+      mountSync(contentPane);
+      break;
+    case "profile":
+      mountProfile(contentPane);
+      break;
+    case "pomodoro":
+      mountPomodoro(contentPane);
+      break;
+    default: {
+      const routeDef = getRouteById(routeId);
+      contentPane.innerHTML = `
+        <div style="max-width:800px;margin:40px auto;background:white;padding:48px 32px;border-radius:var(--radius-xl);border:1px solid var(--ink-200);text-align:center;">
+          ${renderEmptyState({
+            icon: routeDef.icon || "i-folder",
+            title: `${routeDef.title} — Đang phát triển`,
+            description: `Chức năng "${routeDef.title}" đang trong lộ trình phát triển tiếp theo. Hiện tại, vui lòng sử dụng Thời khóa biểu, Quản lý công việc, Lịch thi, Thông báo và Đồng bộ dữ liệu.`,
+            actionText: "Quay về Tổng quan",
+            actionDataAttr: 'id="fallbackGotoDashboardBtn"'
+          })}
+        </div>
+      `;
+      const fallbackBtn = contentPane.querySelector("#fallbackGotoDashboardBtn");
+      if (fallbackBtn) {
+        fallbackBtn.addEventListener("click", () => {
+          import("./workspace.js").then(({ changeCurrentTabRoute }) => {
+            changeCurrentTabRoute("dashboard");
+          });
+        });
+      }
+      break;
+    }
+  }
+}

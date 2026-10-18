@@ -1,0 +1,157 @@
+/**
+ * UniStudy CMC - Notifications Feature Styles
+ */
+.notifications-container {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.notif-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  background: white;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--ink-200);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.notif-filter-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.notif-filter-group .view-mode-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  background: var(--ink-100);
+  color: var(--ink-700);
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.notif-filter-group .view-mode-btn:hover {
+  background: var(--ink-200);
+  color: var(--ink-950);
+}
+
+.notif-filter-group .view-mode-btn.active {
+  background: var(--violet-600);
+  color: white;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .notif-filter-bar {
+    padding: 8px 6px;
+  }
+
+  .notif-filter-group {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .notif-filter-group .view-mode-btn {
+    width: 100%;
+    min-width: 0;
+    padding: 8px 2px;
+    font-size: 0.76rem;
+    text-align: center;
+    justify-content: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notif-item-card {
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  background: white;
+  border: 1px solid var(--ink-200);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  transition: all 0.15s ease;
+}
+
+.notif-item-card.unread {
+  border-left: 4px solid var(--violet-600);
+  background: #fbf9ff;
+}
+
+.notif-icon-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--violet-100);
+  color: var(--violet-700);
+}
+
+.notif-item-card.unread .notif-icon-circle {
+  background: var(--violet-600);
+  color: white;
+}
+
+.notif-content-wrap {
+  flex: 1;
+}
+
+.notif-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.notif-title-row strong {
+  font-size: 0.95rem;
+  color: var(--ink-950);
+}
+
+.notif-time-text {
+  font-size: 0.76rem;
+  color: var(--ink-600);
+}
+
+.notif-body-text {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--ink-600);
+  line-height: 1.45;
+}
