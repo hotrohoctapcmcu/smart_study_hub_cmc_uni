@@ -56,9 +56,25 @@ export const ROUTES = {
     id: "documents",
     title: "Tài liệu",
     icon: "i-folder",
-    isImplemented: false,
+    isImplemented: true,
     inSidebar: true,
-    description: "Kho giáo trình, slide bài giảng và tài liệu môn học"
+    description: "Kho giáo trình, slide bài giảng, textbook và sổ tay cá nhân"
+  },
+  "school-email": {
+    id: "school-email",
+    title: "Email trường",
+    icon: "i-bell",
+    isImplemented: true,
+    inSidebar: true,
+    description: "Đồng bộ và phân tích hòm thư sinh viên CMC"
+  },
+  schoolEmail: {
+    id: "school-email",
+    title: "Email trường",
+    icon: "i-bell",
+    isImplemented: true,
+    inSidebar: true,
+    description: "Đồng bộ và phân tích hòm thư sinh viên CMC"
   },
   "ai-tutor": {
     id: "ai-tutor",
@@ -104,9 +120,9 @@ export const ROUTES = {
     id: "progress",
     title: "Tiến độ",
     icon: "i-chart",
-    isImplemented: false,
+    isImplemented: true,
     inSidebar: true,
-    description: "Biểu đồ phân tích hiệu suất học tập sinh viên"
+    description: "Biểu đồ phân tích hiệu suất và bản đồ thời gian học tập"
   },
   notifications: {
     id: "notifications",
@@ -154,7 +170,7 @@ export const NAVIGATION_SECTIONS = [
     id: "tools",
     title: "CÔNG CỤ",
     icon: "i-spark",
-    routeIds: ["documents", "ai-tutor", "quiz", "flashcards", "pomodoro"]
+    routeIds: ["documents", "pomodoro", "school-email", "ai-tutor", "quiz", "flashcards"]
   },
   {
     id: "bottom",

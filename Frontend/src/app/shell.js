@@ -19,6 +19,9 @@ import { mountNotifications } from "../features/notifications/notifications.js";
 import { mountSync } from "../features/sync/sync.js";
 import { mountProfile } from "../features/profile/profile.js?v=5";
 import { mountPomodoro } from "../features/pomodoro/pomodoro.js?v=4";
+import { mountDocuments } from "../features/documents/documents.js";
+import { mountProgress } from "../features/progress/progress.js";
+import { mountSchoolEmail } from "../features/school-email/school-email.js";
 import { renderEmptyState } from "../shared/components/empty-state.js";
 
 export function renderShell(appEl) {
@@ -107,6 +110,15 @@ function mountCurrentFeature(routeId, contentPane) {
       break;
     case "pomodoro":
       mountPomodoro(contentPane);
+      break;
+    case "documents":
+      mountDocuments(contentPane);
+      break;
+    case "progress":
+      mountProgress(contentPane);
+      break;
+    case "school-email":
+      mountSchoolEmail(contentPane);
       break;
     default: {
       const routeDef = getRouteById(routeId);
