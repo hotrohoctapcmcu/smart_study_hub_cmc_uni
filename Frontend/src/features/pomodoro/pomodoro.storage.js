@@ -122,3 +122,30 @@ export function clearHistory() {
     return [];
   }
 }
+
+/**
+ * Tính tổng thời gian thực tế đã học từ các phiên Pomodoro (đơn vị: giây)
+ */
+export function getTotalPomodoroStudySeconds() {
+  const history = getHistory();
+  return history.reduce((sum, item) => sum + (item.actualStudySeconds || 0), 0);
+}
+
+/**
+ * Thống kê tổng hợp Pomodoro dùng chung cho Dashboard và Tiến độ
+ */
+export function getPomodoroStats() {
+  const history = getHistory();
+  const totalSeconds = history.reduce((sum, item) => sum + (item.actualStudySeconds || 0), 0);
+  const completedCount = history.filter((item) => item.status === "Hoàn thành").length;
+  const earlyStoppedCount = history.filter((item) => item.status === "Kết thúc sớm").length;
+  return {
+    totalSessions: history.length,
+    completedSessions: completedCount,
+    earlyStoppedSessions: earlyStoppedCount,
+    totalSeconds,
+    totalMinutes: Math.round(totalSeconds / 60),
+    totalHours: Number((totalSeconds / 3600).toFixed(1)),
+    history
+  };
+}

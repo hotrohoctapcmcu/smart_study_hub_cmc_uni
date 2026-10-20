@@ -1,6 +1,7 @@
 /**
- * UniStudy CMC - Pomodoro View
+ * UniStudy CMC - Pomodoro View (Sprint 2 Nâng cấp)
  * Giao diện đồng hồ tập trung Pomodoro tích hợp sticker Cáo CMC
+ * Hỗ trợ chọn giờ, phút, giây, nút chọn nhanh 15/25/45m, chọn thời gian nghỉ
  */
 import { getState } from "./pomodoro.service.js";
 import { ASSETS } from "../../shared/config/assets.js";
@@ -15,7 +16,7 @@ export function renderPomodoroView() {
   const isBreakCompleted = pState.state === "break_completed";
   const isBreakMode = pState.mode === "break";
 
-  // Chọn sticker Cáo CMC phù hợp với từng trạng thái
+  // Sticker Cáo CMC theo trạng thái
   let foxImageSrc = ASSETS.fox.pomodoro || ASSETS.fox.study;
   let motivationalText = "Hãy tập trung cao độ để hoàn thành mục tiêu học tập!";
   let badgeModeLabel = "Phiên học tập";
@@ -33,7 +34,6 @@ export function renderPomodoroView() {
     motivationalText = "Đang tạm dừng. Hãy bấm Tiếp tục khi bạn sẵn sàng quay lại học nhé!";
   }
 
-  // Khóa ô nhập thời gian khi đang chạy hoặc tạm dừng
   const isLocked = isRunning || isPaused;
 
   // Render các nút hành động tương ứng với trạng thái
@@ -71,7 +71,7 @@ export function renderPomodoroView() {
     actionsHtml = `
       <button type="button" class="button primary pomo-btn-break" id="pomoStartBreakBtn">
         <svg><use href="#i-spark"></use></svg>
-        <span>Bắt đầu giờ nghỉ (${pState.breakDurationMinutes} phút)</span>
+        <span>Bắt đầu giờ nghỉ (${pState.breakMinutes} phút)</span>
       </button>
       <button type="button" class="button ghost pomo-btn-skip-break" id="pomoSkipBreakBtn">
         <span>Bỏ qua nghỉ & Học tiếp</span>
@@ -171,10 +171,8 @@ export function renderPomodoroView() {
       <!-- Header Trang -->
       <div class="pomodoro-header">
         <div>
-          <div class="eyebrow" style="color:var(--violet-700);margin-bottom:4px;">
-            Trợ lý năng suất UniStudy CMC
-          </div>
-          <h1>Bộ đếm tập trung Pomodoro</h1>
+          <span class="eyebrow"><svg><use href="#i-clock"></use></svg> Trợ lý năng suất UniStudy CMC</span>
+          <h1 style="margin:4px 0 0;font-size:1.8rem;color:var(--ink-950);">Bộ đếm tập trung Pomodoro</h1>
         </div>
       </div>
 
@@ -205,34 +203,94 @@ export function renderPomodoroView() {
           </div>
         </div>
 
-        <!-- Cài đặt thời lượng (Form) -->
-        <div class="pomo-settings-bar">
-          <div class="pomo-setting-group">
-            <label for="pomoWorkDurationInput">Thời gian học (phút):</label>
-            <input 
-              type="number" 
-              id="pomoWorkDurationInput" 
-              min="1" 
-              max="120" 
-              value="${pState.workDurationMinutes}" 
-              ${isLocked ? "disabled title='Cần kết thúc phiên hiện tại để đổi thời gian'" : ""}
-            />
+        <!-- DẢI NÚT CHỌN NHANH (15, 25, 45 phút) -->
+        <div class="pomo-quick-bar" style="margin-bottom:16px;">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--ink-600);margin-bottom:8px;">Chọn nhanh thời gian học:</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="button secondary small pomo-quick-btn ${pState.workMinutes === 15 && !pState.workHours && !pState.workSeconds ? "active" : ""}" data-quick-work="15" ${isLocked ? "disabled" : ""}>
+              ⚡ 15 phút (Ôn bài ngắn)
+            </button>
+            <button type="button" class="button secondary small pomo-quick-btn ${pState.workMinutes === 25 && !pState.workHours && !pState.workSeconds ? "active" : ""}" data-quick-work="25" ${isLocked ? "disabled" : ""}>
+              🎯 25 phút (Tiêu chuẩn)
+            </button>
+            <button type="button" class="button secondary small pomo-quick-btn ${pState.workMinutes === 45 && !pState.workHours && !pState.workSeconds ? "active" : ""}" data-quick-work="45" ${isLocked ? "disabled" : ""}>
+              🔥 45 phút (Tập trung sâu)
+            </button>
           </div>
-          <div class="pomo-setting-group">
-            <label for="pomoBreakDurationInput">Thời gian nghỉ (phút):</label>
-            <input 
-              type="number" 
-              id="pomoBreakDurationInput" 
-              min="1" 
-              max="60" 
-              value="${pState.breakDurationMinutes}" 
-              ${isLocked ? "disabled title='Cần kết thúc phiên hiện tại để đổi thời gian'" : ""}
-            />
+        </div>
+
+        <!-- DẢI NÚT CHỌN THỜI GIAN NGHỈ -->
+        <div class="pomo-break-bar" style="margin-bottom:18px;">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--ink-600);margin-bottom:8px;">Chọn thời gian nghỉ:</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="button ghost small pomo-quick-break-btn ${pState.breakMinutes === 5 ? "active" : ""}" data-quick-break="5" ${isLocked ? "disabled" : ""}>
+              ☕ Nghỉ 5 phút
+            </button>
+            <button type="button" class="button ghost small pomo-quick-break-btn ${pState.breakMinutes === 10 ? "active" : ""}" data-quick-break="10" ${isLocked ? "disabled" : ""}>
+              🧘 Nghỉ 10 phút
+            </button>
+            <button type="button" class="button ghost small pomo-quick-break-btn ${pState.breakMinutes === 15 ? "active" : ""}" data-quick-break="15" ${isLocked ? "disabled" : ""}>
+              🌱 Nghỉ dài 15 phút
+            </button>
+          </div>
+        </div>
+
+        <!-- Cài đặt thời lượng chi tiết: Giờ, Phút, Giây (Form) -->
+        <div class="pomo-settings-bar">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div class="pomo-setting-group">
+              <label for="pomoHoursInput">Giờ:</label>
+              <input 
+                type="number" 
+                id="pomoHoursInput" 
+                min="0" 
+                max="12" 
+                value="${pState.workHours || 0}" 
+                style="width:68px;"
+                ${isLocked ? "disabled" : ""}
+              />
+            </div>
+            <div class="pomo-setting-group">
+              <label for="pomoMinutesInput">Phút:</label>
+              <input 
+                type="number" 
+                id="pomoMinutesInput" 
+                min="0" 
+                max="59" 
+                value="${pState.workMinutes !== undefined ? pState.workMinutes : 25}" 
+                style="width:68px;"
+                ${isLocked ? "disabled" : ""}
+              />
+            </div>
+            <div class="pomo-setting-group">
+              <label for="pomoSecondsInput">Giây:</label>
+              <input 
+                type="number" 
+                id="pomoSecondsInput" 
+                min="0" 
+                max="59" 
+                value="${pState.workSeconds || 0}" 
+                style="width:68px;"
+                ${isLocked ? "disabled" : ""}
+              />
+            </div>
+            <div class="pomo-setting-group" style="margin-left:auto;">
+              <label for="pomoBreakDurationInput">Thời gian nghỉ (phút):</label>
+              <input 
+                type="number" 
+                id="pomoBreakDurationInput" 
+                min="1" 
+                max="60" 
+                value="${pState.breakMinutes || 5}" 
+                style="width:78px;"
+                ${isLocked ? "disabled" : ""}
+              />
+            </div>
           </div>
         </div>
 
         <!-- Cụm nút điều khiển hành động -->
-        <div class="pomo-actions-bar">
+        <div class="pomo-actions-bar" style="margin-top:20px;">
           ${actionsHtml}
         </div>
       </div>
@@ -242,7 +300,7 @@ export function renderPomodoroView() {
         <div class="pomo-history-header">
           <div>
             <h3><svg><use href="#i-calendar"></use></svg> Lịch sử phiên học</h3>
-            <span class="muted small">Ghi nhận các phiên học tập thực tế của bạn</span>
+            <span class="muted small">Ghi nhận các phiên học tập thực tế và đồng bộ sang Dashboard & Tiến độ</span>
           </div>
           ${
             historyList.length > 0

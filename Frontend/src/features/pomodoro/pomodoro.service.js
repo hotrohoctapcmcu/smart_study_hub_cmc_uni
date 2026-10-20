@@ -1,9 +1,12 @@
 /**
- * UniStudy CMC - Pomodoro Service
+ * UniStudy CMC - Pomodoro Service (Sprint 2 Nâng cấp)
  * Quản lý logic đồng hồ Pomodoro chính xác theo timestamp (không phụ thuộc setInterval 1s)
- * - Toàn app dùng chung một phiên duy nhất (Singleton)
- * - Tự động tính toán lại thời gian khi chuyển tab / thu nhỏ trình duyệt
- * - Đảm bảo chỉ ghi nhận lịch sử đúng 1 lần khi hết giờ
+ * - Chọn giờ, phút, giây
+ * - Nút chọn nhanh 15, 25, 45 phút
+ * - Nút chọn thời gian nghỉ (5, 10, 15 phút hoặc tùy chỉnh)
+ * - Bắt đầu, tạm dừng, tiếp tục và kết thúc
+ * - Lưu và khôi phục phiên đang học cùng lịch sử phiên
+ * - Dùng chung dữ liệu với Dashboard và Tiến độ
  */
 import {
   loadActiveSession,
@@ -11,14 +14,19 @@ import {
   clearActiveSession,
   getHistory,
   saveHistoryItem,
-  clearHistory
+  clearHistory,
+  getTotalPomodoroStudySeconds,
+  getPomodoroStats
 } from "./pomodoro.storage.js";
 
+export { getTotalPomodoroStudySeconds, getPomodoroStats };
+
 export const DEFAULT_POMODORO_CONFIG = {
+  defaultWorkHours: 0,
   defaultWorkMinutes: 25,
+  defaultWorkSeconds: 0,
   defaultBreakMinutes: 5,
-  minMinutes: 1,
-  maxMinutes: 120
+  defaultBreakSeconds: 0
 };
 
 // Trạng thái phiên hiện tại trong RAM
@@ -33,9 +41,8 @@ function initService() {
   const saved = loadActiveSession();
   if (saved) {
     currentSession = saved;
-    // Kiểm tra xem phiên có bị hết hạn trong lúc người dùng đóng tab / rời app không
     checkAndProcessCompletion();
-    if (currentSession && currentSession.state === "running") {
+    if (currentSession && (currentSession.state === "running" || currentSession.state === "break_running")) {
       startInterval();
     }
   } else {
@@ -54,13 +61,19 @@ function initService() {
 }
 
 function createDefaultSession() {
+  const totalWorkSec = 25 * 60;
   return {
     state: "idle", // "idle" | "running" | "paused" | "study_completed" | "break_running" | "break_paused" | "break_completed"
     mode: "study", // "study" | "break"
-    workDurationMinutes: DEFAULT_POMODORO_CONFIG.defaultWorkMinutes,
-    breakDurationMinutes: DEFAULT_POMODORO_CONFIG.defaultBreakMinutes,
+    workHours: 0,
+    workMinutes: 25,
+    workSeconds: 0,
+    breakMinutes: 5,
+    breakSeconds: 0,
+    totalWorkSeconds: totalWorkSec,
+    totalBreakSeconds: 5 * 60,
     targetEndTime: null, // Timestamp ms kết thúc
-    remainingMs: DEFAULT_POMODORO_CONFIG.defaultWorkMinutes * 60 * 1000,
+    remainingMs: totalWorkSec * 1000,
     startTime: null,
     lastResumeTime: null,
     actualStudyMs: 0,
@@ -77,9 +90,10 @@ export function subscribePomodoro(listener) {
 }
 
 function notifyListeners() {
+  const s = getState();
   listeners.forEach((fn) => {
     try {
-      fn(getState());
+      fn(s);
     } catch (err) {
       console.error("[Pomodoro Service] Lỗi listener:", err);
     }
@@ -114,7 +128,6 @@ function tick() {
   currentSession.remainingMs = remaining;
 
   if (remaining <= 0) {
-    // Hết giờ
     handleTimeExpired();
   } else {
     notifyListeners();
@@ -131,7 +144,6 @@ function handleTimeExpired() {
   if (currentSession.mode === "study") {
     // Hoàn thành phiên học
     if (!currentSession.hasRecordedHistory) {
-      // Tính thời gian thực học = cộng dồn tới thời điểm kết thúc
       let studyMs = currentSession.actualStudyMs || 0;
       if (currentSession.lastResumeTime) {
         studyMs += Math.max(0, Math.min(now, currentSession.targetEndTime) - currentSession.lastResumeTime);
@@ -141,8 +153,8 @@ function handleTimeExpired() {
       saveHistoryItem({
         id: `pomo-${currentSession.startTime || now}`,
         createdAt: new Date(currentSession.startTime || now).toISOString(),
-        workDurationMinutes: currentSession.workDurationMinutes,
-        actualStudySeconds: Math.max(actualSeconds, currentSession.workDurationMinutes * 60),
+        workDurationMinutes: Math.max(1, Math.round(currentSession.totalWorkSeconds / 60)),
+        actualStudySeconds: Math.max(actualSeconds, currentSession.totalWorkSeconds),
         status: "Hoàn thành"
       });
       currentSession.hasRecordedHistory = true;
@@ -184,21 +196,38 @@ function handleAppFocusWake() {
 }
 
 /**
- * Bắt đầu một phiên học mới
- * @param {number} workMinutes 
- * @param {number} breakMinutes 
+ * Bắt đầu phiên học mới với Giờ, Phút, Giây
  */
-export function startSession(workMinutes, breakMinutes) {
-  const wMin = Math.max(1, parseInt(workMinutes, 10) || DEFAULT_POMODORO_CONFIG.defaultWorkMinutes);
-  const bMin = Math.max(1, parseInt(breakMinutes, 10) || DEFAULT_POMODORO_CONFIG.defaultBreakMinutes);
+export function startSession(hours = 0, minutes = 25, seconds = 0, breakMinutes = 5, breakSeconds = 0) {
+  const h = Math.max(0, parseInt(hours, 10) || 0);
+  const m = Math.max(0, parseInt(minutes, 10) || 0);
+  const s = Math.max(0, parseInt(seconds, 10) || 0);
+  const bMin = Math.max(0, parseInt(breakMinutes, 10) || 5);
+  const bSec = Math.max(0, parseInt(breakSeconds, 10) || 0);
+
+  let totalWorkSec = h * 3600 + m * 60 + s;
+  if (totalWorkSec <= 0) {
+    totalWorkSec = 25 * 60; // Mặc định 25 phút nếu nhập 0
+  }
+
+  let totalBreakSec = bMin * 60 + bSec;
+  if (totalBreakSec <= 0) {
+    totalBreakSec = 5 * 60;
+  }
+
   const now = Date.now();
-  const totalMs = wMin * 60 * 1000;
+  const totalMs = totalWorkSec * 1000;
 
   currentSession = {
     state: "running",
     mode: "study",
-    workDurationMinutes: wMin,
-    breakDurationMinutes: bMin,
+    workHours: h,
+    workMinutes: m,
+    workSeconds: s,
+    breakMinutes: bMin,
+    breakSeconds: bSec,
+    totalWorkSeconds: totalWorkSec,
+    totalBreakSeconds: totalBreakSec,
     targetEndTime: now + totalMs,
     remainingMs: totalMs,
     startTime: now,
@@ -213,6 +242,69 @@ export function startSession(workMinutes, breakMinutes) {
 }
 
 /**
+ * Chọn nhanh thời gian học: 15, 25, 45 phút
+ */
+export function setQuickWorkMinutes(minutes) {
+  const m = parseInt(minutes, 10) || 25;
+  if (!currentSession) currentSession = createDefaultSession();
+  if (currentSession.state === "running" || currentSession.state === "paused") {
+    return false; // Không đổi khi đang chạy/tạm dừng
+  }
+  currentSession.workHours = 0;
+  currentSession.workMinutes = m;
+  currentSession.workSeconds = 0;
+  currentSession.totalWorkSeconds = m * 60;
+  currentSession.remainingMs = m * 60 * 1000;
+  saveActiveSession(currentSession);
+  notifyListeners();
+  return true;
+}
+
+/**
+ * Chọn thời gian nghỉ: 5, 10, 15 phút hoặc tùy chỉnh
+ */
+export function setQuickBreakMinutes(minutes) {
+  const m = Math.max(1, parseInt(minutes, 10) || 5);
+  if (!currentSession) currentSession = createDefaultSession();
+  currentSession.breakMinutes = m;
+  currentSession.breakSeconds = 0;
+  currentSession.totalBreakSeconds = m * 60;
+  saveActiveSession(currentSession);
+  notifyListeners();
+  return true;
+}
+
+/**
+ * Cập nhật giá trị giờ, phút, giây thủ công khi ở trạng thái idle
+ */
+export function setTimeValues(hours = 0, minutes = 25, seconds = 0, breakMinutes = 5) {
+  if (!currentSession) currentSession = createDefaultSession();
+  if (currentSession.state === "running" || currentSession.state === "paused") {
+    return false;
+  }
+  const h = Math.max(0, parseInt(hours, 10) || 0);
+  const m = Math.max(0, parseInt(minutes, 10) || 0);
+  const s = Math.max(0, parseInt(seconds, 10) || 0);
+  const bMin = Math.max(1, parseInt(breakMinutes, 10) || 5);
+
+  let totalSec = h * 3600 + m * 60 + s;
+  if (totalSec <= 0) totalSec = 25 * 60;
+
+  currentSession.workHours = h;
+  currentSession.workMinutes = m;
+  currentSession.workSeconds = s;
+  currentSession.breakMinutes = bMin;
+  currentSession.breakSeconds = 0;
+  currentSession.totalWorkSeconds = totalSec;
+  currentSession.totalBreakSeconds = bMin * 60;
+  currentSession.remainingMs = totalSec * 1000;
+
+  saveActiveSession(currentSession);
+  notifyListeners();
+  return true;
+}
+
+/**
  * Tạm dừng phiên đang chạy
  */
 export function pauseSession() {
@@ -220,7 +312,6 @@ export function pauseSession() {
   const now = Date.now();
 
   if (currentSession.state === "running") {
-    // Cộng dồn thời gian thực học của chặng vừa rồi
     if (currentSession.lastResumeTime) {
       currentSession.actualStudyMs = (currentSession.actualStudyMs || 0) + (now - currentSession.lastResumeTime);
       currentSession.lastResumeTime = null;
@@ -265,13 +356,13 @@ export function resumeSession() {
 }
 
 /**
- * Bắt đầu giờ nghỉ sau khi hoàn thành phiên học
+ * Bắt đầu giờ nghỉ
  */
 export function startBreakSession() {
   if (!currentSession) return;
-  const bMin = currentSession.breakDurationMinutes || DEFAULT_POMODORO_CONFIG.defaultBreakMinutes;
+  const totalBreakSec = currentSession.totalBreakSeconds || (currentSession.breakMinutes || 5) * 60;
   const now = Date.now();
-  const totalMs = bMin * 60 * 1000;
+  const totalMs = totalBreakSec * 1000;
 
   currentSession.mode = "break";
   currentSession.state = "break_running";
@@ -288,9 +379,13 @@ export function startBreakSession() {
  */
 export function startNextStudySession() {
   if (!currentSession) return;
-  const wMin = currentSession.workDurationMinutes || DEFAULT_POMODORO_CONFIG.defaultWorkMinutes;
-  const bMin = currentSession.breakDurationMinutes || DEFAULT_POMODORO_CONFIG.defaultBreakMinutes;
-  startSession(wMin, bMin);
+  startSession(
+    currentSession.workHours,
+    currentSession.workMinutes,
+    currentSession.workSeconds,
+    currentSession.breakMinutes,
+    currentSession.breakSeconds
+  );
 }
 
 /**
@@ -302,7 +397,6 @@ export function endSession(isEarly = false) {
   if (!currentSession) return;
   const now = Date.now();
 
-  // Nếu đang học dở và kết thúc sớm thì ghi lịch sử
   if (isEarly && currentSession.mode === "study" && !currentSession.hasRecordedHistory) {
     let studyMs = currentSession.actualStudyMs || 0;
     if (currentSession.state === "running" && currentSession.lastResumeTime) {
@@ -310,12 +404,11 @@ export function endSession(isEarly = false) {
     }
     const actualSeconds = Math.round(studyMs / 1000);
 
-    // Chỉ lưu nếu đã thực học trên 5 giây
     if (actualSeconds >= 5) {
       saveHistoryItem({
         id: `pomo-${currentSession.startTime || now}`,
         createdAt: new Date(currentSession.startTime || now).toISOString(),
-        workDurationMinutes: currentSession.workDurationMinutes,
+        workDurationMinutes: Math.max(1, Math.round(currentSession.totalWorkSeconds / 60)),
         actualStudySeconds: actualSeconds,
         status: "Kết thúc sớm"
       });
@@ -325,62 +418,61 @@ export function endSession(isEarly = false) {
   stopInterval();
   clearActiveSession();
 
-  const wMin = currentSession.workDurationMinutes;
-  const bMin = currentSession.breakDurationMinutes;
+  const h = currentSession.workHours;
+  const m = currentSession.workMinutes;
+  const s = currentSession.workSeconds;
+  const bMin = currentSession.breakMinutes;
+  const totalWorkSec = currentSession.totalWorkSeconds || 25 * 60;
+
   currentSession = createDefaultSession();
-  currentSession.workDurationMinutes = wMin;
-  currentSession.breakDurationMinutes = bMin;
-  currentSession.remainingMs = wMin * 60 * 1000;
+  currentSession.workHours = h;
+  currentSession.workMinutes = m;
+  currentSession.workSeconds = s;
+  currentSession.breakMinutes = bMin;
+  currentSession.totalWorkSeconds = totalWorkSec;
+  currentSession.remainingMs = totalWorkSec * 1000;
 
   notifyListeners();
-}
-
-/**
- * Cập nhật cấu hình thời gian khi ở trạng thái idle
- */
-export function setDurations(workMinutes, breakMinutes) {
-  if (!currentSession) currentSession = createDefaultSession();
-  if (currentSession.state !== "idle" && currentSession.state !== "study_completed" && currentSession.state !== "break_completed") {
-    // Không cho phép đổi khi đang chạy hoặc tạm dừng
-    return false;
-  }
-  const wMin = Math.max(1, parseInt(workMinutes, 10) || DEFAULT_POMODORO_CONFIG.defaultWorkMinutes);
-  const bMin = Math.max(1, parseInt(breakMinutes, 10) || DEFAULT_POMODORO_CONFIG.defaultBreakMinutes);
-  currentSession.workDurationMinutes = wMin;
-  currentSession.breakDurationMinutes = bMin;
-  currentSession.remainingMs = wMin * 60 * 1000;
-  saveActiveSession(currentSession);
-  notifyListeners();
-  return true;
 }
 
 /**
  * Lấy thông tin thời gian còn lại đã định dạng
  */
 export function getRemainingTime() {
-  if (!currentSession) return { minutes: 25, seconds: 0, text: "25:00", progress: 0 };
+  if (!currentSession) return { hours: 0, minutes: 25, seconds: 0, text: "25:00", progress: 0 };
 
   let totalMs = 0;
   if (currentSession.mode === "study") {
-    totalMs = (currentSession.workDurationMinutes || 25) * 60 * 1000;
+    totalMs = (currentSession.totalWorkSeconds || 25 * 60) * 1000;
   } else {
-    totalMs = (currentSession.breakDurationMinutes || 5) * 60 * 1000;
+    totalMs = (currentSession.totalBreakSeconds || 5 * 60) * 1000;
   }
 
   const remainingMs = Math.max(0, currentSession.remainingMs || 0);
   const totalSeconds = Math.ceil(remainingMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
   const mm = String(minutes).padStart(2, "0");
   const ss = String(seconds).padStart(2, "0");
 
+  let text = "";
+  if (hours > 0) {
+    const hh = String(hours).padStart(2, "0");
+    text = `${hh}:${mm}:${ss}`;
+  } else {
+    text = `${mm}:${ss}`;
+  }
+
   const progress = totalMs > 0 ? Math.min(100, Math.max(0, ((totalMs - remainingMs) / totalMs) * 100)) : 0;
 
   return {
+    hours,
     minutes,
     seconds,
-    text: `${mm}:${ss}`,
+    totalSeconds,
+    text,
     progress: Math.round(progress)
   };
 }
@@ -394,6 +486,9 @@ export function getState() {
   return {
     ...currentSession,
     displayTime: time.text,
+    hoursLeft: time.hours,
+    minutesLeft: time.minutes,
+    secondsLeft: time.seconds,
     progress: time.progress,
     history: getHistory()
   };
