@@ -24,6 +24,23 @@ let mainWindow = null;
 let attempts = 0;
 let timer = null;
 
+/**
+ * Cố định giao diện ở đúng 100%: chặn mọi thay đổi zoom
+ * (Ctrl +/-/0, Ctrl + lăn chuột, pinch-to-zoom) và xoá mức zoom đã lưu.
+ * Chromium lưu zoom theo origin nên nếu người dùng lỡ thu nhỏ một lần,
+ * lần mở sau toàn bộ UI vẫn bị thu nhỏ và dồn về một góc.
+ */
+function lockZoom(win) {
+    if (!win || win.isDestroyed()) return;
+    const wc = win.webContents;
+    try {
+        wc.setZoomMode("disabled");
+        wc.setZoomFactor(1);
+        const limits = wc.setVisualZoomLevelLimits(1, 1);
+        if (limits && typeof limits.catch === "function") limits.catch(() => { });
+    } catch { /* Electron cũ hơn: bỏ qua, zoomFactor vẫn giữ 100% */ }
+}
+
 function loadApp() {
     if (!mainWindow || mainWindow.isDestroyed()) return;
 
@@ -52,9 +69,13 @@ function createWindow() {
             preload: path.join(__dirname, "electron", "preload.js"),
             contextIsolation: true,
             nodeIntegration: false,
-            sandbox: true
+            sandbox: true,
+            // Luôn khởi động ở 100%, không kế thừa zoom đã lưu của lần chạy trước
+            zoomFactor: 1.0
         }
     });
+
+    lockZoom(mainWindow);
 
     mainWindow.once("ready-to-show", () => mainWindow?.show());
 
@@ -65,6 +86,8 @@ function createWindow() {
     mainWindow.webContents.on("did-finish-load", () => {
         attempts = 0;
         clearTimeout(timer);
+        // Ép lại 100% sau mỗi lần tải/nạp lại trang
+        lockZoom(mainWindow);
     });
 
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
