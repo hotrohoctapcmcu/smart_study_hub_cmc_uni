@@ -6,6 +6,7 @@ import { changeCurrentTabRoute, updateActiveTabLocalState } from "../../app/work
 import { validateExamInput } from "../../shared/utils/validation.js";
 import { renderExamModal } from "./exams.view.js";
 import { attachModalEvents } from "../../shared/components/modal.js";
+import { createExamApi, deleteExamApi } from "./exams.service.js";
 
 export function attachExamsEvents(containerEl) {
   // Nút Đồng bộ lịch thi
@@ -61,6 +62,9 @@ export function attachExamsEvents(containerEl) {
             { title: "Làm bài tập trắc nghiệm và đề cương", targetDate: data.date }
           ];
           addLocalExam({ ...data, studyMilestones: milestones });
+          createExamApi(data).catch((err) =>
+            console.warn("[Exams] Lỗi tạo kỳ thi trên máy chủ:", err)
+          );
         }
         close();
       });
@@ -92,6 +96,9 @@ export function attachExamsEvents(containerEl) {
       const ok = window.confirm("Bạn có chắc chắn muốn xóa kỳ thi này?");
       if (ok) {
         deleteLocalExam(id);
+        deleteExamApi(id).catch((err) =>
+          console.warn("[Exams] Lỗi xóa kỳ thi trên máy chủ:", err)
+        );
       }
     });
   });

@@ -9,6 +9,7 @@ import { openSchoolPortals } from "../sync/sync.auth-window.js";
 import { getIuBridge, syncIuAuto } from "../sync/sync.service.js";
 import { renderProfileEditModal } from "./profile.view.js";
 import { attachModalEvents } from "../../shared/components/modal.js";
+import { saveStudentProfileApi } from "./profile.service.js";
 
 export function attachProfileEvents(containerEl) {
   attachSourceSelectorEvents(containerEl);
@@ -52,14 +53,19 @@ export function attachProfileEvents(containerEl) {
         form.addEventListener("submit", (e) => {
           e.preventDefault();
           const fd = new FormData(form);
-          state.studentProfile = {
+          const newProfile = {
             ...(state.studentProfile || {}),
             name: fd.get("name")?.trim() || "Chưa có dữ liệu",
             studentId: fd.get("studentId")?.trim() || "Chưa có dữ liệu",
             email: fd.get("email")?.trim() || "Chưa có dữ liệu"
           };
+          state.studentProfile = newProfile;
           close();
           notifyStateChange();
+
+          saveStudentProfileApi(newProfile).catch((err) =>
+            console.warn("[Profile] Lỗi lưu hồ sơ lên server:", err)
+          );
         });
       }
     });

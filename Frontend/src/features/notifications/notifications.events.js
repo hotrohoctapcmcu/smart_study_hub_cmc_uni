@@ -12,6 +12,8 @@ import {
 import { renderEmailDetailModal } from "../school-email/school-email.view.js";
 import { attachModalEvents } from "../../shared/components/modal.js";
 
+import { markNotificationRead, markAllNotificationsRead as markAllApi } from "./notifications.service.js";
+
 export function attachNotificationsEvents(containerEl) {
   // 1. Lọc theo tab bộ lọc
   const filterBtns = containerEl.querySelectorAll("[data-notif-filter]");
@@ -35,6 +37,9 @@ export function attachNotificationsEvents(containerEl) {
         markEmailRead(id);
       } else {
         markNotificationAsRead(id);
+        markNotificationRead(id).catch((err) =>
+          console.warn("[Notifications] Lỗi đánh dấu đã đọc trên backend:", err)
+        );
       }
       notifyStateChange();
     });
@@ -45,6 +50,9 @@ export function attachNotificationsEvents(containerEl) {
   if (markAllBtn) {
     markAllBtn.addEventListener("click", () => {
       markAllNotificationsAsRead();
+      markAllApi().catch((err) =>
+        console.warn("[Notifications] Lỗi đánh dấu tất cả đã đọc trên backend:", err)
+      );
     });
   }
 

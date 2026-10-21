@@ -1,8 +1,14 @@
 import { state, addLocalTask, updateLocalTask, deleteLocalTask, notifyStateChange } from "../../app/state.js";
-import { updateActiveTabLocalState } from "../../app/workspace.js";
+import { getActiveTab, updateActiveTabLocalState } from "../../app/workspace.js";
 import { validateTask } from "./tasks.validation.js";
 import { renderTaskModal, renderTaskDetailModal } from "./tasks.view.js";
 import { attachModalEvents } from "../../shared/components/modal.js";
+import {
+  createTaskApi,
+  updateTaskApi,
+  deleteTaskApi,
+  toggleChecklistItemApi
+} from "./tasks.service.js";
 
 export function attachTasksEvents(containerEl) {
   const modalHost = containerEl.querySelector("#taskModalHost");
@@ -87,6 +93,17 @@ export function attachTasksEvents(containerEl) {
           completedAt
         });
 
+        // Đồng bộ lên API Backend
+        const curItem = updatedChecklist.find((i) => i.id === itemId);
+        if (curItem && curItem.backendId) {
+          toggleChecklistItemApi(curItem.backendId, isChecked).catch((e) =>
+            console.warn("[Tasks] Lỗi đồng bộ checklist lên backend:", e)
+          );
+        }
+        updateTaskApi(task.id, { status: newStatus }).catch((e) =>
+          console.warn("[Tasks] Lỗi cập nhật trạng thái lên backend:", e)
+        );
+
         // Cập nhật giao diện trong modal trực tiếp
         const badge = modalEl.querySelector("#taskDetailStatusBadge");
         if (badge) {
@@ -144,6 +161,9 @@ export function attachTasksEvents(containerEl) {
         if (ok) {
           close();
           deleteLocalTask(task.id);
+          deleteTaskApi(task.id).catch((e) =>
+            console.warn("[Tasks] Lỗi xóa task trên backend:", e)
+          );
         }
       });
     }
@@ -296,8 +316,14 @@ export function attachTasksEvents(containerEl) {
 
         if (initialData?.id) {
           updateLocalTask(initialData.id, data);
+          updateTaskApi(initialData.id, data).catch((err) =>
+            console.warn("[Tasks] Lỗi cập nhật task lên backend:", err)
+          );
         } else {
           addLocalTask(data);
+          createTaskApi(data).catch((err) =>
+            console.warn("[Tasks] Lỗi tạo task lên backend:", err)
+          );
         }
         close();
       });
@@ -345,6 +371,9 @@ export function attachTasksEvents(containerEl) {
           checklist: updatedChecklist,
           completedAt: new Date().toISOString()
         });
+        updateTaskApi(task.id, { status: "Hoàn thành" }).catch((err) =>
+          console.warn("[Tasks] Lỗi hoàn thành task trên backend:", err)
+        );
       } else {
         // Bỏ tích công việc sẽ về "Chưa làm"
         const hasProgress = task.checklist && task.checklist.some((i) => i.done);
@@ -357,6 +386,9 @@ export function attachTasksEvents(containerEl) {
               checklist: resetChecklist,
               completedAt: null
             });
+            updateTaskApi(task.id, { status: "Chưa làm" }).catch((err) =>
+              console.warn("[Tasks] Lỗi cập nhật task trên backend:", err)
+            );
           } else {
             e.target.checked = true; // Hủy xác nhận thì giữ nguyên công việc
           }
@@ -367,6 +399,9 @@ export function attachTasksEvents(containerEl) {
             checklist: resetChecklist,
             completedAt: null
           });
+          updateTaskApi(task.id, { status: "Chưa làm" }).catch((err) =>
+            console.warn("[Tasks] Lỗi cập nhật task trên backend:", err)
+          );
         }
       }
     });
@@ -374,7 +409,7 @@ export function attachTasksEvents(containerEl) {
 
   // Khôi phục mở modal chi tiết nếu đang được xem
   const activeTab = getActiveTab();
-  if (activeTab.tabState?.openDetailTaskId) {
+  if (activeTab?.tabState?.openDetailTaskId) {
     const task = state.tasks.find((t) => t.id === activeTab.tabState.openDetailTaskId);
     if (task) {
       openDetailModal(task);
@@ -405,6 +440,9 @@ export function attachTasksEvents(containerEl) {
       const ok = window.confirm("Bạn có chắc chắn muốn xóa công việc này?");
       if (ok) {
         deleteLocalTask(id);
+        deleteTaskApi(id).catch((err) =>
+          console.warn("[Tasks] Lỗi xóa task trên backend:", err)
+        );
       }
     });
   });

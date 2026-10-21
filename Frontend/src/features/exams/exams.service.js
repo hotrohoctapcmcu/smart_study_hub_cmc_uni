@@ -1,20 +1,112 @@
 /**
  * UniStudy CMC - Exams Service
- * Interface dịch vụ theo API_FUNCTION_MAP.md & API_CONTRACT.md
+ * Interface dịch vụ theo API Backend Sprint 1
  */
 import { ENDPOINTS } from "../../shared/config/endpoints.js";
 import { apiRequest } from "../../shared/services/api-client.js";
+import { state, notifyStateChange } from "../../app/state.js";
+import { getStudentSubjects } from "../tasks/tasks.service.js";
 
-export async function getExams() {
-  return await apiRequest(ENDPOINTS.exams.list);
+/**
+ * Chuẩn hóa 1 bản ghi kỳ thi từ backend thành đối tượng UI
+ */
+export function mapExamFromBackend(e) {
+  const examId = Number(e.exam_id ?? e.id);
+  const rawDate = e.exam_date ? String(e.exam_date).slice(0, 10) : "";
+  const rawTime = e.exam_time ? String(e.exam_time).slice(0, 5) : "08:00";
+
+  return {
+    id: `exam-${examId}`,
+    examId,
+    subject: e.subject_name || e.subject_code || "Kỳ thi",
+    code: e.subject_code || "",
+    subjectId: e.subject_id,
+    date: rawDate,
+    start: rawTime,
+    duration: Number(e.duration_minutes) || 90,
+    room: e.room || "Chưa xếp phòng",
+    scope: e.exam_format || e.notes || "",
+    source: "Trường",
+    isLocalDraft: false,
+    studyMilestones: []
+  };
 }
 
-export async function getUpcomingExams() {
-  return await apiRequest(ENDPOINTS.exams.upcoming);
+/**
+ * Tải danh sách kỳ thi từ Backend API và cập nhật vào state.exams
+ */
+export async function fetchExamsFromApi() {
+  const res = await apiRequest(ENDPOINTS.exams.list);
+  if (!res.success) {
+    if (res.unavailable) return state.exams;
+    throw new Error(res.error || "Không thể tải danh sách kỳ thi từ máy chủ.");
+  }
+
+  const rows = res.data?.data ?? res.data ?? [];
+  if (Array.isArray(rows)) {
+    state.exams = rows.map(mapExamFromBackend);
+    notifyStateChange();
+    return state.exams;
+  }
+  return state.exams;
 }
 
-export async function getExam(id) {
-  return await apiRequest(ENDPOINTS.exams.getById, {
-    params: { id }
-  });
+/**
+ * Tạo kỳ thi mới trên Backend API
+ */
+export async function createExamApi(examData) {
+  let subjectId = examData.subjectId;
+  if (!subjectId) {
+    try {
+      const subjects = await getStudentSubjects();
+      if (subjects.length > 0) {
+        const query = (examData.subject || "").toLowerCase();
+        const codeQuery = (examData.code || "").toLowerCase();
+        const found = subjects.find(
+          (s) =>
+            (codeQuery && s.subject_code && s.subject_code.toLowerCase() === codeQuery) ||
+            (s.subject_name && s.subject_name.toLowerCase().includes(query))
+        );
+        subjectId = found ? found.subject_id : subjects[0].subject_id;
+      }
+    } catch {
+      subjectId = 1;
+    }
+  }
+
+  const payload = {
+    subjectId: Number(subjectId) || 1,
+    examDate: examData.date,
+    examTime: examData.start || "08:00",
+    room: examData.room || "Chưa xếp phòng",
+    durationMinutes: Number(examData.duration) || 90,
+    examFormat: examData.scope || ""
+  };
+
+  const res = await apiRequest(ENDPOINTS.exams.create, { body: payload });
+  if (!res.success) {
+    throw new Error(res.error || "Lỗi tạo kỳ thi trên máy chủ.");
+  }
+
+  await fetchExamsFromApi();
+  return res.data;
 }
+
+/**
+ * Xóa kỳ thi trên Backend API
+ */
+export async function deleteExamApi(examId) {
+  const numericId = String(examId).replace(/^exam-(school-)?/, "");
+  if (numericId && !isNaN(Number(numericId))) {
+    const res = await apiRequest(ENDPOINTS.exams.delete, {
+      params: { id: numericId }
+    });
+    if (!res.success) {
+      throw new Error(res.error || "Lỗi xóa kỳ thi trên máy chủ.");
+    }
+    await fetchExamsFromApi();
+    return true;
+  }
+  return false;
+}
+

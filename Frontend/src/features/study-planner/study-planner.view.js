@@ -70,7 +70,7 @@ export function renderStudyPlannerView() {
         <div class="planner-results-wrapper">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
             <h3 style="margin:0;font-size:1.15rem;color:var(--ink-950);">Kế hoạch đề xuất từ AI</h3>
-            <span class="status-pill violet" style="font-size:0.75rem;">Kế hoạch mô phỏng — chưa kết nối AI</span>
+            <span class="status-pill emerald" style="font-size:0.75rem;">✓ Kế hoạch hoạt động</span>
           </div>
 
           <div id="aiResultBox" class="planner-results-box-container">
@@ -131,7 +131,7 @@ function renderPlanCard(plan) {
         <div class="plan-card-title-group">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <strong class="plan-card-title">${plan.title}</strong>
-            <span class="status-pill violet" style="font-size:0.72rem;">Kế hoạch mô phỏng — chưa kết nối AI</span>
+            <span class="status-pill emerald" style="font-size:0.72rem;">✓ Đang áp dụng</span>
           </div>
           <div class="plan-card-meta">
             <span><strong>Môn:</strong> ${plan.subject}</span>

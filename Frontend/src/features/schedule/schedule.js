@@ -5,21 +5,27 @@ import { renderScheduleView } from "./schedule.view.js";
 import { attachScheduleEvents } from "./schedule.events.js";
 import { state } from "../../app/state.js";
 import { fetchSchoolSchedules } from "../sync/sync.service.js";
+import { fetchStudySchedules } from "./schedule.service.js";
 
 // Đảm bảo chỉ gọi API lấy lịch một lần cho cả phiên làm việc.
 let schedulesLoadPromise = null;
 
 /**
- * Mount Schedule tab: nạp lịch học thật từ backend (SQLite) trước khi render.
- * Nếu server chưa sẵn sàng, hiển thị trống để người dùng tự nhập / đồng bộ sau.
+ * Mount Schedule tab: nạp lịch học thật và lịch tự học từ backend (SQLite) trước khi render.
  */
 export async function mountSchedule(containerEl) {
   if (!schedulesLoadPromise) {
     schedulesLoadPromise = (async () => {
       try {
-        const fetched = await fetchSchoolSchedules();
-        state.schoolEvents = Array.isArray(fetched)
-          ? fetched.map((t) => ({ ...t, source: "Trường" }))
+        const [fetchedSchool] = await Promise.all([
+          fetchSchoolSchedules(),
+          fetchStudySchedules().catch((e) => {
+            console.warn("[SCHEDULE] Không lấy được lịch tự học:", e.message);
+            return [];
+          })
+        ]);
+        state.schoolEvents = Array.isArray(fetchedSchool)
+          ? fetchedSchool.map((t) => ({ ...t, source: "Trường" }))
           : [];
       } catch (e) {
         console.warn("[SCHEDULE] Không lấy được lịch từ server:", e.message);
@@ -32,3 +38,4 @@ export async function mountSchedule(containerEl) {
   containerEl.innerHTML = renderScheduleView();
   attachScheduleEvents(containerEl);
 }
+

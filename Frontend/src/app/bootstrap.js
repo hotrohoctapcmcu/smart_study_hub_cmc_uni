@@ -52,6 +52,43 @@ export function bootstrap() {
   // Khởi tạo render lần đầu
   renderShell(appEl);
 
+  // Tự động nạp dữ liệu ban đầu từ Backend API trong chế độ nền (Non-blocking)
+  (async () => {
+    try {
+      const [
+        { fetchProfileFromApi },
+        { fetchSchoolSchedules },
+        { fetchStudySchedules },
+        { fetchTasksFromApi },
+        { fetchExamsFromApi },
+        { fetchNotificationsFromApi }
+      ] = await Promise.all([
+        import("../features/profile/profile.service.js"),
+        import("../features/sync/sync.service.js"),
+        import("../features/schedule/schedule.service.js"),
+        import("../features/tasks/tasks.service.js"),
+        import("../features/exams/exams.service.js"),
+        import("../features/notifications/notifications.service.js")
+      ]);
+
+      await Promise.allSettled([
+        fetchProfileFromApi(),
+        fetchSchoolSchedules().then((schedules) => {
+          if (Array.isArray(schedules) && schedules.length > 0) {
+            state.schoolEvents = schedules.map((t) => ({ ...t, source: "Trường" }));
+            notifyStateChange();
+          }
+        }),
+        fetchStudySchedules(),
+        fetchTasksFromApi(),
+        fetchExamsFromApi(),
+        fetchNotificationsFromApi()
+      ]);
+    } catch (err) {
+      logger.warn("Không thể tải toàn bộ dữ liệu khởi tạo từ backend:", err);
+    }
+  })();
+
   // Đồng bộ breakpoint khi thay đổi kích thước cửa sổ
   let lastCategory = window.innerWidth <= 768 ? "mobile" : window.innerWidth <= 1024 ? "tablet" : "desktop";
   window.addEventListener("resize", () => {
@@ -74,3 +111,4 @@ export function bootstrap() {
 
   logger.info("UniStudy CMC đã khởi động thành công.");
 }
+

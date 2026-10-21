@@ -798,10 +798,6 @@ export function renderStudySessionModal(sessionData = null) {
           style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;"
         />
       </label>
-
-      <div class="badge-draft" style="width:fit-content;">
-        📌 Bản nháp cục bộ — Lưu trong không gian làm việc
-      </div>
     </form>
   `;
 

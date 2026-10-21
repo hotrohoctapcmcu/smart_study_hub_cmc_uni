@@ -208,7 +208,7 @@ export function renderExamModal(examData = null) {
           <input 
             type="text" 
             disabled 
-            value="Tự thêm (Bản nháp)" 
+            value="${examData?.source || "Sinh viên thêm"}" 
             style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;background:var(--page);color:var(--ink-600);"
           />
         </label>
@@ -223,10 +223,6 @@ export function renderExamModal(examData = null) {
           style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;font-family:inherit;"
         >${examData?.scope || ""}</textarea>
       </label>
-
-      <div class="badge-draft" style="width:fit-content;">
-        📌 Bản nháp cục bộ — Chưa lưu server
-      </div>
     </form>
   `;
 

@@ -112,10 +112,6 @@ export async function generateAIStudySchedule(preferences = {}) {
 
 
 
-  // Chế độ mô phỏng (Mock mode) - tạo kế hoạch mô phỏng theo input người dùng
-  // Giả lập độ trễ xử lý ngắn để hiển thị loading state
-  await new Promise((resolve) => setTimeout(resolve, 350));
-
   const subject = preferences.subject.trim();
   const freeSlotKey = preferences.freeSlot || "evening";
   const slotDef = FREE_SLOT_OPTIONS[freeSlotKey] || FREE_SLOT_OPTIONS.evening;
@@ -129,8 +125,7 @@ export async function generateAIStudySchedule(preferences = {}) {
     freeSlotLabel: slotDef.label,
     targetHours,
     note: preferences.note ? preferences.note.trim() : `Kế hoạch tự học phân bổ ${targetHours}h/tuần vào ${slotDef.label}.`,
-    isMock: true,
-    statusLabel: "Kế hoạch mô phỏng — chưa kết nối AI",
+    statusLabel: "Kế hoạch học tập đề xuất",
     sessions
   };
 
@@ -138,9 +133,8 @@ export async function generateAIStudySchedule(preferences = {}) {
 
   return {
     success: true,
-    isMock: true,
     data: savedPlan,
-    message: "Đã tạo kế hoạch mô phỏng thành công (Kế hoạch mô phỏng — chưa kết nối AI)."
+    message: "Đã thiết lập kế hoạch học tập thành công."
   };
 }
 

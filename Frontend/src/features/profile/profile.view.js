@@ -58,7 +58,7 @@ export function renderProfileView() {
           <div style="margin-top:16px;">
             ${
               isCustomized
-                ? `<span class="badge-draft">📌 Bản nháp cục bộ — Chưa xác thực máy chủ CMC</span>`
+                ? `<span class="badge-draft" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;">✓ Hồ sơ học tập cá nhân</span>`
                 : `<span class="muted small">Dữ liệu hồ sơ sẽ được cập nhật khi kết nối thành công với cổng IU.</span>`
             }
           </div>
@@ -130,9 +130,6 @@ export function renderProfileEditModal(currentData) {
         </label>
       </div>
 
-      <div class="badge-draft" style="width:fit-content;">
-        📌 Lưu ý: Thông tin nhập tay chỉ lưu tạm trong bộ nhớ phiên, không ghi đè dữ liệu xác thực trường.
-      </div>
     </form>
   `;
 
