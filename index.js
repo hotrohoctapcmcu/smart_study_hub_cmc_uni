@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const apiModule = require('./API/index');
-const FE_DIR = path.resolve(__dirname, 'Frontend/unistudy-fe');
+const FE_DIR = path.resolve(__dirname, 'Frontend');
 const FE_PORT = 8080;
 
 let apiServer = null;

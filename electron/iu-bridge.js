@@ -7,11 +7,11 @@
  * ===================================================================================
  * Luồng tự động (không copy cookie tay):
  *   1. iu:login  — mở cửa sổ SSO IU riêng (partition persist:cmc-portal, giữ
- *      phiên như IU_VT vẫn làm) bằng loginIU({ keepOpen:false }). Login xong
+ *      phiên như IU vẫn làm) bằng loginIU({ keepOpen:false }). Login xong
  *      đọc cookie (readIuCookies) + laySession(win) từ edu.system, POST thẳng
  *      /api/v1/sync/iu/session về API. Đóng cửa sổ IU sau khi xong.
  *   2. iu:pull   — gọi POST /api/v1/sync/iu/pull (server tự dùng cookie đã lưu
- *      kéo IU_VT + lưu DB). Bridge không chạm vào dữ liệu, chỉ chuyển tiếp
+ *      kéo IU + lưu DB). Bridge không chạm vào dữ liệu, chỉ chuyển tiếp
  *      kết quả về renderer.
  *   3. iu:status — GET /api/v1/sync/iu/status (không lộ cookie).
  *   4. iu:logout — DELETE /api/v1/sync/iu/session + logoutIU() xoá partition.
@@ -79,11 +79,11 @@ function registerIuBridge() {
 
     const { ipcMain } = electron;
     // eslint-disable-next-line global-require
-    const { loginIU, logoutIU, getIuWindow } = require("../CRWEB/IU_VT/login");
+    const { loginIU, logoutIU, getIuWindow } = require("../CRWEB/IU/login");
     // eslint-disable-next-line global-require
-    const { readIuCookies } = require("../CRWEB/IU_VT/login/cookies");
+    const { readIuCookies } = require("../CRWEB/IU/login/cookies");
     // eslint-disable-next-line global-require
-    const { laySession } = require("../CRWEB/IU_VT/payload");
+    const { laySession } = require("../CRWEB/IU/payload");
 
     // Mở cửa sổ SSO IU, login xong lưu phiên lên API rồi đóng cửa sổ.
     ipcMain.handle("iu:login", async (_event, opts = {}) => {
