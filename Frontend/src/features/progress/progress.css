@@ -109,11 +109,15 @@
   margin-top: 6px;
 }
 
-/* Charts Grid */
+/* Charts Grid (Full-width for study chart) */
 .progress-charts-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 18px;
+}
+
+.progress-charts-grid.single-chart .progress-card {
+  width: 100%;
 }
 
 .progress-card {
@@ -133,6 +137,37 @@
   gap: 10px;
 }
 
+.day-chart-scroll-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.day-chart-scroll-actions .nav-arrow-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--ink-200);
+  background: white;
+  color: var(--ink-700);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.day-chart-scroll-actions .nav-arrow-btn:hover {
+  background: var(--violet-50);
+  border-color: var(--violet-300);
+  color: var(--violet-700);
+}
+
+.day-chart-scroll-actions .nav-arrow-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* Bar Chart */
 .progress-bar-chart {
   display: flex;
@@ -146,12 +181,30 @@
 
 .progress-bar-chart.chart-scrollable {
   overflow-x: auto;
-  padding-bottom: 8px;
-  gap: 8px;
+  padding-bottom: 12px;
+  gap: 12px;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--violet-300) var(--ink-100);
+}
+
+.progress-bar-chart.chart-scrollable::-webkit-scrollbar {
+  height: 6px;
+}
+
+.progress-bar-chart.chart-scrollable::-webkit-scrollbar-track {
+  background: var(--ink-100);
+  border-radius: 99px;
+}
+
+.progress-bar-chart.chart-scrollable::-webkit-scrollbar-thumb {
+  background: var(--violet-300);
+  border-radius: 99px;
 }
 
 .progress-bar-chart.chart-scrollable .bar-chart-column {
-  min-width: 38px;
+  min-width: 50px;
+  flex: 0 0 50px;
 }
 
 .bar-chart-column {

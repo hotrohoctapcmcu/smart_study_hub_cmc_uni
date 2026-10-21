@@ -20,10 +20,19 @@ export function attachTasksEvents(containerEl) {
   const openDetailModal = (task) => {
     if (!modalHost || !task) return;
 
+    const activeTab = getActiveTab();
+    if (activeTab.tabState) {
+      activeTab.tabState.openDetailTaskId = task.id;
+    }
+
     modalHost.innerHTML = renderTaskDetailModal(task);
     const modalEl = modalHost.querySelector("#taskDetailViewModal");
 
     const close = () => {
+      const curTab = getActiveTab();
+      if (curTab.tabState) {
+        curTab.tabState.openDetailTaskId = null;
+      }
       modalHost.innerHTML = "";
     };
 
@@ -45,28 +54,37 @@ export function attachTasksEvents(containerEl) {
         });
 
         // Tính toán chuyển trạng thái tự động theo checklist
-        let newStatus = task.status;
+        let newStatus = "Chưa làm";
+        let completedAt = null;
+
         if (updatedChecklist.length > 0) {
           const allDone = updatedChecklist.every((i) => i.done);
           const anyDone = updatedChecklist.some((i) => i.done);
 
           if (allDone) {
             newStatus = "Hoàn thành";
+            completedAt = task.completedAt || new Date().toISOString();
           } else if (anyDone) {
             newStatus = "Đang làm";
-          } else if (task.status === "Hoàn thành") {
-            // Bỏ tích mục của công việc hoàn thành thì mở lại công việc
-            newStatus = "Đang làm";
+            completedAt = null;
+          } else {
+            newStatus = "Chưa làm";
+            completedAt = null;
           }
+        } else {
+          newStatus = task.status;
+          completedAt = task.completedAt || null;
         }
 
         task.checklist = updatedChecklist;
         task.status = newStatus;
+        task.completedAt = completedAt;
 
         // Lưu vào store cục bộ
         updateLocalTask(task.id, {
           checklist: updatedChecklist,
-          status: newStatus
+          status: newStatus,
+          completedAt
         });
 
         // Cập nhật giao diện trong modal trực tiếp
@@ -77,9 +95,13 @@ export function attachTasksEvents(containerEl) {
         }
 
         const progressEl = modalEl.querySelector("#taskDetailChecklistProgress");
-        if (progressEl && updatedChecklist.length > 0) {
-          const doneCount = updatedChecklist.filter((i) => i.done).length;
-          progressEl.textContent = `${Math.round((doneCount / updatedChecklist.length) * 100)}%`;
+        if (progressEl) {
+          if (updatedChecklist.length > 0) {
+            const doneCount = updatedChecklist.filter((i) => i.done).length;
+            progressEl.textContent = `${Math.round((doneCount / updatedChecklist.length) * 100)}%`;
+          } else {
+            progressEl.textContent = "Không có checklist";
+          }
         }
 
         const row = box.closest(".checklist-interactive-row");
@@ -120,8 +142,8 @@ export function attachTasksEvents(containerEl) {
       deleteBtn.addEventListener("click", () => {
         const ok = window.confirm(`Bạn có chắc chắn muốn xóa công việc "${task.title}" không?`);
         if (ok) {
-          deleteLocalTask(task.id);
           close();
+          deleteLocalTask(task.id);
         }
       });
     }
@@ -176,7 +198,7 @@ export function attachTasksEvents(containerEl) {
         });
       });
 
-      // Gắn sự kiện sửa text
+      // Gắn sự kiện sửa text (giữ ID ổn định)
       checklistHost.querySelectorAll(".checklist-text-input").forEach((input, i) => {
         input.addEventListener("input", (e) => {
           localChecklist[i].text = e.target.value;
@@ -230,6 +252,28 @@ export function attachTasksEvents(containerEl) {
           .map((i) => ({ ...i, text: i.text.trim() }))
           .filter((i) => i.text.length > 0);
 
+        // Tự động xác định trạng thái theo checklist
+        let status = "Chưa làm";
+        let completedAt = initialData?.completedAt || null;
+
+        if (cleanChecklist.length > 0) {
+          const allDone = cleanChecklist.every((i) => i.done);
+          const anyDone = cleanChecklist.some((i) => i.done);
+
+          if (allDone) {
+            status = "Hoàn thành";
+            completedAt = completedAt || new Date().toISOString();
+          } else if (anyDone) {
+            status = "Đang làm";
+            completedAt = null;
+          } else {
+            status = "Chưa làm";
+            completedAt = null;
+          }
+        } else if (initialData?.status === "Hoàn thành") {
+          status = "Hoàn thành";
+        }
+
         const data = {
           title: fd.get("title")?.trim(),
           startTime: fd.get("startTime") || null,
@@ -238,7 +282,8 @@ export function attachTasksEvents(containerEl) {
           description: fd.get("note")?.trim() || "",
           subject: fd.get("subject")?.trim() || "Học tập cá nhân",
           priority: fd.get("priority") || "Trung bình",
-          status: fd.get("status") || "Chưa làm",
+          status,
+          completedAt,
           checklist: cleanChecklist
         };
 
@@ -264,7 +309,7 @@ export function attachTasksEvents(containerEl) {
   if (createBtn) createBtn.addEventListener("click", () => openModal());
   if (emptyCreateBtn) emptyCreateBtn.addEventListener("click", () => openModal());
 
-  // 2. Mở khung chi tiết khi nhấn vào dòng / tiêu đề công việc
+  // 2. Mở khung chi tiết khi nhấn vào ô nội dung công việc (trừ nút thao tác)
   const detailTriggers = containerEl.querySelectorAll("[data-open-task-detail]");
   detailTriggers.forEach((el) => {
     el.addEventListener("click", (e) => {
@@ -297,29 +342,46 @@ export function attachTasksEvents(containerEl) {
         const updatedChecklist = (task.checklist || []).map((i) => ({ ...i, done: true }));
         updateLocalTask(task.id, {
           status: "Hoàn thành",
-          checklist: updatedChecklist
+          checklist: updatedChecklist,
+          completedAt: new Date().toISOString()
         });
       } else {
-        // Bỏ tích công việc sẽ mở lại
-        if (task.checklist && task.checklist.some((i) => i.done)) {
-          const ok = window.confirm("Bạn có muốn mở lại công việc này và đặt lại toàn bộ checklist không?");
+        // Bỏ tích công việc sẽ về "Chưa làm"
+        const hasProgress = task.checklist && task.checklist.some((i) => i.done);
+        if (hasProgress) {
+          const ok = window.confirm("Công việc này đã có tiến độ trong checklist. Bạn có chắc chắn muốn bỏ hoàn thành và đặt lại toàn bộ checklist về Chưa làm không?");
           if (ok) {
             const resetChecklist = task.checklist.map((i) => ({ ...i, done: false }));
             updateLocalTask(task.id, {
-              status: "Đang làm",
-              checklist: resetChecklist
+              status: "Chưa làm",
+              checklist: resetChecklist,
+              completedAt: null
             });
           } else {
-            e.target.checked = true; // Hủy thao tác bỏ tích
+            e.target.checked = true; // Hủy xác nhận thì giữ nguyên công việc
           }
         } else {
+          const resetChecklist = (task.checklist || []).map((i) => ({ ...i, done: false }));
           updateLocalTask(task.id, {
-            status: "Đang làm"
+            status: "Chưa làm",
+            checklist: resetChecklist,
+            completedAt: null
           });
         }
       }
     });
   });
+
+  // Khôi phục mở modal chi tiết nếu đang được xem
+  const activeTab = getActiveTab();
+  if (activeTab.tabState?.openDetailTaskId) {
+    const task = state.tasks.find((t) => t.id === activeTab.tabState.openDetailTaskId);
+    if (task) {
+      openDetailModal(task);
+    } else {
+      activeTab.tabState.openDetailTaskId = null;
+    }
+  }
 
   // 4. Nút Sửa trên bảng
   const editBtns = containerEl.querySelectorAll("[data-edit-task-id]");

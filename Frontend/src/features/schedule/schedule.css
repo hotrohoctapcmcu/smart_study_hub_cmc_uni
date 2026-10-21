@@ -1,14 +1,15 @@
 /**
- * UniStudy CMC - Schedule Feature Styles (Theo Ảnh 06, 07, 08)
+ * UniStudy CMC - Schedule Feature Styles (Google Calendar Style 24h Grid)
  */
 .schedule-container {
-  max-width: 1260px;
+  max-width: 1360px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
+/* 1. THANH CÔNG CỤ LỊCH (GOOGLE CALENDAR STYLE TOOLBAR) */
 .schedule-header-controls {
   display: flex;
   align-items: center;
@@ -16,9 +17,65 @@
   gap: 16px;
   flex-wrap: wrap;
   background: white;
-  padding: 16px 20px;
+  padding: 14px 20px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--ink-200);
+  box-shadow: var(--shadow-sm);
+}
+
+.schedule-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.schedule-period-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-arrow-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--ink-200);
+  background: white;
+  color: var(--ink-700);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.nav-arrow-btn:hover {
+  background: var(--violet-50);
+  border-color: var(--violet-300);
+  color: var(--violet-700);
+}
+
+.nav-arrow-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.schedule-period-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink-950);
+  letter-spacing: -0.01em;
+}
+
+.schedule-action-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-mini-toggle {
+  display: none;
 }
 
 .view-mode-tabs {
@@ -34,7 +91,7 @@
 
 .view-mode-btn {
   height: 32px;
-  padding: 0 12px;
+  padding: 0 14px;
   display: inline-flex;
   align-items: center;
   border-radius: 7px;
@@ -53,12 +110,19 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* BỐ CỤC 2 CỘT CHO LỊCH HỌC */
+/* 2. BỐ CỤC 2 CỘT CHUẨN: LỊCH CHÍNH TRÁI (LỚN), LỊCH NHỎ PHẢI (280px) */
 .schedule-body-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 290px;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 18px;
   align-items: start;
+}
+
+.schedule-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 280px;
 }
 
 .schedule-main-col {
@@ -68,14 +132,7 @@
   gap: 16px;
 }
 
-.schedule-side-col {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 290px;
-}
-
-/* LỊCH THU NHỎ (MINI CALENDAR) */
+/* 3. LỊCH THÁNG THU NHỎ (MINI CALENDAR) */
 .schedule-mini-card {
   background: white;
   border: 1px solid var(--ink-200);
@@ -160,19 +217,20 @@
   background: var(--ink-100);
 }
 
+/* Đánh dấu ngày được chọn và hôm nay theo 2 kiểu khác nhau */
 .mini-day-cell.today {
   color: var(--violet-700);
   font-weight: 800;
+  border: 1.5px dashed var(--violet-400);
   background: var(--violet-50);
 }
 
 .mini-day-cell.selected {
-  border: 2px solid var(--violet-600) !important;
-  background: var(--violet-100) !important;
-  color: var(--violet-900) !important;
+  border: 2px solid var(--violet-700) !important;
+  background: var(--violet-600) !important;
+  color: white !important;
   font-weight: 800;
-  border-radius: 8px;
-  box-shadow: 0 0 0 1px var(--violet-600);
+  box-shadow: var(--shadow-sm);
 }
 
 .mini-day-cell.empty {
@@ -188,7 +246,11 @@
   bottom: 2px;
 }
 
-/* CHÚ GIẢI MÀU SẮC LỊCH */
+.mini-day-cell.selected .mini-event-dot {
+  background: white;
+}
+
+/* 4. CHÚ GIẢI MÀU SẮC LỊCH */
 .schedule-legend-card {
   background: white;
   border: 1px solid var(--ink-200);
@@ -243,7 +305,383 @@
   border: 1px solid #dc2626;
 }
 
-/* LỊCH THÁNG CHÍNH (MONTH VIEW) */
+/* 5. BANNER CẢNH BÁO XUNG ĐỘT */
+.schedule-conflict-banner {
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  background: #fee2e2;
+  border: 1px solid var(--red-600);
+  color: #991b1b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  animation: fadeIn 0.2s ease;
+}
+
+.schedule-conflict-banner strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 6. LƯỚI GIỜ 24H (GOOGLE CALENDAR 24H GRID ENGINE) */
+.schedule-grid-container {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--ink-200);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sticky Header Ngày */
+.grid-sticky-header {
+  display: flex;
+  background: #faf8fd;
+  border-bottom: 2px solid var(--ink-200);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.grid-time-gutter-corner {
+  width: 60px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-400);
+  border-right: 1px solid var(--ink-200);
+}
+
+.grid-header-columns {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(110px, 1fr));
+  flex: 1;
+}
+
+.grid-header-columns.single-day {
+  grid-template-columns: 1fr;
+}
+
+.grid-col-header {
+  padding: 10px 6px;
+  text-align: center;
+  border-right: 1px solid var(--ink-100);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.grid-col-header:hover {
+  background: var(--violet-50);
+}
+
+.grid-col-header.today {
+  background: #f5f0fb;
+}
+
+.col-header-dayname {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-600);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.col-header-daynum {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--ink-950);
+}
+
+.col-header-daynum.today-badge {
+  background: var(--violet-600);
+  color: white;
+  padding: 1px 8px;
+  border-radius: 99px;
+}
+
+/* Hàng sự kiện Cả ngày */
+.grid-allday-row {
+  display: flex;
+  background: #fbfaff;
+  border-bottom: 1px solid var(--ink-200);
+}
+
+.grid-time-gutter-cell.allday-label {
+  width: 60px;
+  flex-shrink: 0;
+  padding: 8px 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ink-500);
+  text-align: center;
+  border-right: 1px solid var(--ink-200);
+}
+
+.grid-allday-columns {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(110px, 1fr));
+  flex: 1;
+}
+
+.grid-allday-columns.single-day {
+  grid-template-columns: 1fr;
+}
+
+.allday-col-cell {
+  border-right: 1px solid var(--ink-100);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 32px;
+}
+
+.allday-event-chip {
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-left: 3px solid transparent;
+}
+
+.allday-event-chip.school {
+  background: #fef9c3;
+  color: #713f12;
+  border-left-color: #ca8a04;
+}
+
+.allday-event-chip.study {
+  background: #dcfce7;
+  color: #14532d;
+  border-left-color: #16a34a;
+}
+
+.allday-event-chip.conflict {
+  background: #fee2e2;
+  color: #7f1d1d;
+  border-left-color: #dc2626;
+}
+
+/* Khung cuộn dọc 24 giờ */
+.schedule-grid-scroll-pane {
+  max-height: 640px;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+  scroll-behavior: smooth;
+}
+
+.grid-body-canvas {
+  position: relative;
+  display: flex;
+  min-width: 100%;
+}
+
+/* Cột mốc giờ bên trái (00:00 - 23:00) */
+.grid-time-gutter {
+  width: 60px;
+  flex-shrink: 0;
+  position: relative;
+  background: white;
+  border-right: 1px solid var(--ink-200);
+}
+
+.grid-time-gutter-slot {
+  position: absolute;
+  width: 100%;
+  text-align: right;
+  padding-right: 8px;
+  transform: translateY(-50%);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-500);
+  line-height: 1;
+}
+
+.grid-time-gutter-slot.slot-zero,
+.grid-time-gutter-slot:first-child {
+  transform: translateY(2px);
+}
+
+/* Vùng cột các ngày */
+.grid-days-container {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(110px, 1fr));
+  flex: 1;
+  position: relative;
+}
+
+.grid-days-container.single-day {
+  grid-template-columns: 1fr;
+}
+
+.grid-day-column {
+  position: relative;
+  border-right: 1px solid var(--ink-100);
+}
+
+/* Các hàng giờ nền với vạch 30 phút */
+.grid-hour-rows-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.grid-hour-row {
+  height: 60px;
+  border-bottom: 1px solid var(--ink-100);
+  box-sizing: border-box;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.grid-hour-row:hover {
+  background: rgba(147, 51, 234, 0.04);
+}
+
+.grid-half-hour-line {
+  position: absolute;
+  top: 30px;
+  left: 0;
+  right: 0;
+  border-bottom: 1px dashed var(--ink-100);
+}
+
+/* Lớp chứa các khối sự kiện được định vị chính xác theo phút */
+.grid-events-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+/* Khối sự kiện (Calendar Event Block) */
+.calendar-event-block {
+  position: absolute;
+  pointer-events: auto;
+  border-radius: 6px;
+  padding: 4px 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  border-left: 3.5px solid transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: inherit;
+}
+
+.calendar-event-block:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  z-index: 10 !important;
+}
+
+.calendar-event-block:focus-visible {
+  outline: 2px solid var(--violet-600);
+  outline-offset: 1px;
+}
+
+/* Màu khối sự kiện */
+.calendar-event-block.school {
+  background: #fef9c3;
+  color: #713f12;
+  border-left-color: #ca8a04;
+  border-top: 1px solid rgba(202, 138, 4, 0.3);
+  border-right: 1px solid rgba(202, 138, 4, 0.3);
+  border-bottom: 1px solid rgba(202, 138, 4, 0.3);
+}
+
+.calendar-event-block.study {
+  background: #dcfce7;
+  color: #14532d;
+  border-left-color: #16a34a;
+  border-top: 1px solid rgba(22, 163, 74, 0.3);
+  border-right: 1px solid rgba(22, 163, 74, 0.3);
+  border-bottom: 1px solid rgba(22, 163, 74, 0.3);
+}
+
+.calendar-event-block.conflict {
+  background: #fee2e2 !important;
+  color: #7f1d1d !important;
+  border-left-color: #dc2626 !important;
+  border: 1px solid #dc2626 !important;
+  box-shadow: 0 0 0 1px #dc2626;
+}
+
+.ev-time-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.ev-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ev-room {
+  font-size: 0.7rem;
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ev-conflict-tag {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--red-600);
+  background: white;
+  padding: 1px 4px;
+  border-radius: 3px;
+  width: fit-content;
+  margin-top: 2px;
+}
+
+.ev-source-tag {
+  font-size: 0.65rem;
+  opacity: 0.8;
+}
+
+.calendar-event-block.is-short {
+  padding: 2px 6px;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.calendar-event-block.is-short .ev-title {
+  margin: 0;
+}
+
+/* 7. LỊCH THÁNG CHÍNH (MONTH VIEW) */
 .schedule-month-container {
   background: white;
   border-radius: var(--radius-lg);
@@ -273,7 +711,7 @@
 }
 
 .month-grid-cell {
-  min-height: 105px;
+  min-height: 110px;
   padding: 6px;
   border-right: 1px solid var(--ink-100);
   border-bottom: 1px solid var(--ink-100);
@@ -386,188 +824,34 @@
   flex-shrink: 0;
 }
 
-.month-event-chip .chip-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Banner Cảnh báo xung đột (Khắc phục lỗi Ảnh 08) */
-.schedule-conflict-banner {
-  padding: 14px 18px;
-  border-radius: var(--radius-md);
-  background: #fee2e2;
-  border: 1px solid var(--red-600);
-  color: #991b1b;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  animation: fadeIn 0.2s ease;
-}
-
-.schedule-conflict-banner strong {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Lưới Lịch tuần (Week Grid) */
-.schedule-week-grid {
-  display: grid;
-  grid-template-columns: 80px repeat(7, 1fr);
-  background: white;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--ink-200);
-  overflow-x: auto;
-  box-shadow: var(--shadow-sm);
-}
-
-.grid-day-header {
-  padding: 14px 10px;
-  text-align: center;
-  border-bottom: 2px solid var(--ink-200);
-  border-left: 1px solid var(--ink-100);
-  background: #fbfaff;
-}
-
-.grid-day-header.today {
-  background: var(--violet-50);
-  border-bottom-color: var(--violet-600);
-}
-
-.grid-day-header strong {
-  display: block;
-  font-size: 0.9rem;
-  color: var(--ink-950);
-}
-
-.grid-day-header span {
-  font-size: 0.76rem;
-  color: var(--ink-600);
-}
-
-.grid-time-slot-label {
-  padding: 12px 8px;
-  text-align: right;
-  font-size: 0.75rem;
-  color: var(--ink-500);
-  border-bottom: 1px solid var(--ink-100);
-  font-weight: 600;
-}
-
-.grid-day-column {
-  border-left: 1px solid var(--ink-100);
-  position: relative;
-  min-height: 480px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Thẻ sự kiện trong lịch (Event Card) */
-.event-card {
-  padding: 10px 12px;
-  border-radius: 10px;
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  position: relative;
-  border-left: 4px solid transparent;
-}
-
-.event-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
-}
-
-/* 1. Lịch trường: Vàng */
-.event-card.school {
-  background: #fef9c3;
-  color: #713f12;
-  border-left-color: #ca8a04;
-}
-
-/* 2. Lịch tự học: Xanh lá */
-.event-card.study {
-  background: #dcfce7;
-  color: #14532d;
-  border-left-color: #16a34a;
-}
-
-/* 3. Lịch xung đột: Đỏ (Ưu tiên cao nhất) */
-.event-card.conflict {
-  background: #fee2e2 !important;
-  color: #7f1d1d !important;
-  border-left-color: #dc2626 !important;
-  box-shadow: 0 0 0 1px #dc2626;
-}
-
-.event-card-title {
+.month-more-link {
+  background: transparent;
+  border: none;
+  color: var(--violet-700);
+  font-size: 0.72rem;
   font-weight: 700;
-  margin-bottom: 2px;
-}
-
-.event-card-time {
-  font-size: 0.74rem;
-  opacity: 0.85;
-}
-
-.event-card-tag {
-  display: inline-block;
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 4px;
-  margin-top: 4px;
-  background: rgba(0, 0, 0, 0.08);
-}
-
-/* View Lịch ngày (Theo Ảnh 07) */
-.schedule-day-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.day-event-row {
-  display: grid;
-  grid-template-columns: 140px 1fr auto;
-  align-items: center;
-  gap: 20px;
-  padding: 18px 22px;
-  background: white;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--ink-200);
-  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: all 0.15s ease;
+  padding: 2px 4px;
+  text-align: left;
 }
 
-.day-event-row:hover {
-  border-color: var(--violet-300);
-  box-shadow: var(--shadow-md);
+.month-more-link:hover {
+  text-decoration: underline;
 }
 
-.day-event-row:focus-visible,
-.event-card:focus-visible {
-  outline: 2px solid var(--violet-600);
-  outline-offset: 2px;
+/* 8. MODAL XỬ LÝ XUNG ĐỘT */
+.conflict-decision-dialog .modal-dialog {
+  max-width: 540px;
+  width: 94%;
 }
 
-.day-event-row.conflict {
-  border-color: var(--red-600);
-  background: #fff5f5;
-}
-
-/* Modals đặc thù của Schedule */
 .event-detail-dialog .modal-dialog,
 .confirm-delete-dialog .modal-dialog {
   max-width: 480px;
   width: 92%;
 }
 
+/* 9. RESPONSIVE */
 @media (max-width: 960px) {
   .schedule-body-layout {
     grid-template-columns: 1fr;
@@ -575,6 +859,15 @@
 
   .schedule-side-col {
     width: 100%;
+    display: none;
+  }
+
+  .schedule-side-col.mobile-open {
+    display: flex;
+  }
+
+  .mobile-mini-toggle {
+    display: inline-flex;
   }
 }
 
@@ -584,19 +877,24 @@
     gap: 12px;
   }
 
-  .day-event-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 14px 16px;
+  .schedule-nav-group {
+    width: 100%;
+    justify-content: space-between;
   }
 
-  .event-card {
-    min-height: 48px;
-    padding: 8px 10px;
+  .schedule-action-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .grid-time-gutter-corner,
+  .grid-time-gutter,
+  .grid-time-gutter-cell.allday-label {
+    width: 48px;
   }
 
   .month-grid-cell {
-    min-height: 60px;
+    min-height: 65px;
     padding: 3px;
   }
 

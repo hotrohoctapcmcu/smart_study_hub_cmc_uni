@@ -155,3 +155,22 @@
   color: var(--ink-600);
   line-height: 1.45;
 }
+
+.notif-icon-circle.email-circle {
+  background: var(--blue-100, #dbeafe);
+  color: var(--blue-700, #1d4ed8);
+}
+
+.notif-item-card.unread .notif-icon-circle.email-circle {
+  background: var(--blue-600, #2563eb);
+  color: white;
+}
+
+.notif-extracted-box {
+  transition: all 0.2s ease;
+}
+
+.notif-extracted-box:hover {
+  filter: brightness(0.98);
+}
+

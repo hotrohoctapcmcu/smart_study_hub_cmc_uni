@@ -16,10 +16,13 @@ import {
   saveHistoryItem,
   clearHistory,
   getTotalPomodoroStudySeconds,
-  getPomodoroStats
+  getPomodoroStats,
+  isPomodoroSoundEnabled,
+  setPomodoroSoundEnabled
 } from "./pomodoro.storage.js";
+import { ASSETS } from "../../shared/config/assets.js";
 
-export { getTotalPomodoroStudySeconds, getPomodoroStats };
+export { getTotalPomodoroStudySeconds, getPomodoroStats, isPomodoroSoundEnabled, setPomodoroSoundEnabled };
 
 export const DEFAULT_POMODORO_CONFIG = {
   defaultWorkHours: 0,
@@ -134,6 +137,58 @@ function tick() {
   }
 }
 
+// Quản lý phát âm thanh thông báo
+let pomodoroAudio = null;
+
+export function stopPomodoroSound() {
+  if (pomodoroAudio) {
+    try {
+      pomodoroAudio.pause();
+      pomodoroAudio.currentTime = 0;
+    } catch (err) {
+      console.warn("[Pomodoro Audio] Lỗi khi dừng âm thanh:", err);
+    }
+  }
+}
+
+export function playPomodoroSound(force = false) {
+  if (typeof Audio === "undefined") return;
+  // Nếu âm thanh đang tắt và không phải force, tuyệt đối không phát
+  if (!force && !isPomodoroSoundEnabled()) {
+    stopPomodoroSound();
+    return;
+  }
+  try {
+    const audioSrc = ASSETS.sounds?.pomodoro || "assets/amthanh.mp3";
+    if (!pomodoroAudio) {
+      pomodoroAudio = new Audio(audioSrc);
+    } else if (pomodoroAudio.src !== audioSrc && !pomodoroAudio.src.endsWith(audioSrc)) {
+      pomodoroAudio.src = audioSrc;
+    }
+    pomodoroAudio.currentTime = 0;
+    const playPromise = pomodoroAudio.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch((err) => {
+        console.warn("[Pomodoro Audio] Trình duyệt chưa cho phép tự phát âm thanh (cần tương tác):", err);
+      });
+    }
+  } catch (err) {
+    console.warn("[Pomodoro Audio] Lỗi khi phát file âm thanh Pomodoro:", err);
+  }
+}
+
+export function togglePomodoroSound() {
+  const current = isPomodoroSoundEnabled();
+  const next = !current;
+  setPomodoroSoundEnabled(next);
+  if (!next) {
+    // Ngắt tiếng ngay lập tức nếu đang phát
+    stopPomodoroSound();
+  }
+  notifyListeners();
+  return next;
+}
+
 /**
  * Xử lý khi hết giờ
  */
@@ -164,6 +219,10 @@ function handleTimeExpired() {
     currentSession.remainingMs = 0;
     currentSession.targetEndTime = null;
     saveActiveSession(currentSession);
+
+    if (isPomodoroSoundEnabled()) {
+      playPomodoroSound();
+    }
     notifyListeners();
   } else if (currentSession.mode === "break") {
     // Hoàn thành giờ nghỉ
@@ -171,6 +230,10 @@ function handleTimeExpired() {
     currentSession.remainingMs = 0;
     currentSession.targetEndTime = null;
     saveActiveSession(currentSession);
+
+    if (isPomodoroSoundEnabled()) {
+      playPomodoroSound();
+    }
     notifyListeners();
   }
 }
@@ -499,7 +562,8 @@ export function getState() {
     minutesLeft: time.minutes,
     secondsLeft: time.seconds,
     progress: time.progress,
-    history: getHistory()
+    history: getHistory(),
+    soundEnabled: isPomodoroSoundEnabled()
   };
 }
 

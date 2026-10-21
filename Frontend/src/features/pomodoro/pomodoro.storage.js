@@ -6,7 +6,8 @@
 
 const STORAGE_KEYS = {
   ACTIVE_SESSION: "unistudy_pomodoro_active_session",
-  HISTORY: "unistudy_pomodoro_history"
+  HISTORY: "unistudy_pomodoro_history",
+  SOUND_ENABLED: "unistudy_pomodoro_sound_enabled"
 };
 
 // In-memory fallback khi chạy trong môi trường không có localStorage (như test runner)
@@ -148,4 +149,30 @@ export function getPomodoroStats() {
     totalHours: Number((totalSeconds / 3600).toFixed(1)),
     history
   };
+}
+
+/**
+ * Kiểm tra trạng thái bật/tắt âm thanh chuông báo Pomodoro
+ * @returns {boolean}
+ */
+export function isPomodoroSoundEnabled() {
+  try {
+    const raw = getStorage().getItem(STORAGE_KEYS.SOUND_ENABLED);
+    if (raw === null) return true; // Mặc định bật âm thanh
+    return raw === "true";
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Lưu trạng thái bật/tắt âm thanh chuông báo Pomodoro
+ * @param {boolean} enabled
+ */
+export function setPomodoroSoundEnabled(enabled) {
+  try {
+    getStorage().setItem(STORAGE_KEYS.SOUND_ENABLED, String(!!enabled));
+  } catch (err) {
+    console.error("[Pomodoro Storage] Lỗi lưu cấu hình âm thanh:", err);
+  }
 }

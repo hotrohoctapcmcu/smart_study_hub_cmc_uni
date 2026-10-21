@@ -116,23 +116,23 @@ function renderRepositoryTab(allDocs, selectedCategory, selectedSubject, searchQ
         </div>
 
         <div class="doc-filter-dropdowns">
-          <label class="doc-select-group">
-            <span class="tiny muted">Loại tài liệu:</span>
+          <div class="doc-select-group">
+            <label for="docCategorySelect" class="doc-select-label">Loại tài liệu:</label>
             <select id="docCategorySelect" class="doc-select">
               ${DOCUMENT_CATEGORIES.map(
                 (cat) => `<option value="${cat}" ${cat === selectedCategory ? "selected" : ""}>${cat}</option>`
               ).join("")}
             </select>
-          </label>
+          </div>
 
-          <label class="doc-select-group">
-            <span class="tiny muted">Môn học:</span>
+          <div class="doc-select-group">
+            <label for="docSubjectSelect" class="doc-select-label">Môn học:</label>
             <select id="docSubjectSelect" class="doc-select">
               ${subjectsList.map(
                 (subj) => `<option value="${subj}" ${subj === selectedSubject ? "selected" : ""}>${subj}</option>`
               ).join("")}
             </select>
-          </label>
+          </div>
         </div>
       </div>
 

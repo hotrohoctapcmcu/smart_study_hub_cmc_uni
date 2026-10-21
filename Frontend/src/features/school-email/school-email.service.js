@@ -137,6 +137,12 @@ export function markEmailRead(emailId) {
   return emails;
 }
 
+export function markAllSchoolEmailsAsRead() {
+  const emails = getSchoolEmails().map((m) => ({ ...m, isRead: true }));
+  getStorage().setItem(STORAGE_KEY, JSON.stringify(emails));
+  return emails;
+}
+
 /**
  * Trích xuất deadline từ email và tự động tạo task vào state.tasks
  */

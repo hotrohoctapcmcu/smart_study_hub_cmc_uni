@@ -17,7 +17,9 @@ import {
   setQuickBreakMinutes,
   setTimeValues,
   clearAllHistory,
-  subscribePomodoro
+  subscribePomodoro,
+  togglePomodoroSound,
+  playPomodoroSound
 } from "./pomodoro.service.js";
 import { renderPomodoroView } from "./pomodoro.view.js";
 
@@ -25,6 +27,7 @@ let unsubscribeService = null;
 let lastState = null;
 let lastMode = null;
 let lastHistoryCount = 0;
+let lastSoundEnabled = null;
 
 export function attachPomodoroEvents(containerEl) {
   if (unsubscribeService) {
@@ -36,6 +39,7 @@ export function attachPomodoroEvents(containerEl) {
   lastState = null;
   lastMode = null;
   lastHistoryCount = 0;
+  lastSoundEnabled = null;
 
   unsubscribeService = subscribePomodoro((pState) => {
     if (!document.body.contains(containerEl)) {
@@ -47,12 +51,17 @@ export function attachPomodoroEvents(containerEl) {
     }
 
     const currentHistoryCount = pState.history ? pState.history.length : 0;
-    const isStateChanged = pState.state !== lastState || pState.mode !== lastMode || currentHistoryCount !== lastHistoryCount;
+    const isStateChanged =
+      pState.state !== lastState ||
+      pState.mode !== lastMode ||
+      currentHistoryCount !== lastHistoryCount ||
+      pState.soundEnabled !== lastSoundEnabled;
 
     if (isStateChanged) {
       lastState = pState.state;
       lastMode = pState.mode;
       lastHistoryCount = currentHistoryCount;
+      lastSoundEnabled = pState.soundEnabled;
       containerEl.innerHTML = renderPomodoroView();
       bindDomEvents(containerEl);
     } else {
@@ -191,6 +200,14 @@ function bindDomEvents(containerEl) {
       if (ok) {
         clearAllHistory();
       }
+    });
+  }
+
+  // 12. Bật/Tắt chuông báo
+  const toggleSoundBtn = containerEl.querySelector("#pomoToggleSoundBtn");
+  if (toggleSoundBtn) {
+    toggleSoundBtn.addEventListener("click", () => {
+      togglePomodoroSound();
     });
   }
 }

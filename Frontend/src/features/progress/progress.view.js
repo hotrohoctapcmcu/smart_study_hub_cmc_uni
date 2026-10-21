@@ -141,21 +141,37 @@ export function renderProgressView(uiState = {}) {
         </div>
       </div>
 
-      <!-- Lưới 2 khối: Biểu đồ theo chu kỳ & Bản đồ nhiệt Heatmap -->
-      <div class="progress-charts-grid">
-        <!-- Khối 1: Biểu đồ cột phân bổ giờ học -->
-        <div class="progress-card">
+      <!-- Biểu đồ phân bổ thời lượng học (Chiếm toàn bộ diện tích) -->
+      <div class="progress-charts-grid single-chart">
+        <!-- Biểu đồ cột phân bổ giờ học -->
+        <div class="progress-card progress-chart-full">
           <div class="progress-card-head">
             <div>
               <h2 style="font-size:1.15rem;margin:0 0 4px;color:var(--ink-950);">${escapeHtml(data.chart.title)}</h2>
               <span class="muted small">${escapeHtml(data.periodTitle)} · Đơn vị: ${data.chart.unit}</span>
             </div>
-            <span class="status-pill violet">
-              ${currentPeriod === "day" ? "Biểu đồ Ngày" : currentPeriod === "week" ? "Biểu đồ Tuần" : "Biểu đồ Tháng"}
-            </span>
+            <div style="display:flex;align-items:center;gap:10px;">
+              ${
+                currentPeriod === "day"
+                  ? `
+                <div class="day-chart-scroll-actions" style="display:flex;align-items:center;gap:6px;">
+                  <button type="button" class="nav-arrow-btn" id="scrollDayChartLeftBtn" title="Cuộn xem giờ trước" aria-label="Cuộn xem giờ trước">
+                    <svg><use href="#i-chevron-left"></use></svg>
+                  </button>
+                  <button type="button" class="nav-arrow-btn" id="scrollDayChartRightBtn" title="Cuộn xem giờ sau" aria-label="Cuộn xem giờ sau">
+                    <svg><use href="#i-chevron-right"></use></svg>
+                  </button>
+                </div>
+              `
+                  : ""
+              }
+              <span class="status-pill violet">
+                ${currentPeriod === "day" ? "Biểu đồ Ngày (24 giờ)" : currentPeriod === "week" ? "Biểu đồ Tuần" : "Biểu đồ Tháng"}
+              </span>
+            </div>
           </div>
 
-          <div class="progress-bar-chart ${currentPeriod === "day" ? "chart-scrollable" : ""}">
+          <div class="progress-bar-chart ${currentPeriod === "day" ? "chart-scrollable" : ""}" id="progressBarChartScrollContainer">
             ${data.chart.labels
               .map((label, idx) => {
                 const val = data.chart.values[idx] || 0;
@@ -196,96 +212,6 @@ export function renderProgressView(uiState = {}) {
             `
               : ""
           }
-        </div>
-
-        <!-- Khối 2: Bản đồ thời gian học tập (Heatmap) -->
-        <div class="progress-card">
-          <div class="progress-card-head">
-            <div>
-              <h2 style="font-size:1.15rem;margin:0 0 4px;color:var(--ink-950);">Bản đồ thời gian học tập</h2>
-              <span class="muted small">
-                ${
-                  currentPeriod === "day"
-                    ? "Mức độ phân bổ 24 giờ trong ngày"
-                    : currentPeriod === "week"
-                    ? "Phân bố các buổi học trong tuần"
-                    : "Mức độ tích lũy các ngày trong tháng"
-                }
-              </span>
-            </div>
-            <div class="heatmap-legend">
-              <span class="heat-chip heat-0"></span> <small>0 phút</small>
-              <span class="heat-chip heat-1"></span> <small>Thấp</small>
-              <span class="heat-chip heat-2"></span> <small>Vừa</small>
-              <span class="heat-chip heat-3"></span> <small>Cao</small>
-            </div>
-          </div>
-
-          <div class="study-heatmap-container">
-            ${
-              currentPeriod === "day"
-                ? `
-              <!-- Heatmap Ngày: 24 ô giờ -->
-              <div class="day-heatmap-grid">
-                ${data.periodHeatmap
-                  .map(
-                    (cell) => `
-                  <div class="day-heat-cell heat-${cell.level}" title="${escapeHtml(cell.tooltip)}">
-                    <span class="day-heat-time">${cell.slot}</span>
-                    <span class="day-heat-val">${cell.minutes > 0 ? cell.minutes + "m" : ""}</span>
-                  </div>
-                `
-                  )
-                  .join("")}
-              </div>
-            `
-                : currentPeriod === "week"
-                ? `
-              <!-- Heatmap Tuần: 7 ngày x 3 khung -->
-              <div class="heatmap-header-row">
-                <span class="heatmap-day-label">Ngày</span>
-                <span>Sáng (06:00 - 12:00)</span>
-                <span>Chiều (12:00 - 18:00)</span>
-                <span>Tối (18:00 - 24:00)</span>
-              </div>
-
-              ${data.periodHeatmap
-                .map(
-                  (row) => `
-                <div class="heatmap-data-row">
-                  <span class="heatmap-day-label"><strong>${escapeHtml(row.day)}</strong></span>
-                  <div class="heatmap-cell heat-${row.morning}" title="${row.day} - Sáng: ${row.morningMins} phút"></div>
-                  <div class="heatmap-cell heat-${row.afternoon}" title="${row.day} - Chiều: ${row.afternoonMins} phút"></div>
-                  <div class="heatmap-cell heat-${row.evening}" title="${row.day} - Tối: ${row.eveningMins} phút"></div>
-                </div>
-              `
-                )
-                .join("")}
-            `
-                : `
-              <!-- Heatmap Tháng: Lưới các ngày trong tháng -->
-              <div class="month-heatmap-grid">
-                ${data.periodHeatmap
-                  .map(
-                    (d) => `
-                  <div class="month-heat-day heat-${d.level}" title="${escapeHtml(d.tooltip)}">
-                    <span class="month-heat-daynum">${d.dayNumber}</span>
-                    <span class="month-heat-mins">${d.minutes > 0 ? (d.hours >= 1 ? d.hours + "h" : d.minutes + "m") : ""}</span>
-                  </div>
-                `
-                  )
-                  .join("")}
-              </div>
-            `
-            }
-          </div>
-
-          <div style="margin-top:14px;padding:12px;border-radius:10px;background:var(--ink-50);display:flex;align-items:center;gap:10px;">
-            <svg style="color:var(--violet-600);width:18px;height:18px;flex-shrink:0;"><use href="#i-clock"></use></svg>
-            <span class="small" style="color:var(--ink-800);">
-              Tổng thời lượng ghi nhận trong chu kỳ: <strong>${data.totalStudyHours} giờ (${data.totalStudyMinutes} phút)</strong>.
-            </span>
-          </div>
         </div>
       </div>
 

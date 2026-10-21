@@ -47,13 +47,17 @@
 .pomo-mode-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 16px;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 14px;
   border-radius: 99px;
-  font-size: 0.85rem;
+  font-size: 0.76rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  max-width: 90%;
+  box-sizing: border-box;
 }
 
 .pomo-mode-badge.badge-study {
@@ -101,19 +105,21 @@
 /* Vòng tròn tiến độ SVG đếm ngược */
 .pomo-circle-wrap {
   position: relative;
-  width: 270px;
-  height: 270px;
+  width: 280px;
+  height: 280px;
   max-width: 100%;
   aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 14px;
+  margin: 0 auto 16px;
 }
 
 .pomo-circle-svg {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
   transform: rotate(-90deg);
   overflow: visible;
 }
@@ -121,13 +127,13 @@
 .pomo-circle-track {
   fill: none;
   stroke: var(--ink-100);
-  stroke-width: 12px;
+  stroke-width: 13px;
 }
 
 .pomo-circle-bar {
   fill: none;
   stroke: url(#pomoGradStudy);
-  stroke-width: 12px;
+  stroke-width: 13px;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.4s ease;
 }
@@ -137,8 +143,8 @@
 }
 
 .pomo-circle-center {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -146,6 +152,23 @@
   text-align: center;
   pointer-events: none;
   padding: 20px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+}
+
+/* Thanh điều khiển âm thanh chuông báo */
+.pomo-sound-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--page);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  margin-bottom: 18px;
+  width: 100%;
+  max-width: 720px;
   box-sizing: border-box;
 }
 
@@ -355,6 +378,18 @@
     order: 2;
     width: 90px;
     height: 90px;
+  }
+
+  .pomo-sound-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .pomo-sound-bar > div:last-child {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
   }
 
   .pomo-settings-bar {

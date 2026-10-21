@@ -60,22 +60,6 @@ export const ROUTES = {
     inSidebar: true,
     description: "Kho giáo trình, slide bài giảng, textbook và sổ tay cá nhân"
   },
-  "school-email": {
-    id: "school-email",
-    title: "Email trường",
-    icon: "i-bell",
-    isImplemented: true,
-    inSidebar: true,
-    description: "Đồng bộ và phân tích hòm thư sinh viên CMC"
-  },
-  schoolEmail: {
-    id: "school-email",
-    title: "Email trường",
-    icon: "i-bell",
-    isImplemented: true,
-    inSidebar: true,
-    description: "Đồng bộ và phân tích hòm thư sinh viên CMC"
-  },
   "ai-tutor": {
     id: "ai-tutor",
     title: "Trợ lý AI",
@@ -147,6 +131,14 @@ export const ROUTES = {
     isImplemented: true,
     inSidebar: false,
     description: "Thông tin sinh viên và cấu hình nguồn dữ liệu"
+  },
+  "school-email": {
+    id: "notifications",
+    title: "Thông báo",
+    icon: "i-bell",
+    isImplemented: true,
+    inSidebar: false,
+    description: "Đã gộp vào thông báo hệ thống"
   }
 };
 
@@ -192,5 +184,8 @@ export const NAVIGATION_SECTIONS = [
  * Lấy route theo id
  */
 export function getRouteById(routeId) {
+  if (routeId === "school-email" || routeId === "schoolEmail") {
+    return ROUTES.notifications;
+  }
   return ROUTES[routeId] || Object.values(ROUTES).find((r) => r.id === routeId) || ROUTES.dashboard;
 }

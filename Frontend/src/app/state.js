@@ -4,6 +4,7 @@
  * Tuyệt đối không seed dữ liệu giả. Dữ liệu thật chỉ đến từ input người dùng hoặc backend sau này.
  */
 import { calculateRemainingTime } from "../shared/utils/date.js";
+import { getSchoolEmails, markAllSchoolEmailsAsRead } from "../features/school-email/school-email.service.js";
 
 const listeners = new Set();
 
@@ -339,12 +340,25 @@ export function markAllNotificationsAsRead() {
   state.notifications.forEach((n) => {
     n.read = true;
   });
+  try {
+    markAllSchoolEmailsAsRead();
+  } catch (err) {
+    console.warn("[State] Lỗi cập nhật trạng thái email:", err);
+  }
   notifyStateChange();
 }
 
 /**
- * Đếm số lượng thông báo chưa đọc thật sự
+ * Đếm số lượng thông báo chưa đọc thật sự (bao gồm thông báo hệ thống và email trường)
  */
 export function getUnreadNotificationCount() {
-  return state.notifications.filter((n) => !n.read).length;
+  const notifUnread = state.notifications.filter((n) => !n.read).length;
+  let emailUnread = 0;
+  try {
+    const emails = getSchoolEmails();
+    emailUnread = emails.filter((m) => !m.isRead).length;
+  } catch {
+    emailUnread = 0;
+  }
+  return notifUnread + emailUnread;
 }

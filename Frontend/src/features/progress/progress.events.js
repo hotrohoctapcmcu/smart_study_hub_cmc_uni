@@ -65,4 +65,21 @@ export function attachProgressEvents(containerEl, uiState, reRenderCallback) {
       reRenderCallback();
     });
   }
+
+  // 5. Nút cuộn ngang biểu đồ 24 giờ trong ngày (không thay đổi ngày được chọn)
+  const scrollChartLeftBtn = containerEl.querySelector("#scrollDayChartLeftBtn");
+  const scrollChartRightBtn = containerEl.querySelector("#scrollDayChartRightBtn");
+  const chartScrollContainer = containerEl.querySelector("#progressBarChartScrollContainer");
+
+  if (scrollChartLeftBtn && chartScrollContainer) {
+    scrollChartLeftBtn.addEventListener("click", () => {
+      chartScrollContainer.scrollBy({ left: -260, behavior: "smooth" });
+    });
+  }
+
+  if (scrollChartRightBtn && chartScrollContainer) {
+    scrollChartRightBtn.addEventListener("click", () => {
+      chartScrollContainer.scrollBy({ left: 260, behavior: "smooth" });
+    });
+  }
 }

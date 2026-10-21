@@ -68,38 +68,64 @@ export function renderDashboardView() {
         </div>
       </div>
 
-      <!-- Khối tóm tắt nhanh: Pomodoro & Tiến độ (Sprint 2) -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:16px;">
+      <!-- Khối tóm tắt nhanh: Pomodoro & Tiến độ (Sprint 2 - Balanced Layout) -->
+      <div class="dashboard-quick-row">
         <!-- Card Pomodoro Live -->
-        <div class="dash-card" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;">
-          <div style="display:flex;align-items:center;gap:14px;">
-            <div style="width:44px;height:44px;border-radius:12px;background:var(--violet-50);color:var(--violet-700);display:flex;align-items:center;justify-content:center;">
-              <svg style="width:22px;height:22px;"><use href="#i-clock"></use></svg>
+        <div class="dash-card dash-quick-card">
+          <div class="dash-quick-body">
+            <div class="dash-quick-icon pomo-icon">
+              <svg><use href="#i-clock"></use></svg>
             </div>
-            <div>
-              <div style="font-size:0.82rem;font-weight:700;color:var(--ink-600);text-transform:uppercase;">Bộ đếm Pomodoro</div>
-              <div style="font-size:1.4rem;font-weight:800;color:var(--ink-950);">${pomoState.displayTime}</div>
-              <div style="font-size:0.75rem;color:var(--ink-500);">${pomoState.state === "running" ? "🔥 Đang tập trung học" : "Đã xong " + pomoState.history.length + " phiên"}</div>
+            <div class="dash-quick-info">
+              <div class="dash-quick-label">Bộ đếm Pomodoro</div>
+              <div class="dash-quick-value">${pomoState.displayTime}</div>
+              <div class="dash-quick-sub">${
+                pomoState.state === "running"
+                  ? "🔥 Đang tập trung học"
+                  : pomoState.state === "paused"
+                  ? "⏸️ Đang tạm dừng"
+                  : pomoState.state === "study_completed"
+                  ? "🎉 Hoàn thành phiên học"
+                  : pomoState.state === "break_running"
+                  ? "☕ Đang trong giờ nghỉ"
+                  : pomoState.state === "break_paused"
+                  ? "⏸️ Tạm dừng giờ nghỉ"
+                  : pomoState.state === "break_completed"
+                  ? "✨ Hết giờ nghỉ ngơi"
+                  : `Đã xong ${pomoState.history.length} phiên`
+              }</div>
             </div>
           </div>
-          <button type="button" class="button primary small" data-dash-goto="pomodoro">
-            ${pomoState.state === "running" ? "Mở đồng hồ" : "Bắt đầu học"}
+          <button type="button" class="button primary small dash-quick-action" data-dash-goto="pomodoro">
+            ${
+              pomoState.state === "running"
+                ? "Mở đồng hồ"
+                : pomoState.state === "paused"
+                ? "Tiếp tục học"
+                : pomoState.state === "study_completed"
+                ? "Bắt đầu nghỉ"
+                : pomoState.state === "break_running" || pomoState.state === "break_paused"
+                ? "Xem giờ nghỉ"
+                : pomoState.state === "break_completed"
+                ? "Phiên mới"
+                : "Bắt đầu học"
+            }
           </button>
         </div>
 
         <!-- Card Tổng thời gian học -->
-        <div class="dash-card" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;">
-          <div style="display:flex;align-items:center;gap:14px;">
-            <div style="width:44px;height:44px;border-radius:12px;background:var(--blue-50);color:var(--blue-700);display:flex;align-items:center;justify-content:center;">
-              <svg style="width:22px;height:22px;"><use href="#i-chart"></use></svg>
+        <div class="dash-card dash-quick-card">
+          <div class="dash-quick-body">
+            <div class="dash-quick-icon study-icon">
+              <svg><use href="#i-chart"></use></svg>
             </div>
-            <div>
-              <div style="font-size:0.82rem;font-weight:700;color:var(--ink-600);text-transform:uppercase;">Thời gian tự học tuần</div>
-              <div style="font-size:1.4rem;font-weight:800;color:var(--ink-950);">${progressData.totalStudyHours} giờ</div>
-              <div style="font-size:0.75rem;color:var(--ink-500);">Streak: ${progressData.habits.streakDays} ngày liên tiếp</div>
+            <div class="dash-quick-info">
+              <div class="dash-quick-label">Thời gian tự học tuần</div>
+              <div class="dash-quick-value">${progressData.totalStudyHours} giờ</div>
+              <div class="dash-quick-sub">Streak: ${progressData.habits.streakDays} ngày liên tiếp</div>
             </div>
           </div>
-          <button type="button" class="button secondary small" data-dash-goto="progress">
+          <button type="button" class="button secondary small dash-quick-action" data-dash-goto="progress">
             Bản đồ thời gian
           </button>
         </div>

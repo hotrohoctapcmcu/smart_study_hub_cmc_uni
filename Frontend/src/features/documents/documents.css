@@ -129,30 +129,61 @@
 .doc-filter-dropdowns {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .doc-select-group {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.doc-select-label {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--ink-700);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin: 0;
 }
 
 .doc-select {
   height: 38px;
+  min-width: 140px;
+  max-width: 210px;
   border: 1px solid var(--ink-200);
   border-radius: 8px;
-  padding: 0 10px;
-  font-size: 0.84rem;
-  background: white;
+  padding: 0 30px 0 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background-color: white;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   color: var(--ink-900);
   outline: none;
   cursor: pointer;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.doc-select:hover {
+  border-color: var(--violet-300);
 }
 
 .doc-select:focus {
   border-color: var(--violet-600);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
 /* Nhóm chọn nhanh loại tài liệu - Có khoảng cách rõ ràng, không chạm viền card bên dưới */

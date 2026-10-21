@@ -17,6 +17,7 @@ async function runAllTests() {
     await import("./browser-eval.test.js");
     const { runStudyPlannerTests } = await import("./study-planner.test.js");
     await runStudyPlannerTests();
+    await import("./sprint2-features.test.js");
     console.log("====================================================");
     console.log("      TẤT CẢ CÁC BÀI KIỂM THỬ ĐÃ ĐẠT (ALL PASS)     ");
     console.log("====================================================");

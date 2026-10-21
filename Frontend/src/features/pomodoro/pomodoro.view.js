@@ -24,11 +24,11 @@ export function renderPomodoroView() {
   if (isStudyCompleted) {
     foxImageSrc = ASSETS.fox.quizSuccess;
     motivationalText = "Xuất sắc! Bạn đã hoàn thành trọn vẹn phiên tập trung. Hãy nghỉ ngơi một chút nhé!";
-    badgeModeLabel = "Đã hoàn thành phiên học";
+    badgeModeLabel = "Đã hoàn thành";
   } else if (isBreakMode || isBreakCompleted) {
     foxImageSrc = ASSETS.fox.wave;
     motivationalText = "Thư giãn mắt và uống chút nước để nạp lại năng lượng!";
-    badgeModeLabel = isBreakCompleted ? "Hết giờ nghỉ ngơi" : "Giờ nghỉ ngơi";
+    badgeModeLabel = isBreakCompleted ? "Hết giờ nghỉ" : "Giờ nghỉ ngơi";
   } else if (isPaused) {
     foxImageSrc = ASSETS.fox.study;
     motivationalText = "Đang tạm dừng. Hãy bấm Tiếp tục khi bạn sẵn sàng quay lại học nhé!";
@@ -184,16 +184,16 @@ export function renderPomodoroView() {
       <!-- Main Timer Card -->
       <div class="pomo-timer-card">
         <!-- Cụm trung tâm: Đồng hồ vòng tròn và Sticker Cáo CMC -->
-        <div class="pomo-core-display">
+        <div class="pomo-core-display" style="display: flex; align-items: center; justify-content: center; gap: 40px; width: 100%; max-width: 720px; margin: 10px 0 24px; flex-wrap: wrap;">
           <!-- Cột bên: Sticker Cáo CMC linh động (đặt bên cạnh hoặc phía dưới, không đè lên đồng hồ) -->
-          <div class="pomo-fox-container">
-            <img src="${foxImageSrc}" alt="Linh vật Cáo CMC Pomodoro" class="pomo-fox-img" />
+          <div class="pomo-fox-container" style="width: 160px; height: 160px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+            <img src="${foxImageSrc}" alt="Linh vật Cáo CMC Pomodoro" class="pomo-fox-img" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 8px 16px rgba(91, 33, 182, 0.12));" />
           </div>
 
           <!-- Đồng hồ vòng tròn SVG với bộ đếm ở chính giữa -->
-          <div class="pomo-clock-wrap">
-            <div class="pomo-circle-wrap">
-              <svg class="pomo-circle-svg" viewBox="0 0 280 280" aria-hidden="true">
+          <div class="pomo-clock-wrap" style="display: flex; flex-direction: column; align-items: center;">
+            <div class="pomo-circle-wrap" style="position: relative; width: 280px; height: 280px; max-width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+              <svg class="pomo-circle-svg" viewBox="0 0 280 280" style="position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible;" aria-hidden="true">
                 <defs>
                   <linearGradient id="pomoGradStudy" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="#7c3aed" />
@@ -204,26 +204,26 @@ export function renderPomodoroView() {
                     <stop offset="100%" stop-color="#ea580c" />
                   </linearGradient>
                 </defs>
-                <circle class="pomo-circle-track" cx="140" cy="140" r="115" />
+                <circle class="pomo-circle-track" cx="140" cy="140" r="115" style="fill: none; stroke: var(--ink-100, #e2e8f0); stroke-width: 13px;" />
                 <circle 
                   id="pomoCircleProgress" 
                   class="pomo-circle-bar ${isBreakMode ? "bar-break" : ""}" 
                   cx="140" 
                   cy="140" 
                   r="115" 
-                  style="stroke-dasharray: 722.57; stroke-dashoffset: ${dashOffset};" 
+                  style="fill: none; stroke: url(${isBreakMode ? "#pomoGradBreak" : "#pomoGradStudy"}); stroke-width: 13px; stroke-linecap: round; stroke-dasharray: 722.57; stroke-dashoffset: ${dashOffset}; transition: stroke-dashoffset 0.4s ease;" 
                 />
               </svg>
-              <div class="pomo-circle-center">
-                <span class="pomo-mode-badge ${isBreakMode || isBreakCompleted ? "badge-break" : "badge-study"}" id="pomoCenterBadge">
-                  <svg style="width:12px;height:12px;"><use href="${isBreakMode || isBreakCompleted ? "#i-spark" : "#i-clock"}"></use></svg>
+              <div class="pomo-circle-center" style="position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; padding: 20px; box-sizing: border-box; width: 100%; height: 100%;">
+                <span class="pomo-mode-badge ${isBreakMode || isBreakCompleted ? "badge-break" : "badge-study"}" id="pomoCenterBadge" style="margin-bottom: 6px;">
+                  <svg style="width:14px;height:14px;display:inline-block;vertical-align:middle;"><use href="${isBreakMode || isBreakCompleted ? "#i-spark" : "#i-clock"}"></use></svg>
                   <span>${badgeModeLabel}</span>
                 </span>
-                <div class="pomo-countdown-text" id="pomoCountdownDisplay">${pState.displayTime}</div>
-                <span class="pomo-circle-sub">${isBreakMode ? "Giờ nghỉ ngơi" : "Tập trung học tập"}</span>
+                <div class="pomo-countdown-text" id="pomoCountdownDisplay" style="font-size: clamp(2.4rem, 5.5vw, 3.6rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; color: var(--ink-950); font-variant-numeric: tabular-nums; margin: 4px 0;">${pState.displayTime}</div>
+                <span class="pomo-circle-sub" style="font-size: 0.8rem; color: var(--ink-500); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">${isBreakMode ? "Giờ nghỉ ngơi" : "Tập trung học tập"}</span>
               </div>
             </div>
-            <p class="pomo-motivational-quote">${motivationalText}</p>
+            <p class="pomo-motivational-quote" style="margin: 0; font-size: 0.9rem; color: var(--ink-600); text-align: center; max-width: 380px; line-height: 1.45;">${motivationalText}</p>
           </div>
         </div>
 
@@ -255,6 +255,25 @@ export function renderPomodoroView() {
             </button>
             <button type="button" class="button ghost small pomo-quick-break-btn ${pState.breakMinutes === 15 ? "active" : ""}" data-quick-break="15" ${isLocked ? "disabled" : ""}>
               🌱 Nghỉ dài 15 phút
+            </button>
+          </div>
+        </div>
+
+        <!-- CÀI ĐẶT ÂM THANH CHUÔNG BÁO POMODORO -->
+        <div class="pomo-sound-bar" style="display:flex;align-items:center;justify-content:space-between;background:var(--page);border:1px solid var(--ink-200);border-radius:var(--radius-md);padding:10px 16px;margin-bottom:18px;width:100%;max-width:720px;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:34px;height:34px;border-radius:8px;background:var(--violet-100);color:var(--violet-700);display:flex;align-items:center;justify-content:center;">
+              <svg style="width:18px;height:18px;"><use href="#i-bell"></use></svg>
+            </div>
+            <div>
+              <div style="font-size:0.85rem;font-weight:700;color:var(--ink-900);">Chuông báo kết thúc phiên (amthanh.mp3)</div>
+              <div style="font-size:0.75rem;color:var(--ink-500);">${pState.soundEnabled !== false ? "Tự động phát chuông khi hoàn thành phiên học hoặc kết thúc giờ nghỉ" : "Âm thanh chuông báo đang tắt"}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <button type="button" class="button ${pState.soundEnabled !== false ? "primary" : "ghost"} small" id="pomoToggleSoundBtn" title="Bật/Tắt âm thanh chuông báo">
+              <svg style="width:14px;height:14px;"><use href="#i-bell"></use></svg>
+              <span>${pState.soundEnabled !== false ? "Bật chuông" : "Tắt chuông"}</span>
             </button>
           </div>
         </div>

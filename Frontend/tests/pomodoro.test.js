@@ -87,4 +87,11 @@ assert(resetState.state === "idle", "Reset hoàn toàn phiên về idle");
 clearAllHistory();
 assert(getHistory().length === 0, "Xóa toàn bộ lịch sử thành công");
 
-console.log("--> Toàn bộ test Pomodoro PASS!\n");
+// 9. Kiểm tra âm thanh chuông báo và file asset
+import("../src/shared/config/assets.js").then(({ ASSETS }) => {
+  assert(ASSETS.sounds && ASSETS.sounds.pomodoro === "assets/amthanh.mp3", "Asset âm thanh Pomodoro được cấu hình đúng: assets/amthanh.mp3");
+  const s = getState();
+  assert(typeof s.soundEnabled === "boolean", "Trạng thái soundEnabled có trong state");
+  console.log("--> Toàn bộ test Pomodoro & Âm thanh PASS!\n");
+});
+

@@ -21,7 +21,6 @@ import { mountProfile } from "../features/profile/profile.js?v=5";
 import { mountPomodoro } from "../features/pomodoro/pomodoro.js?v=4";
 import { mountDocuments } from "../features/documents/documents.js";
 import { mountProgress } from "../features/progress/progress.js";
-import { mountSchoolEmail } from "../features/school-email/school-email.js";
 import { renderEmptyState } from "../shared/components/empty-state.js";
 
 export function renderShell(appEl) {
@@ -118,7 +117,7 @@ function mountCurrentFeature(routeId, contentPane) {
       mountProgress(contentPane);
       break;
     case "school-email":
-      mountSchoolEmail(contentPane);
+      mountNotifications(contentPane);
       break;
     default: {
       const routeDef = getRouteById(routeId);

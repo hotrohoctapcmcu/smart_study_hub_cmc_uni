@@ -115,3 +115,110 @@
   font-size: 0.76rem;
   color: var(--ink-600);
 }
+
+/* Quick Summary Row: Pomodoro & Study Time */
+.dashboard-quick-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  width: 100%;
+}
+
+.dash-quick-card {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 20px 24px !important;
+  min-height: 108px !important;
+  gap: 20px !important;
+  box-sizing: border-box !important;
+}
+
+.dash-quick-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.dash-quick-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dash-quick-icon.pomo-icon {
+  background: var(--violet-50);
+  color: var(--violet-700);
+}
+
+.dash-quick-icon.study-icon {
+  background: var(--blue-50);
+  color: var(--blue-700);
+}
+
+.dash-quick-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.dash-quick-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dash-quick-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink-600);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dash-quick-value {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--ink-950);
+  line-height: 1.2;
+}
+
+.dash-quick-sub {
+  font-size: 0.78rem;
+  color: var(--ink-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-quick-action {
+  flex-shrink: 0;
+  min-height: 38px;
+  padding: 0 16px;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .dashboard-quick-row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .dash-quick-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+    padding: 16px !important;
+  }
+
+  .dash-quick-action {
+    width: 100%;
+  }
+}
+

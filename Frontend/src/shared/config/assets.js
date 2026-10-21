@@ -15,6 +15,10 @@ export const ASSETS = {
     pomodoro: "assets/fox-pomodoro.png",
     quizSuccess: "assets/fox-quiz-success.png"
   },
+  // Âm thanh thông báo
+  sounds: {
+    pomodoro: "assets/amthanh.mp3"
+  },
   // Backgrounds
   backgrounds: {
     loginPurple: "assets/login-purple-background.png",
