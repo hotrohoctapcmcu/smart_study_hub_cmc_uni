@@ -8,6 +8,7 @@ const ketNoiDatabase = require('../database/index');
 const { API_PREFIX, PORT, CORS_OPTIONS, JSON_LIMIT } = require('./config');
 const { notFound, errorHandler } = require('./shared/errorHandler');
 const { setDbForAll, registerModules } = require('./modules');
+const { NGUOI_DUNG_ID } = require('./shared/nguoiDung');
 
 const app = express();
 
@@ -49,7 +50,7 @@ async function start() {
         }
 
         try {
-            const userId = req.user?.id || 1;
+            const userId = NGUOI_DUNG_ID;
             const today = new Date().toISOString().slice(0, 10);
 
             const [profile, schedules, deadlines, exams, reminders] =

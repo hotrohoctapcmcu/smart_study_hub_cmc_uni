@@ -1,22 +1,22 @@
 /**
  * API/shared/iu-client.js
  * ===================================================================================
- * ADAPTER GỌI NHÁNH IU_VT TỪ API SERVER (NODE THƯỜNG, KHÔNG ELECTRON)
+ * ADAPTER GỌI NHÁNH IU TỪ API SERVER (NODE THƯỜNG, KHÔNG ELECTRON)
  * ===================================================================================
  * - Chỉ dùng các cụm chạy được trên Node: data / payload / crypto (+ capture
  *   khi có window, không dùng ở đây).
  * - KHÔNG require cụm login/window (cần Electron main process) ở top-level;
  *   login do client/Electron thực hiện rồi gửi cookie+session lên.
- * - IU_VT trả schema { IU: {...} }; adapter map sang shape dataIU phẳng mà
+ * - IU trả schema { IU: {...} }; adapter map sang shape dataIU phẳng mà
  *   database/functions/sync.js (saveIUData) đang nhận: MSV, ho_ten,
  *   ten_nganh_hoc, ngay_thang_nam_sinh, bang_diem, tkb, lich_thi.
  * ===================================================================================
  */
 
 function loadIU() {
-    // Require lười để API vẫn boot được nếu thiếu file IU_VT.
+    // Require lười để API vẫn boot được nếu thiếu file IU.
     // eslint-disable-next-line global-require
-    return require('../../CRWEB/IU_VT');
+    return require('../../CRWEB/IU');
 }
 
 function s(v) {
@@ -77,7 +77,7 @@ function thuTuNgay(ngay) {
 }
 
 /**
- * Map schema { IU: {...} } của IU_VT -> dataIU phẳng cho saveIUData().
+ * Map schema { IU: {...} } của IU -> dataIU phẳng cho saveIUData().
  */
 function mapSangDataIU(schema) {
     const iu = (schema && schema.IU) || {};

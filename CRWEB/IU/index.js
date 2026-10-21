@@ -1,9 +1,9 @@
 "use strict";
 
 /**
- * CRWEB/IU_VT/index.js — DIEM TRUY CAP DUY NHAT cua toan bo chuc nang IU.
+ * CRWEB/IU/index.js — DIEM TRUY CAP DUY NHAT cua toan bo chuc nang IU.
  * Ben ngoai chi can:
- *   const iu = require("./CRWEB/IU_VT");
+ *   const iu = require("./CRWEB/IU");
  *
  * Gom 5 cum, moi cum 1 nhiem vu:
  *   login/    Dang nhap portal IU bang SSO Microsoft (Electron), tra cookie.

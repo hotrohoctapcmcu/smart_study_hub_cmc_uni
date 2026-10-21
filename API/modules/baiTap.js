@@ -1,5 +1,5 @@
 const express = require('express');
-const { verifyToken } = require('../shared/auth');
+const { NGUOI_DUNG_ID } = require('../shared/nguoiDung');
 
 const router = express.Router();
 let db;
@@ -21,16 +21,15 @@ const xuLy = (callback, status = 200, message = '') => async (req, res, next) =>
     }
 };
 
-router.use(verifyToken);
 
-router.get('/', xuLy(req => db.layDanhSachDeadline(req.user.id, req.query.status || null)));
+router.get('/', xuLy(req => db.layDanhSachDeadline(NGUOI_DUNG_ID, req.query.status || null)));
 
-router.get('/upcoming', xuLy(req => db.layDeadlineSapToi(req.user.id, parseInt(req.query.days || 3, 10))));
+router.get('/upcoming', xuLy(req => db.layDeadlineSapToi(NGUOI_DUNG_ID, parseInt(req.query.days || 3, 10))));
 
 router.post('/', xuLy(req => {
     const { subjectId, title, deadline } = req.body;
     kiemTra(subjectId && title && deadline, 'subjectId, title và deadline là bắt buộc.');
-    return db.themBaiTap(req.user.id, req.body);
+    return db.themBaiTap(NGUOI_DUNG_ID, req.body);
 }, 201, 'Đã tạo bài tập.'));
 
 router.put('/:id', xuLy(req => {
@@ -46,21 +45,21 @@ router.patch('/:id/status', xuLy(req => {
 
 router.delete('/:id', xuLy(req => db.xoaBaiTap(req.params.id), 200, 'Đã xóa bài tập và nhắc nhở liên quan.'));
 
-router.get('/checklist', xuLy(req => db.layChecklist(req.user.id)));
+router.get('/checklist', xuLy(req => db.layChecklist(NGUOI_DUNG_ID)));
 
 router.get('/:taskId/checklist', xuLy(async req => {
-    const all = await db.layChecklist(req.user.id);
+    const all = await db.layChecklist(NGUOI_DUNG_ID);
     return all.filter(item => item.assignment_id === Number(req.params.taskId));
 }));
 
 router.post('/checklist', xuLy(req => {
     kiemTra(req.body.title, 'title là bắt buộc.');
-    return db.themChecklist(req.user.id, req.body);
+    return db.themChecklist(NGUOI_DUNG_ID, req.body);
 }, 201, 'Đã thêm task vào checklist.'));
 
 router.post('/:taskId/checklist', xuLy(req => {
     kiemTra(req.body.title, 'title là bắt buộc.');
-    return db.themChecklist(req.user.id, {
+    return db.themChecklist(NGUOI_DUNG_ID, {
         ...req.body,
         assignmentId: Number(req.params.taskId)
     });

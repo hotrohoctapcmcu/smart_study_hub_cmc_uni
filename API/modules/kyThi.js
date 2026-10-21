@@ -1,5 +1,5 @@
 const express = require('express');
-const { verifyToken } = require('../shared/auth');
+const { NGUOI_DUNG_ID } = require('../shared/nguoiDung');
 
 const router = express.Router();
 let db;
@@ -16,18 +16,17 @@ const xuLy = (callback, status = 200) => async (req, res, next) => {
 
 const trangThaiHopLe = ['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
 
-router.use(verifyToken);
 
 router.get('/', xuLy(async req => ({
-    data: await db.layLichThi(req.user.id)
+    data: await db.layLichThi(NGUOI_DUNG_ID)
 })));
 
 router.get('/upcoming', xuLy(async req => ({
-    data: await db.layLichThiSapToi(req.user.id)
+    data: await db.layLichThiSapToi(NGUOI_DUNG_ID)
 })));
 
 router.get('/study-plans', xuLy(async req => ({
-    data: await db.layKeHoachOnThi(req.user.id)
+    data: await db.layKeHoachOnThi(NGUOI_DUNG_ID)
 })));
 
 router.post('/', xuLy(async req => {
@@ -39,7 +38,7 @@ router.post('/', xuLy(async req => {
 
     return {
         message: 'Đã thêm kỳ thi.',
-        data: await db.themLichThi(req.user.id, req.body)
+        data: await db.themLichThi(NGUOI_DUNG_ID, req.body)
     };
 }, 201));
 
@@ -52,7 +51,7 @@ router.post('/study-plans', xuLy(async req => {
 
     return {
         message: 'Đã tạo kế hoạch ôn thi.',
-        data: await db.taoKeHoachOnThi(req.user.id, req.body)
+        data: await db.taoKeHoachOnThi(NGUOI_DUNG_ID, req.body)
     };
 }, 201));
 
@@ -74,7 +73,7 @@ router.delete('/study-plans/:id', xuLy(async req => {
 
 router.get('/:examId/study-plans', xuLy(async req => ({
     examId: req.params.examId,
-    data: await db.layKeHoachOnThi(req.user.id, req.params.examId)
+    data: await db.layKeHoachOnThi(NGUOI_DUNG_ID, req.params.examId)
 })));
 
 router.delete('/:id', xuLy(async req => {

@@ -3,7 +3,7 @@
  * ===================================================================================
  * CẤU HÌNH TẬP TRUNG — BACKEND API SERVER
  * ===================================================================================
- * Mọi hằng số dùng chung của API (port, prefix, CORS, JWT, ...) nằm ở một nơi duy
+ * Mọi hằng số dùng chung của API (port, prefix, CORS, ...) nằm ở một nơi duy
  * nhất để API/index.js và các module cùng đọc, tránh rải rác magic-string.
  * Giữ nguyên giá trị đang chạy (PORT 3001, prefix /api/v1, ...) — chỉ di dời chỗ
  * khai báo, không đổi hành vi.
@@ -22,9 +22,6 @@ const CORS_OPTIONS = {
 
 const JSON_LIMIT = '10mb';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'unistudy_cmc_sprint1_secret_key';
-const JWT_EXPIRES_IN = '7d';
-
 const FRONTEND_URL = 'http://localhost:8080';
 
 const SERVICE = {
@@ -37,8 +34,6 @@ module.exports = {
     PORT,
     CORS_OPTIONS,
     JSON_LIMIT,
-    JWT_SECRET,
-    JWT_EXPIRES_IN,
     FRONTEND_URL,
     SERVICE
 };

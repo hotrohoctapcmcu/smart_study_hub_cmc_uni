@@ -49,7 +49,7 @@ export async function getSyncStatus(jobId) {
   });
 }
 
-// ─── Nhánh IU tự động (Electron bridge -> API -> IU_VT -> DB) ───────────────
+// ─── Nhánh IU tự động (Electron bridge -> API -> IU -> DB) ───────────────
 
 /**
  * Cầu nối Electron do preload expose (window.__uniStudyIU).
@@ -93,7 +93,7 @@ export async function loginIuViaBridge(opts = {}) {
 }
 
 /**
- * Kéo dữ liệu IU bằng phiên đã lưu (server gọi IU_VT + lưu DB).
+ * Kéo dữ liệu IU bằng phiên đã lưu (server gọi IU + lưu DB).
  * @param {object} [opts] - { ngayBatDau, ngayKetThuc }
  * @returns {Promise<{timetableCount, examsCount, gradesCount, thatBai}>}
  */
@@ -282,7 +282,7 @@ export async function refreshFromServer() {
 
 /**
  * Luồng tự động trọn vòng trong Electron:
- * login (cửa sổ SSO riêng) -> pull (server kéo IU_VT + lưu DB)
+ * login (cửa sổ SSO riêng) -> pull (server kéo IU + lưu DB)
  * -> nạp vào state hiển thị. Ném lỗi để caller hiển thị message.
  */
 export async function syncIuAuto(opts = {}) {

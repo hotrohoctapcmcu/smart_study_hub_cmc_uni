@@ -1,4 +1,3 @@
-const taiKhoan = require('./taiKhoan');
 const sinhVien = require('./sinhVien');
 const thoiKhoaBieu = require('./thoiKhoaBieu');
 const baiTap = require('./baiTap');
@@ -7,7 +6,6 @@ const kyThi = require('./kyThi');
 const dongBo = require('./dongBo');
 
 const MODULES = [
-    { name: 'auth', paths: ['/auth'], router: taiKhoan },
     { name: 'student', paths: ['/student'], router: sinhVien },
     { name: 'schedules', paths: ['/schedules'], router: thoiKhoaBieu },
     { name: 'tasks', paths: ['/tasks', '/checklist'], router: baiTap },
