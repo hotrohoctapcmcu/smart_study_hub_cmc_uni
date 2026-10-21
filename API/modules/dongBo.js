@@ -69,6 +69,33 @@ function layTrangThaiJob(jobId) {
 }
 
 
+/**
+ * Xác định mã số sinh viên để ghi vào DB.
+ * Ưu tiên MSV IU trả về; nếu nhóm hồ sơ lỗi/thiếu thì dùng mã đã lưu sẵn trong DB
+ * (hồ sơ vẫn còn nguyên từ lần đồng bộ trước).
+ * @param {string} maSinhVien - MSV từ mapSangDataIU()
+ * @returns {Promise<string>}
+ */
+async function layMaSinhVien(maSinhVien) {
+    const tuIU = String(maSinhVien == null ? '' : maSinhVien).trim();
+    if (tuIU) return tuIU;
+
+    try {
+        // Ứng dụng chỉ có một hồ sơ sinh viên duy nhất, nên lấy thẳng bản ghi đầu tiên
+        // (không dùng layHoSo(NGUOI_DUNG_ID) vì student_id không nhất thiết bằng userId).
+        const rows = await db.executeQuery(
+            'SELECT student_code FROM Students ORDER BY student_id LIMIT 1'
+        );
+        const daLuu = rows.length ? String(rows[0].student_code || '').trim() : '';
+        if (daLuu) return daLuu;
+    } catch { /* DB chưa sẵn sàng — rơi xuống lỗi bên dưới */ }
+
+    throw loi(
+        'Không lấy được mã số sinh viên từ cổng IU. ' +
+        'Hãy đăng nhập IU lại rồi đồng bộ để tải nhóm Hồ sơ sinh viên.'
+    );
+}
+
 router.get('/sources', xuLy(() => ({ sources: layCacNguonDongBo() })));
 
 router.post('/', xuLy(req => khoiTaoDongBo(req.body.sources, NGUOI_DUNG_ID), 202));
@@ -102,8 +129,14 @@ router.post('/iu/pull', xuLy(async req => {
         data
     });
 
+    const dataIU = mapSangDataIU(data);
+
+    // saveIUData() khoá hồ sơ theo MÃ SỐ SINH VIÊN, không phải userId nội bộ.
+    // Trước đây truyền NGUOI_DUNG_ID (number) nên .trim() ném TypeError.
+    const studentCode = await layMaSinhVien(dataIU.MSV);
+
     const savedDb = luuDb
-        ? await db.dongBoHoSoIU(NGUOI_DUNG_ID, mapSangDataIU(data))
+        ? await db.dongBoHoSoIU(studentCode, dataIU)
         : null;
 
 

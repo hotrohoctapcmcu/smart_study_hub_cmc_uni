@@ -205,6 +205,9 @@ async function getPool() {
             runSchema(db);
         }
 
+        // Nâng cấp cấu trúc cũ (file .db tạo từ schema trước đây) lên schema hiện tại.
+        migrateSchema(db);
+
         _db = db;
         // Tạo file .db ngay từ lần chạy đầu (không đợi tới lúc tắt app).
         persistNow();
@@ -254,6 +257,75 @@ function runSchema(db) {
     db.run('PRAGMA foreign_keys = ON;');
     // Ghi ngay schema + dữ liệu seed ra file .db.
     persistNow();
+}
+
+/**
+ * Đưa file .db cũ về đúng schema hiện tại.
+ *
+ * `CREATE TABLE IF NOT EXISTS` KHÔNG sửa được bảng đã tồn tại, nên file .db
+ * tạo từ schema cũ vẫn giữ cột `Students.user_id NOT NULL`. Cột này không còn
+ * được ghi ở bất kỳ đâu (hệ thống bỏ bảng Users) nên mọi lần upsert hồ sơ đều
+ * vi phạm NOT NULL và đồng bộ IU thất bại.
+ *
+ * Cách xử lý: dựng bảng mới theo schema hiện tại, copy dữ liệu cũ sang
+ * (giữ nguyên student_id để không phá khóa ngoại), rồi thay thế bảng cũ.
+ * Chỉ chạy khi phát hiện cột di sản — không đụng gì tới database đúng schema.
+ *
+ * @param {Database} db - sql.js database instance
+ */
+function migrateSchema(db) {
+    try {
+        const cols = queryAll(db, 'PRAGMA table_info("Students");').map(c => c.name);
+        if (!cols.length) return; // chưa có bảng — runSchema đã lo
+
+        const coUserCu = cols.includes('user_id');
+        const thieuEmail = !cols.includes('email');
+        if (!coUserCu && !thieuEmail) return;
+
+        const coEmailCu = cols.includes('email');
+
+        db.run('PRAGMA foreign_keys = OFF;');
+        db.run('BEGIN;');
+        try {
+            db.run(`CREATE TABLE Students_new (
+                student_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_code     TEXT    NOT NULL UNIQUE,
+                full_name        TEXT    NOT NULL,
+                major            TEXT    NOT NULL,
+                dob              TEXT,
+                enrollment_year  INTEGER,
+                current_semester TEXT,
+                phone            TEXT,
+                avatar_url       TEXT,
+                email            TEXT,
+                created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+                updated_at       TEXT    NOT NULL DEFAULT (datetime('now'))
+            );`);
+
+            db.run(`INSERT INTO Students_new
+                        (student_id, student_code, full_name, major, dob,
+                         enrollment_year, current_semester, phone, avatar_url,
+                         email, created_at, updated_at)
+                    SELECT student_id, student_code, full_name, major, dob,
+                           enrollment_year, current_semester, phone, avatar_url,
+                           ${coEmailCu ? 'email' : 'NULL'},
+                           ${cols.includes('created_at') ? "created_at" : "datetime('now')"},
+                           ${cols.includes('updated_at') ? "updated_at" : "datetime('now')"}
+                    FROM Students;`);
+
+            db.run('DROP TABLE Students;');
+            db.run('ALTER TABLE Students_new RENAME TO Students;');
+            db.run('COMMIT;');
+            console.log('[DB] Đã nâng cấp bảng Students: bỏ user_id, thêm email.');
+        } catch (err) {
+            try { db.run('ROLLBACK;'); } catch (_) { }
+            console.error('[DB] Nâng cấp bảng Students thất bại:', err.message);
+        } finally {
+            db.run('PRAGMA foreign_keys = ON;');
+        }
+    } catch (err) {
+        console.error('[DB] Không kiểm tra được schema Students:', err.message);
+    }
 }
 
 /**

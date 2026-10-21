@@ -21,6 +21,13 @@ async function saveIUData(studentCode, dataIU) {
     if (!studentCode) throw new Error("studentCode là bắt buộc");
     if (!dataIU)      throw new Error("dataIU là bắt buộc");
 
+    // Chấp nhận cả số (mã SV chỉ gồm chữ số) — tránh .trim() ném TypeError
+    // với thông báo khó hiểu khi caller truyền id nội bộ thay vì MSV.
+    const maSinhVien = String(studentCode).trim();
+    if (!maSinhVien) {
+        throw new Error("studentCode không hợp lệ: cần mã số sinh viên (VD: ITIU21001)");
+    }
+
     const result = {
         student: false,
         gradesCount: 0,
@@ -38,7 +45,7 @@ async function saveIUData(studentCode, dataIU) {
         // ────────────────────────────────────────────────────────────────
         // 1. Đồng bộ hồ sơ sinh viên (upsert theo student_code)
         // ────────────────────────────────────────────────────────────────
-        const code  = studentCode.trim();
+        const code  = maSinhVien;
         const dob   = dataIU.ngay_thang_nam_sinh
             ? convertDate(dataIU.ngay_thang_nam_sinh)
             : null;
