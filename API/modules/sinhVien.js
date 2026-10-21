@@ -1,5 +1,5 @@
 const express = require('express');
-const { verifyToken } = require('../shared/auth');
+const { NGUOI_DUNG_ID } = require('../shared/nguoiDung');
 
 const router = express.Router();
 let db;
@@ -15,10 +15,9 @@ const xuLy = callback => async (req, res, next) => {
     }
 };
 
-router.use(verifyToken);
 
 router.get('/profile', xuLy(async req => {
-    const data = await db.layHoSo(req.user.id);
+    const data = await db.layHoSo(NGUOI_DUNG_ID);
     if (!data) throw loi('Chưa có hồ sơ. Vui lòng đồng bộ dữ liệu từ cổng trường.', 404);
     return { data };
 }));
@@ -30,16 +29,16 @@ router.put('/profile', xuLy(async req => {
 
     return {
         message: 'Cập nhật hồ sơ thành công.',
-        data: await db.luuHoSo(req.user.id, req.body)
+        data: await db.luuHoSo(NGUOI_DUNG_ID, req.body)
     };
 }));
 
 router.get('/grades', xuLy(async req => ({
-    data: await db.layBangDiem(req.user.id, req.query.hocKy || null)
+    data: await db.layBangDiem(NGUOI_DUNG_ID, req.query.hocKy || null)
 })));
 
 router.get('/subjects', xuLy(async req => ({
-    data: await db.layDanhSachMonHoc(req.user.id)
+    data: await db.layDanhSachMonHoc(NGUOI_DUNG_ID)
 })));
 
 module.exports = router;

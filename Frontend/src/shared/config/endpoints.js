@@ -43,7 +43,7 @@ export const ENDPOINTS = {
     getSources: { method: "GET", path: "/api/v1/sync/sources" },
     startSync: { method: "POST", path: "/api/v1/sync" },
     getStatus: { method: "GET", path: "/api/v1/sync/status" },
-    // Nhánh IU tự động (Electron bridge -> API -> IU_VT -> DB)
+    // Nhánh IU tự động (Electron bridge -> API -> IU -> DB)
     iuSaveSession: { method: "POST", path: "/api/v1/sync/iu/session" },
     iuPull: { method: "POST", path: "/api/v1/sync/iu/pull" },
     iuGroup: { method: "POST", path: "/api/v1/sync/iu/group" },

@@ -1,5 +1,5 @@
 const express = require('express');
-const { verifyToken } = require('../shared/auth');
+const { NGUOI_DUNG_ID } = require('../shared/nguoiDung');
 
 const router = express.Router();
 let db;
@@ -48,31 +48,30 @@ async function xepLichTuHoc(userId, data) {
     return db.xepLichTuHoc(userId, data);
 }
 
-router.use(verifyToken);
 
 router.get('/', xuLy(async req => ({
-    data: await db.layThoiKhoaBieu(req.user.id)
+    data: await db.layThoiKhoaBieu(NGUOI_DUNG_ID)
 })));
 
 router.get('/today', xuLy(async req => {
     const date = new Date().toISOString().split('T')[0];
-    return { date, data: await layTheoNgay(req.user.id, date) };
+    return { date, data: await layTheoNgay(NGUOI_DUNG_ID, date) };
 }));
 
 router.get('/by-date', xuLy(async req => ({
     date: req.query.date,
-    data: await layTheoNgay(req.user.id, req.query.date)
+    data: await layTheoNgay(NGUOI_DUNG_ID, req.query.date)
 })));
 
 router.get('/by-week', xuLy(async req => ({
     from: req.query.from,
     to: req.query.to,
-    data: await layTheoTuan(req.user.id, req.query.from, req.query.to)
+    data: await layTheoTuan(NGUOI_DUNG_ID, req.query.from, req.query.to)
 })));
 
 router.post('/', async (req, res, next) => {
     try {
-        const data = await themTietHoc(req.user.id, req.body);
+        const data = await themTietHoc(NGUOI_DUNG_ID, req.body);
         res.status(201).json({ success: true, message: 'Đã thêm tiết học.', data });
     } catch (err) {
         next(err);
@@ -86,25 +85,25 @@ router.delete('/:id', xuLy(async req => {
 }));
 
 router.get('/conflicts/check', xuLy(async req => {
-    const conflicts = await db.kiemTraTrungLich(req.user.id);
+    const conflicts = await db.kiemTraTrungLich(NGUOI_DUNG_ID);
     return { hasConflict: conflicts.length > 0, conflicts };
 }));
 
 router.post('/conflicts/check', xuLy(async req => {
     const { studyDate, startTime, endTime, excludeScheduleId } = req.body || {};
     const conflicts = await kiemTraXungDot(
-        req.user.id, studyDate, startTime, endTime, excludeScheduleId
+        NGUOI_DUNG_ID, studyDate, startTime, endTime, excludeScheduleId
     );
     return { hasConflict: conflicts.length > 0, conflicts };
 }));
 
 router.get('/study', xuLy(async req => ({
-    data: await db.layLichTuHoc(req.user.id, req.query.from || null, req.query.to || null)
+    data: await db.layLichTuHoc(NGUOI_DUNG_ID, req.query.from || null, req.query.to || null)
 })));
 
 router.post('/study', async (req, res, next) => {
     try {
-        const data = await xepLichTuHoc(req.user.id, req.body);
+        const data = await xepLichTuHoc(NGUOI_DUNG_ID, req.body);
         res.status(201).json({ success: true, message: 'Đã xếp lịch tự học.', data });
     } catch (err) {
         next(err);
@@ -139,7 +138,7 @@ router.get('/study/free-slots', xuLy(async req => {
 
     return {
         date,
-        freeSlots: await db.timKhoangTrongTuHoc(req.user.id, date, minutes)
+        freeSlots: await db.timKhoangTrongTuHoc(NGUOI_DUNG_ID, date, minutes)
     };
 }));
 

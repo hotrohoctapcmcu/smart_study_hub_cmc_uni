@@ -1,5 +1,5 @@
 const express = require('express');
-const { verifyToken } = require('../shared/auth');
+const { NGUOI_DUNG_ID } = require('../shared/nguoiDung');
 const iuKho = require('../shared/iu-session');
 const { keoDuLieuIU, keoNhomIU, mapSangDataIU } = require('../shared/iu-client');
 
@@ -68,47 +68,45 @@ function layTrangThaiJob(jobId) {
     };
 }
 
-router.use(verifyToken);
 
 router.get('/sources', xuLy(() => ({ sources: layCacNguonDongBo() })));
 
-router.post('/', xuLy(req => khoiTaoDongBo(req.body.sources, req.user.id), 202));
+router.post('/', xuLy(req => khoiTaoDongBo(req.body.sources, NGUOI_DUNG_ID), 202));
 
 router.get('/status', xuLy(req => layTrangThaiJob(req.query.jobId)));
 
 router.post('/iu/session', xuLy(req => {
     const { session, cookie, data, ttlMs } = req.body || {};
-    const status = iuKho.saveSession(req.user.id, { session, cookie, data, ttlMs });
+    const status = iuKho.saveSession(NGUOI_DUNG_ID, { session, cookie, data, ttlMs });
 
     return { message: 'Đã lưu phiên IU.', ...status };
 }, 201));
 
-router.get('/iu/status', xuLy(req => iuKho.getStatus(req.user.id)));
+router.get('/iu/status', xuLy(req => iuKho.getStatus(NGUOI_DUNG_ID)));
 
 router.delete('/iu/session', xuLy(req => {
-    iuKho.clearSession(req.user.id);
+    iuKho.clearSession(NGUOI_DUNG_ID);
     return { message: 'Đã xoá phiên IU.' };
 }));
 
-router.post('/iu/pull', xuLy(async req => { 
-    const saved = iuKho.getSession(req.user.id);
+router.post('/iu/pull', xuLy(async req => {
+    const saved = iuKho.getSession(NGUOI_DUNG_ID);
     if (!saved) throw loi('Chưa có phiên IU.', 401);
 
     const { ngayBatDau, ngayKetThuc, luuDb = true } = req.body || {};
     const { data, thatBai } = await keoDuLieuIU(saved.session, saved.cookie, { ngayBatDau, ngayKetThuc });
 
-    iuKho.saveSession(req.user.id, {
+    iuKho.saveSession(NGUOI_DUNG_ID, {
         session: saved.session,
         cookie: saved.cookie,
         data
     });
 
     const savedDb = luuDb
-        ? await db.dongBoHoSoIU(req.user.id, mapSangDataIU(data))
+        ? await db.dongBoHoSoIU(NGUOI_DUNG_ID, mapSangDataIU(data))
         : null;
 
-    // Gắn lỗi từng nhóm vào message để frontend hiển thị được nguyên nhân
-    // khi kết quả 0 tiết TKB / 0 kỳ thi (trước đây lỗi bị nuốt).
+
     let message = 'Đã kéo dữ liệu IU.';
     if (Array.isArray(thatBai) && thatBai.length) {
         message += ` Một số nhóm lỗi: ${thatBai.join('; ')}`;
@@ -118,7 +116,7 @@ router.post('/iu/pull', xuLy(async req => {
 }));
 
 router.post('/iu/group', xuLy(async req => {
-    const saved = iuKho.getSession(req.user.id);
+    const saved = iuKho.getSession(NGUOI_DUNG_ID);
     if (!saved) throw loi('Chưa có phiên IU.', 401);
 
     const { nhom, ...opts } = req.body || {};

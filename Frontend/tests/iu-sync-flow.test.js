@@ -1,6 +1,6 @@
 /**
  * UniStudy CMC - IU Sync Flow Test (chạy bằng node, không cần Electron/DOM)
- * Kiểm tra nhánh nối FE -> API -> IU_VT ở mức logic thuần:
+ * Kiểm tra nhánh nối FE -> API -> IU ở mức logic thuần:
  *  - getIuBridge() trả null khi không có window.__uniStudyIU (web thuần)
  *  - map timetable/exam rows trong refreshFromServer qua render view:
  *    schoolEvents hiển thị đúng shape schedule.view cần

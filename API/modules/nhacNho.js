@@ -1,5 +1,5 @@
 const express = require('express');
-const { verifyToken } = require('../shared/auth');
+const { NGUOI_DUNG_ID } = require('../shared/nguoiDung');
 
 const router = express.Router();
 let db;
@@ -14,14 +14,13 @@ const xuLy = (callback, status = 200) => async (req, res, next) => {
     }
 };
 
-router.use(verifyToken);
 
 router.get('/', xuLy(async req => ({
-    data: await db.layDanhSachNhacNho(req.user.id)
+    data: await db.layDanhSachNhacNho(NGUOI_DUNG_ID)
 })));
 
 router.get('/unread-count', xuLy(async req => {
-    const data = await db.layDanhSachNhacNho(req.user.id);
+    const data = await db.layDanhSachNhacNho(NGUOI_DUNG_ID);
     const now = Date.now();
     const unreadCount = data.filter(item =>
         !item.is_sent && new Date(item.remind_time).getTime() <= now
@@ -43,7 +42,7 @@ router.post('/', xuLy(async req => {
 
     return {
         message: 'Đã tạo nhắc nhở.',
-        data: await db.taoNhacNho(req.user.id, req.body)
+        data: await db.taoNhacNho(NGUOI_DUNG_ID, req.body)
     };
 }, 201));
 
@@ -57,7 +56,7 @@ router.post('/multi-tier', xuLy(async req => {
     return {
         message: 'Đã tạo bộ nhắc nhở đa tầng.',
         data: await db.taoNhacNhoDaTang(
-            req.user.id,
+            NGUOI_DUNG_ID,
             targetType,
             targetId,
             title,
