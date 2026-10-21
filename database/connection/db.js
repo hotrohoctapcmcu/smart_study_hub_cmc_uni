@@ -174,7 +174,7 @@ async function getPool() {
 
             // Nếu database cũ không có bảng Users (trống/lỗi), tạo database mới từ đầu
             try {
-                const tables = queryAll(db, "SELECT name FROM sqlite_master WHERE type='table' AND name='Users';");
+                const tables = queryAll(db, "SELECT name FROM sqlite_master WHERE type='table' AND name='Students';");
                 if (!tables || tables.length === 0) {
                     db = new SQLobj.Database();
                 }
@@ -193,7 +193,7 @@ async function getPool() {
         // CREATE TABLE IF NOT EXISTS + INSERT OR IGNORE đảm bảo an toàn, không xóa dữ liệu thật.
         let needSchema = false;
         try {
-            const checks = ['Users', 'Students', 'Subjects'];
+            const checks = ['Students', 'Subjects'];
             for (const tbl of checks) {
                 const rows = queryAll(db, `SELECT 1 FROM ${tbl} LIMIT 1;`);
                 if (rows.length === 0) { needSchema = true; break; }

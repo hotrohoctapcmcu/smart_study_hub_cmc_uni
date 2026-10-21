@@ -1,4 +1,4 @@
-/**
+﻿/**
  * database/sprint1Service.js
  * ===================================================================================
  * BACKEND SERVICE LAYER - SPRINT 1 (CHỨC NĂNG 1, 2, 3, 4, 9, 18)
@@ -12,11 +12,20 @@
 const { getPool, executeQuery, executeProcedure, sql } = require('./connection/db');
 const { saveIUData } = require('./functions/sync');
 
-// Helper: lấy student_id từ userId (hoặc student_id trực tiếp)
-async function layStudentId(userId) {
+// Helper: lấy student_id từ tham số đầu vào (chấp nhận student_id nguyên hoặc student_code)
+async function layStudentId(studentId) {
+    const parsed = parseInt(studentId, 10);
+    if (Number.isInteger(parsed) && parsed > 0) {
+        const rows = await executeQuery(
+            'SELECT student_id FROM Students WHERE student_id = @sid LIMIT 1',
+            { sid: parsed }
+        );
+        if (rows.length > 0) return rows[0].student_id;
+    }
+    // Thử tìm theo student_code nếu không phải số hợp lệ
     const rows = await executeQuery(
-        `SELECT student_id FROM Students WHERE user_id = @uid OR student_id = @uid`,
-        { uid: parseInt(userId, 10) }
+        'SELECT student_id FROM Students WHERE student_code = @code LIMIT 1',
+        { code: String(studentId) }
     );
     if (rows.length === 0) return null;
     return rows[0].student_id;
@@ -35,15 +44,14 @@ function cleanParams(params) {
 // 1. CHỨC NĂNG 18: HỒ SƠ HỌC TẬP CÁ NHÂN (PERSONAL ACADEMIC PROFILE)
 // ===================================================================================
 
-async function layHoSo(userId) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return null;
+async function layHoSo(studentId) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return null;
 
     const rows = await executeQuery(`
         SELECT
             s.student_id,
-            s.user_id,
             s.student_code,
             s.full_name,
             s.major,
@@ -52,9 +60,7 @@ async function layHoSo(userId) {
             s.current_semester,
             s.phone,
             s.avatar_url,
-            u.email,
-            u.username,
-            u.is_active,
+            s.email,
             COALESCE(SUM(CASE WHEN g.is_passed = 1 THEN g.credits ELSE 0 END), 0) AS total_passed_credits,
             CASE
                 WHEN COALESCE(SUM(CASE WHEN g.is_passed = 1 THEN g.credits ELSE 0 END), 0) > 0
@@ -87,33 +93,25 @@ async function layHoSo(userId) {
             (SELECT COUNT(1) FROM Assignments a WHERE a.student_id = s.student_id AND a.status IN ('PENDING','IN_PROGRESS','OVERDUE')) AS incomplete_assignments,
             (SELECT COUNT(1) FROM Exams e WHERE e.student_id = s.student_id AND date(e.exam_date) >= date('now')) AS upcoming_exams_count
         FROM Students s
-        INNER JOIN Users u ON s.user_id = u.user_id
         LEFT JOIN Grades g ON s.student_id = g.student_id
         WHERE s.student_id = @sid
-        GROUP BY s.student_id, s.user_id, s.student_code, s.full_name, s.major,
-                 s.dob, s.enrollment_year, s.current_semester, s.phone, s.avatar_url,
-                 u.email, u.username, u.is_active
-    `, { sid: studentId });
+        GROUP BY s.student_id, s.student_code, s.full_name, s.major,
+                 s.dob, s.enrollment_year, s.current_semester, s.phone, s.avatar_url, s.email
+    `, { sid });
 
     return rows.length > 0 ? rows[0] : null;
 }
 
-async function luuHoSo(userId, data = {}) {
-    if (!userId) throw new Error('userId là bắt buộc');
+async function luuHoSo(studentId, data = {}) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
     if (!data.studentCode || !data.fullName || !data.major) {
         throw new Error('studentCode, fullName và major là bắt buộc');
     }
 
-    const studentId = await layStudentId(userId);
+    const sid = await layStudentId(studentId);
 
-    // Cập nhật Users
-    await executeQuery(
-        `UPDATE Users SET full_name = @fn, updated_at = datetime('now') WHERE user_id = @uid`,
-        { fn: data.fullName, uid: parseInt(userId, 10) }
-    );
-
-    if (studentId) {
-        // Upsert vào Students
+    if (sid) {
+        // Cập nhật bản ghi đã có
         await executeQuery(`
             UPDATE Students
             SET student_code = @sc, full_name = @fn, major = @mj,
@@ -122,33 +120,36 @@ async function luuHoSo(userId, data = {}) {
                 current_semester = COALESCE(@cs, current_semester),
                 phone = COALESCE(@ph, phone),
                 avatar_url = COALESCE(@av, avatar_url),
+                email = COALESCE(@em, email),
                 updated_at = datetime('now')
             WHERE student_id = @sid
         `, {
             sc: data.studentCode, fn: data.fullName, mj: data.major,
             db: data.dob || null, ey: data.enrollmentYear || null,
             cs: data.currentSemester || null, ph: data.phone || null,
-            av: data.avatarUrl || null, sid: studentId
+            av: data.avatarUrl || null, em: data.email || null,
+            sid
         });
     } else {
+        // Tạo mới sinh viên
         await executeQuery(`
-            INSERT INTO Students (user_id, student_code, full_name, major, dob, enrollment_year, current_semester, phone, avatar_url)
-            VALUES (@uid, @sc, @fn, @mj, @db, @ey, @cs, @ph, @av)
+            INSERT INTO Students (student_code, full_name, major, dob, enrollment_year, current_semester, phone, avatar_url, email)
+            VALUES (@sc, @fn, @mj, @db, @ey, @cs, @ph, @av, @em)
         `, {
-            uid: parseInt(userId, 10), sc: data.studentCode, fn: data.fullName, mj: data.major,
+            sc: data.studentCode, fn: data.fullName, mj: data.major,
             db: data.dob || null, ey: data.enrollmentYear || null,
             cs: data.currentSemester || null, ph: data.phone || null,
-            av: data.avatarUrl || null
+            av: data.avatarUrl || null, em: data.email || null
         });
     }
 
-    return await layHoSo(userId);
+    return await layHoSo(data.studentCode);
 }
 
-async function layBangDiem(userId, hocKy = null) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+async function layBangDiem(studentId, hocKy = null) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     if (hocKy) {
         return await executeQuery(`
@@ -161,7 +162,7 @@ async function layBangDiem(userId, hocKy = null) {
             INNER JOIN Subjects sub ON g.subject_id = sub.subject_id
             WHERE g.student_id = @sid AND g.semester = @hk
             ORDER BY g.academic_year DESC, g.semester DESC, sub.subject_name ASC
-        `, { sid: studentId, hk: hocKy });
+        `, { sid, hk: hocKy });
     }
 
     return await executeQuery(`
@@ -174,13 +175,13 @@ async function layBangDiem(userId, hocKy = null) {
         INNER JOIN Subjects sub ON g.subject_id = sub.subject_id
         WHERE g.student_id = @sid
         ORDER BY g.academic_year DESC, g.semester DESC, sub.subject_name ASC
-    `, { sid: studentId });
+    `, { sid });
 }
 
-async function layMonHocChuaDat(userId) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+async function layMonHocChuaDat(studentId) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     return await executeQuery(`
         SELECT g.grade_id, g.subject_id,
@@ -191,13 +192,13 @@ async function layMonHocChuaDat(userId) {
         INNER JOIN Subjects sub ON g.subject_id = sub.subject_id
         WHERE g.student_id = @sid AND (g.is_passed = 0 OR g.letter_grade = 'F')
         ORDER BY g.academic_year DESC, g.semester DESC
-    `, { sid: studentId });
+    `, { sid });
 }
 
-async function layMonHocDaDat(userId) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+async function layMonHocDaDat(studentId) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     return await executeQuery(`
         SELECT g.grade_id, g.subject_id,
@@ -208,13 +209,13 @@ async function layMonHocDaDat(userId) {
         INNER JOIN Subjects sub ON g.subject_id = sub.subject_id
         WHERE g.student_id = @sid AND g.is_passed = 1
         ORDER BY g.academic_year DESC, g.semester DESC
-    `, { sid: studentId });
+    `, { sid });
 }
 
-async function layDanhSachMonHoc(userId) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+async function layDanhSachMonHoc(studentId) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     return await executeQuery(`
         SELECT sub.subject_id, sub.subject_code, sub.subject_name,
@@ -225,13 +226,13 @@ async function layDanhSachMonHoc(userId) {
         LEFT JOIN StudentSubjects ss ON sub.subject_id = ss.subject_id AND ss.student_id = @sid
         WHERE sub.is_active = 1
         ORDER BY sub.subject_name ASC
-    `, { sid: studentId });
+    `, { sid });
 }
 
-async function dongBoHoSoIU(userId, dataIU) {
-    if (!userId) throw new Error('userId là bắt buộc');
+async function dongBoHoSoIU(studentCode, dataIU) {
+    if (!studentCode) throw new Error('studentCode là bắt buộc');
     if (!dataIU) throw new Error('dataIU là bắt buộc');
-    return await saveIUData(userId, dataIU);
+    return await saveIUData(studentCode, dataIU);
 }
 
 // ===================================================================================
@@ -245,10 +246,10 @@ function sqlDayOfWeek(dateStr) {
     return jsDay === 0 ? 8 : jsDay + 1;
 }
 
-async function layThoiKhoaBieu(userId) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+async function layThoiKhoaBieu(studentId) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     return await executeQuery(`
         SELECT t.timetable_id, t.student_id, s.student_code,
@@ -268,14 +269,14 @@ async function layThoiKhoaBieu(userId) {
         INNER JOIN Subjects sub ON t.subject_id = sub.subject_id
         WHERE t.student_id = @sid
         ORDER BY t.day_of_week ASC, t.start_time ASC
-    `, { sid: studentId });
+    `, { sid });
 }
 
-async function layThoiKhoaBieuTheoNgay(userId, ngay) {
-    if (!userId) throw new Error('userId là bắt buộc');
+async function layThoiKhoaBieuTheoNgay(studentId, ngay) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
     if (!ngay) throw new Error('ngay là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     const dayOfWeek = sqlDayOfWeek(ngay);
 
@@ -298,14 +299,14 @@ async function layThoiKhoaBieuTheoNgay(userId, ngay) {
           AND t.day_of_week = @dow
           AND date(@ngay) BETWEEN date(t.start_date) AND date(t.end_date)
         ORDER BY t.start_time ASC
-    `, { sid: studentId, dow: dayOfWeek, ngay });
+    `, { sid, dow: dayOfWeek, ngay });
 }
 
-async function layThoiKhoaBieuTheoTuan(userId, tuNgay, denNgay) {
-    if (!userId) throw new Error('userId là bắt buộc');
+async function layThoiKhoaBieuTheoTuan(studentId, tuNgay, denNgay) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
     if (!tuNgay || !denNgay) throw new Error('tuNgay và denNgay là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     return await executeQuery(`
         SELECT t.timetable_id, t.student_id, s.student_code,
@@ -326,14 +327,14 @@ async function layThoiKhoaBieuTheoTuan(userId, tuNgay, denNgay) {
           AND date(t.start_date) <= date(@den)
           AND date(t.end_date) >= date(@tu)
         ORDER BY t.day_of_week ASC, t.start_time ASC
-    `, { sid: studentId, tu: tuNgay, den: denNgay });
+    `, { sid, tu: tuNgay, den: denNgay });
 }
 
-async function layThoiKhoaBieuTheoMon(userId, subjectId) {
-    if (!userId) throw new Error('userId là bắt buộc');
+async function layThoiKhoaBieuTheoMon(studentId, subjectId) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
     if (!subjectId) throw new Error('subjectId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     return await executeQuery(`
         SELECT t.timetable_id, t.student_id, s.student_code,
@@ -352,17 +353,17 @@ async function layThoiKhoaBieuTheoMon(userId, subjectId) {
         INNER JOIN Subjects sub ON t.subject_id = sub.subject_id
         WHERE t.student_id = @sid AND t.subject_id = @sid2
         ORDER BY t.day_of_week ASC, t.start_time ASC
-    `, { sid: studentId, sid2: parseInt(subjectId, 10) });
+    `, { sid, sid2: parseInt(subjectId, 10) });
 }
 
-async function themTietHoc(userId, data = {}) {
-    if (!userId) throw new Error('userId là bắt buộc');
+async function themTietHoc(studentId, data = {}) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
     if (!data.subjectId || !data.className || !data.room || !data.dayOfWeek || !data.startTime || !data.endTime) {
         throw new Error('subjectId, className, room, dayOfWeek, startTime, endTime là bắt buộc');
     }
 
-    const studentId = await layStudentId(userId);
-    if (!studentId) throw new Error('Không tìm thấy sinh viên');
+    const sid = await layStudentId(studentId);
+    if (!sid) throw new Error('Không tìm thấy sinh viên');
 
     await executeQuery(`
         INSERT INTO Timetables (student_id, subject_id, class_name, room, campus,
@@ -370,7 +371,7 @@ async function themTietHoc(userId, data = {}) {
                                 lecturer_name, semester, academic_year)
         VALUES (@sid, @subId, @cn, @rm, @cp, @dow, @st, @et, @sd, @ed, @ln, @sm, @ay)
     `, {
-        sid: studentId, subId: parseInt(data.subjectId, 10),
+        sid, subId: parseInt(data.subjectId, 10),
         cn: data.className, rm: data.room, cp: data.campus || 'Cơ sở chính',
         dow: parseInt(data.dayOfWeek, 10),
         st: data.startTime, et: data.endTime,
@@ -394,10 +395,10 @@ async function xoaTietHoc(timetableId) {
 // 3. CHỨC NĂNG 2: AI XẾP LỊCH TỰ HỌC & CẢNH BÁO TRÙNG (SCHEDULING & CONFLICT ALERT)
 // ===================================================================================
 
-async function kiemTraTrungLich(userId) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+async function kiemTraTrungLich(studentId) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     return await executeQuery(`
         SELECT t1.student_id,
@@ -429,15 +430,15 @@ async function kiemTraTrungLich(userId) {
         INNER JOIN Subjects sub1 ON t1.subject_id = sub1.subject_id
         INNER JOIN Subjects sub2 ON t2.subject_id = sub2.subject_id
         WHERE t1.student_id = @sid
-    `, { sid: studentId });
+    `, { sid });
 }
 
-async function kiemTraXungDotLichTuHoc(userId, studyDate, startTime, endTime, excludeScheduleId = null) {
-    if (!userId) throw new Error('userId là bắt buộc');
+async function kiemTraXungDotLichTuHoc(studentId, studyDate, startTime, endTime, excludeScheduleId = null) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
     if (!studyDate || !startTime || !endTime) throw new Error('studyDate, startTime và endTime là bắt buộc');
 
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     const dayOfWeek = sqlDayOfWeek(studyDate);
 
@@ -456,7 +457,7 @@ async function kiemTraXungDotLichTuHoc(userId, studyDate, startTime, endTime, ex
           AND t.day_of_week = @dow
           AND date(@sd) BETWEEN date(t.start_date) AND date(t.end_date)
           AND t.start_time < @et AND t.end_time > @st
-    `, { sid: studentId, dow: dayOfWeek, sd: studyDate, st: startTime, et: endTime });
+    `, { sid, dow: dayOfWeek, sd: studyDate, st: startTime, et: endTime });
     conflicts.push(...tkbConflicts);
 
     // 2. Xung đột với lịch tự học khác
@@ -472,25 +473,25 @@ async function kiemTraXungDotLichTuHoc(userId, studyDate, startTime, endTime, ex
           AND ss.status != 'CANCELLED'
           AND (@ex IS NULL OR ss.schedule_id != @ex)
           AND ss.start_time < @et AND ss.end_time > @st
-    `, { sid: studentId, sd: studyDate, st: startTime, et: endTime, ex: excludeScheduleId ? parseInt(excludeScheduleId, 10) : null });
+    `, { sid, sd: studyDate, st: startTime, et: endTime, ex: excludeScheduleId ? parseInt(excludeScheduleId, 10) : null });
     conflicts.push(...studyConflicts);
 
     return conflicts;
 }
 
-async function xepLichTuHoc(userId, data = {}) {
-    if (!userId) throw new Error('userId là bắt buộc');
+async function xepLichTuHoc(studentId, data = {}) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
     if (!data.title || !data.studyDate || !data.startTime || !data.endTime) {
         throw new Error('title, studyDate, startTime và endTime là bắt buộc');
     }
 
-    const studentId = await layStudentId(userId);
-    if (!studentId) throw new Error('Không tìm thấy sinh viên');
+    const sid = await layStudentId(studentId);
+    if (!sid) throw new Error('Không tìm thấy sinh viên');
 
     // Kiểm tra xung đột nếu không ép buộc
     if (data.forceSave !== 1) {
         const conflicts = await kiemTraXungDotLichTuHoc(
-            userId, data.studyDate, data.startTime, data.endTime, null
+            studentId, data.studyDate, data.startTime, data.endTime, null
         );
         if (conflicts.length > 0) {
             throw new Error('Khung giờ tự học bị trùng với lịch học chính khóa hoặc lịch tự học khác.');
@@ -508,7 +509,7 @@ async function xepLichTuHoc(userId, data = {}) {
                                     is_ai_suggested, status, notes)
         VALUES (@sid, @subId, @title, @sd, @st, @et, @dur, @ais, 'PLANNED', @nt)
     `, {
-        sid: studentId,
+        sid,
         subId: data.subjectId ? parseInt(data.subjectId, 10) : null,
         title: data.title, sd: data.studyDate,
         st: data.startTime, et: data.endTime,
@@ -521,10 +522,10 @@ async function xepLichTuHoc(userId, data = {}) {
     return idRes.length > 0 ? idRes[0] : null;
 }
 
-async function layLichTuHoc(userId, tuNgay = null, denNgay = null) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+async function layLichTuHoc(studentId, tuNgay = null, denNgay = null) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     if (tuNgay && denNgay) {
         return await executeQuery(`
@@ -539,7 +540,7 @@ async function layLichTuHoc(userId, tuNgay = null, denNgay = null) {
               AND date(ss.study_date) >= date(@tu)
               AND date(ss.study_date) <= date(@de)
             ORDER BY ss.study_date ASC, ss.start_time ASC
-        `, { sid: studentId, tu: tuNgay, de: denNgay });
+        `, { sid, tu: tuNgay, de: denNgay });
     }
 
     return await executeQuery(`
@@ -552,7 +553,7 @@ async function layLichTuHoc(userId, tuNgay = null, denNgay = null) {
         LEFT JOIN Subjects sub ON ss.subject_id = sub.subject_id
         WHERE ss.student_id = @sid
         ORDER BY ss.study_date ASC, ss.start_time ASC
-    `, { sid: studentId });
+    `, { sid });
 }
 
 async function timKhoangTrongTuHoc(userId, ngay, thoiLuongPhut = 60) {
@@ -654,10 +655,10 @@ async function xoaLichTuHoc(scheduleId) {
 // 4. CHỨC NĂNG 3: QUẢN LÝ DEADLINE VÀ CHECKLIST (DEADLINE & CHECKLIST)
 // ===================================================================================
 
-async function layDanhSachDeadline(userId, trangThai = null) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+async function layDanhSachDeadline(studentId, trangThai = null) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     if (trangThai) {
         return await executeQuery(`
@@ -670,7 +671,7 @@ async function layDanhSachDeadline(userId, trangThai = null) {
             INNER JOIN Subjects sub ON a.subject_id = sub.subject_id
             WHERE a.student_id = @sid AND a.status = @st
             ORDER BY a.deadline ASC
-        `, { sid: studentId, st: trangThai });
+        `, { sid, st: trangThai });
     }
 
     return await executeQuery(`
@@ -683,13 +684,13 @@ async function layDanhSachDeadline(userId, trangThai = null) {
         INNER JOIN Subjects sub ON a.subject_id = sub.subject_id
         WHERE a.student_id = @sid
         ORDER BY a.deadline ASC
-    `, { sid: studentId });
+    `, { sid });
 }
 
-async function layDeadlineSapToi(userId, soNgay = 3) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+async function layDeadlineSapToi(studentId, soNgay = 3) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     return await executeQuery(`
         SELECT a.assignment_id, a.subject_id,
@@ -702,24 +703,24 @@ async function layDeadlineSapToi(userId, soNgay = 3) {
           AND a.status IN ('PENDING', 'IN_PROGRESS')
           AND date(a.deadline) BETWEEN date('now') AND date('now', @d)
         ORDER BY a.deadline ASC
-    `, { sid: studentId, d: `+ ${soNgay} days` });
+    `, { sid, d: `+ ${soNgay} days` });
 }
 
-async function themBaiTap(userId, data = {}) {
-    if (!userId) throw new Error('userId là bắt buộc');
+async function themBaiTap(studentId, data = {}) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
     if (!data.subjectId || !data.title || !data.deadline) {
         throw new Error('subjectId, title và deadline là bắt buộc');
     }
 
-    const studentId = await layStudentId(userId);
-    if (!studentId) throw new Error('Không tìm thấy sinh viên');
+    const sid = await layStudentId(studentId);
+    if (!sid) throw new Error('Không tìm thấy sinh viên');
 
     await executeQuery(`
         INSERT INTO Assignments (student_id, subject_id, title, description,
                                  assigned_at, deadline, status, submission_url, source, external_id)
         VALUES (@sid, @subId, @title, @desc, datetime('now'), @dl, 'PENDING', @url, @src, @ext)
     `, {
-        sid: studentId,
+        sid,
         subId: parseInt(data.subjectId, 10),
         title: data.title,
         desc: data.description || null,
@@ -747,10 +748,10 @@ async function themBaiTap(userId, data = {}) {
             const remindTime = new Date(dl.getTime() + t.hours * 60 * 60 * 1000);
             if (remindTime > now) {
                 await executeQuery(`
-                    INSERT INTO Reminders (student_id, target_type, target_id, title, message, tier, remind_time, channel)
+                    INSERT OR IGNORE INTO Reminders (student_id, target_type, target_id, title, message, tier, remind_time, channel)
                     VALUES (@sid, 'ASSIGNMENT', @aid, @title, @msg, @tier, @rt, 'APP')
                 `, {
-                    sid: studentId, aid: newId,
+                    sid, aid: newId,
                     title: `Nhắc nhở: Sắp đến hạn bài tập: ${data.title}`,
                     msg: t.msg,
                     tier: t.tier,
@@ -809,10 +810,10 @@ async function xoaBaiTap(assignmentId) {
     return true;
 }
 
-async function layChecklist(userId) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+async function layChecklist(studentId) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     return await executeQuery(`
         SELECT c.checklist_id, c.student_id, c.subject_id,
@@ -826,21 +827,21 @@ async function layChecklist(userId) {
         ORDER BY c.is_completed ASC,
                  CASE c.priority WHEN 'URGENT' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 ELSE 4 END ASC,
                  c.deadline ASC
-    `, { sid: studentId });
+    `, { sid });
 }
 
-async function themChecklist(userId, data = {}) {
-    if (!userId) throw new Error('userId là bắt buộc');
+async function themChecklist(studentId, data = {}) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
     if (!data.title) throw new Error('title là bắt buộc');
 
-    const studentId = await layStudentId(userId);
-    if (!studentId) throw new Error('Không tìm thấy sinh viên');
+    const sid = await layStudentId(studentId);
+    if (!sid) throw new Error('Không tìm thấy sinh viên');
 
     await executeQuery(`
         INSERT INTO Checklists (student_id, subject_id, assignment_id, title, description, priority, deadline)
         VALUES (@sid, @subId, @asgId, @title, @desc, @pr, @dl)
     `, {
-        sid: studentId,
+        sid,
         subId: data.subjectId ? parseInt(data.subjectId, 10) : null,
         asgId: data.assignmentId ? parseInt(data.assignmentId, 10) : null,
         title: data.title,
@@ -902,10 +903,10 @@ async function xoaChecklist(checklistId) {
 // 5. CHỨC NĂNG 4: NHẮC NHỞ THÔNG MINH ĐA TẦNG (MULTI-TIER SMART REMINDERS)
 // ===================================================================================
 
-async function layDanhSachNhacNho(userId) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+async function layDanhSachNhacNho(studentId) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     return await executeQuery(`
         SELECT r.reminder_id, r.student_id, r.target_type, r.target_id,
@@ -914,23 +915,23 @@ async function layDanhSachNhacNho(userId) {
         FROM Reminders r
         WHERE r.student_id = @sid
         ORDER BY r.remind_time ASC
-    `, { sid: studentId });
+    `, { sid });
 }
 
-async function taoNhacNho(userId, data = {}) {
-    if (!userId) throw new Error('userId là bắt buộc');
+async function taoNhacNho(studentId, data = {}) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
     if (!data.targetType || !data.targetId || !data.title || !data.remindTime) {
         throw new Error('targetType, targetId, title và remindTime là bắt buộc');
     }
 
-    const studentId = await layStudentId(userId);
-    if (!studentId) throw new Error('Không tìm thấy thông tin sinh viên');
+    const sid = await layStudentId(studentId);
+    if (!sid) throw new Error('Không tìm thấy thông tin sinh viên');
 
     await executeQuery(`
-        INSERT INTO Reminders (student_id, target_type, target_id, title, message, tier, remind_time, channel)
+        INSERT OR IGNORE INTO Reminders (student_id, target_type, target_id, title, message, tier, remind_time, channel)
         VALUES (@sid, @tt, @tid, @title, @msg, @tier, @rt, @ch)
     `, {
-        sid: studentId,
+        sid,
         tt: data.targetType,
         tid: parseInt(data.targetId, 10),
         title: data.title,
@@ -945,13 +946,13 @@ async function taoNhacNho(userId, data = {}) {
     return idRes.length > 0 ? idRes[0] : null;
 }
 
-async function taoNhacNhoDaTang(userId, targetType, targetId, title, deadline, channel = 'APP') {
-    if (!userId || !targetType || !targetId || !title || !deadline) {
-        throw new Error('userId, targetType, targetId, title, deadline là bắt buộc');
+async function taoNhacNhoDaTang(studentId, targetType, targetId, title, deadline, channel = 'APP') {
+    if (!studentId || !targetType || !targetId || !title || !deadline) {
+        throw new Error('studentId, targetType, targetId, title, deadline là bắt buộc');
     }
 
-    const studentId = await layStudentId(userId);
-    if (!studentId) throw new Error('Không tìm thấy thông tin sinh viên');
+    const sid = await layStudentId(studentId);
+    if (!sid) throw new Error('Không tìm thấy thông tin sinh viên');
 
     const dl = new Date(deadline);
     const now = new Date();
@@ -969,10 +970,10 @@ async function taoNhacNhoDaTang(userId, targetType, targetId, title, deadline, c
         const remindTime = new Date(dl.getTime() + t.hours * 60 * 60 * 1000);
         if (remindTime > now) {
             await executeQuery(`
-                INSERT INTO Reminders (student_id, target_type, target_id, title, message, tier, remind_time, channel)
+                INSERT OR IGNORE INTO Reminders (student_id, target_type, target_id, title, message, tier, remind_time, channel)
                 VALUES (@sid, @tt, @tid, @title, @msg, @tier, @rt, @ch)
             `, {
-                sid: studentId, tt: targetType, tid: parseInt(targetId, 10),
+                sid, tt: targetType, tid: parseInt(targetId, 10),
                 title, msg: t.msg, tier: t.tier, rt: remindTime.toISOString(), ch: channel
             });
             createdCount++;
@@ -1018,10 +1019,10 @@ async function xoaNhacNho(reminderId) {
 // 6. CHỨC NĂNG 9: QUẢN LÝ LỊCH THI VÀ KẾ HOẠCH ÔN THI (EXAM & STUDY PLANS)
 // ===================================================================================
 
-async function layLichThi(userId) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+async function layLichThi(studentId) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     return await executeQuery(`
         SELECT e.exam_id, e.student_id, s.student_code, s.full_name AS student_name,
@@ -1040,13 +1041,13 @@ async function layLichThi(userId) {
         INNER JOIN Subjects sub ON e.subject_id = sub.subject_id
         WHERE e.student_id = @sid
         ORDER BY e.exam_date ASC, e.exam_time ASC
-    `, { sid: studentId });
+    `, { sid });
 }
 
-async function layLichThiSapToi(userId) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+async function layLichThiSapToi(studentId) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     return await executeQuery(`
         SELECT e.exam_id, e.student_id, s.student_code, s.full_name AS student_name,
@@ -1066,24 +1067,24 @@ async function layLichThiSapToi(userId) {
         WHERE e.student_id = @sid
           AND date(e.exam_date) >= date('now')
         ORDER BY e.exam_date ASC, e.exam_time ASC
-    `, { sid: studentId });
+    `, { sid });
 }
 
-async function themLichThi(userId, data = {}) {
-    if (!userId) throw new Error('userId là bắt buộc');
+async function themLichThi(studentId, data = {}) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
     if (!data.subjectId || !data.examDate || !data.examTime || !data.room) {
         throw new Error('subjectId, examDate, examTime và room là bắt buộc');
     }
 
-    const studentId = await layStudentId(userId);
-    if (!studentId) throw new Error('Không tìm thấy sinh viên');
+    const sid = await layStudentId(studentId);
+    if (!sid) throw new Error('Không tìm thấy sinh viên');
 
     await executeQuery(`
         INSERT INTO Exams (student_id, subject_id, exam_name, exam_date, exam_time,
                            duration_minutes, room, campus, exam_format, identification_number)
         VALUES (@sid, @subId, @en, @ed, @et, @dur, @rm, @cp, @ef, @idn)
     `, {
-        sid: studentId,
+        sid,
         subId: parseInt(data.subjectId, 10),
         en: data.examName || 'Thi kết thúc học phần',
         ed: data.examDate, et: data.examTime,
@@ -1115,10 +1116,10 @@ async function themLichThi(userId, data = {}) {
             const remindTime = new Date(examDateTime.getTime() + t.hours * 60 * 60 * 1000);
             if (remindTime > now) {
                 await executeQuery(`
-                    INSERT INTO Reminders (student_id, target_type, target_id, title, message, tier, remind_time, channel)
+                    INSERT OR IGNORE INTO Reminders (student_id, target_type, target_id, title, message, tier, remind_time, channel)
                     VALUES (@sid, 'EXAM', @eid, @title, @msg, @tier, @rt, 'APP')
                 `, {
-                    sid: studentId, eid: newId,
+                    sid, eid: newId,
                     title: `Nhắc thi: ${t.tier === '7_DAYS' ? 'Còn 7 ngày nữa thi môn ' : t.tier === '3_DAYS' ? 'Cảnh báo thi: Còn 3 ngày nữa thi môn ' : 'KHẨN: Ngày mai thi môn '}${subjectName}`,
                     msg: t.msg,
                     tier: t.tier,
@@ -1145,10 +1146,10 @@ async function xoaLichThi(examId) {
     return true;
 }
 
-async function layKeHoachOnThi(userId, examId = null) {
-    if (!userId) throw new Error('userId là bắt buộc');
-    const studentId = await layStudentId(userId);
-    if (!studentId) return [];
+async function layKeHoachOnThi(studentId, examId = null) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    const sid = await layStudentId(studentId);
+    if (!sid) return [];
 
     if (examId) {
         return await executeQuery(`
@@ -1163,7 +1164,7 @@ async function layKeHoachOnThi(userId, examId = null) {
             INNER JOIN Subjects sub ON esp.subject_id = sub.subject_id
             WHERE esp.student_id = @sid AND esp.exam_id = @eid
             ORDER BY esp.start_date ASC
-        `, { sid: studentId, eid: parseInt(examId, 10) });
+        `, { sid, eid: parseInt(examId, 10) });
     }
 
     return await executeQuery(`
@@ -1178,17 +1179,17 @@ async function layKeHoachOnThi(userId, examId = null) {
         INNER JOIN Subjects sub ON esp.subject_id = sub.subject_id
         WHERE esp.student_id = @sid
         ORDER BY esp.start_date ASC
-    `, { sid: studentId });
+    `, { sid });
 }
 
-async function taoKeHoachOnThi(userId, data = {}) {
-    if (!userId) throw new Error('userId là bắt buộc');
+async function taoKeHoachOnThi(studentId, data = {}) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
     if (!data.examId || !data.phaseTitle || !data.startDate || !data.endDate) {
         throw new Error('examId, phaseTitle, startDate, endDate là bắt buộc');
     }
 
-    const studentId = await layStudentId(userId);
-    if (!studentId) throw new Error('Không tìm thấy sinh viên');
+    const sid = await layStudentId(studentId);
+    if (!sid) throw new Error('Không tìm thấy sinh viên');
 
     // Lấy subject_id từ Exams
     const examRes = await executeQuery('SELECT subject_id FROM Exams WHERE exam_id = @eid', {
@@ -1201,7 +1202,7 @@ async function taoKeHoachOnThi(userId, data = {}) {
                                     target_description, start_date, end_date, priority, status, notes)
         VALUES (@sid, @eid, @subId, @pt, @td, @sd, @ed, @pr, 'PLANNED', @nt)
     `, {
-        sid: studentId,
+        sid,
         eid: parseInt(data.examId, 10),
         subId: subjectId,
         pt: data.phaseTitle,

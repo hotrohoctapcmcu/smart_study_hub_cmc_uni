@@ -3,36 +3,24 @@
 -- 00_sqlite_init.sql
 -- TẠO TOÀN BỘ CẤU TRÚC BẢNG CHO SQLITE (THAY THẾ SQL SERVER)
 -- PHỤC VỤ CÁC CHỨC NĂNG: 1, 2, 3, 4, 9, 18
+-- Lưu ý: Bỏ bảng Users và thuộc tính user_id — hệ thống chỉ dùng student_id
 -- ===================================================================================
 
 -- Chức năng 18: Hồ sơ học tập cá nhân
 
-CREATE TABLE IF NOT EXISTS Users (
-    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    email TEXT,
-    full_name TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'lecturer', 'admin')),
-    is_active INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
 CREATE TABLE IF NOT EXISTS Students (
-    student_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL UNIQUE,
-    student_code TEXT NOT NULL UNIQUE,
-    full_name TEXT NOT NULL,
-    major TEXT NOT NULL,
-    dob TEXT,
-    enrollment_year INTEGER,
+    student_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_code     TEXT    NOT NULL UNIQUE,
+    full_name        TEXT    NOT NULL,
+    major            TEXT    NOT NULL,
+    dob              TEXT,
+    enrollment_year  INTEGER,
     current_semester TEXT,
-    phone TEXT,
-    avatar_url TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+    phone            TEXT,
+    avatar_url       TEXT,
+    email            TEXT,
+    created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at       TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS Subjects (
@@ -170,19 +158,21 @@ CREATE TABLE IF NOT EXISTS Checklists (
 
 -- Chức năng 4: Nhắc nhở thông minh đa tầng
 
+-- UNIQUE (student_id, target_type, target_id, tier) tránh bản ghi nhắc nhở bị trùng
 CREATE TABLE IF NOT EXISTS Reminders (
     reminder_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    student_id INTEGER NOT NULL,
-    target_type TEXT NOT NULL CHECK (target_type IN ('ASSIGNMENT','EXAM','LESSON','STUDY_PLAN','CUSTOM')),
-    target_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    message TEXT,
-    tier TEXT NOT NULL CHECK (tier IN ('7_DAYS','3_DAYS','24_HOURS','12_HOURS','1_HOUR','OVERDUE','CUSTOM')),
-    remind_time TEXT NOT NULL,
-    is_sent INTEGER NOT NULL DEFAULT 0,
-    sent_at TEXT,
-    channel TEXT NOT NULL DEFAULT 'APP' CHECK (channel IN ('APP','EMAIL','NOTIFICATION')),
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    student_id  INTEGER NOT NULL,
+    target_type TEXT    NOT NULL CHECK (target_type IN ('ASSIGNMENT','EXAM','LESSON','STUDY_PLAN','CUSTOM')),
+    target_id   INTEGER NOT NULL,
+    title       TEXT    NOT NULL,
+    message     TEXT,
+    tier        TEXT    NOT NULL CHECK (tier IN ('7_DAYS','3_DAYS','24_HOURS','12_HOURS','1_HOUR','OVERDUE','CUSTOM')),
+    remind_time TEXT    NOT NULL,
+    is_sent     INTEGER NOT NULL DEFAULT 0,
+    sent_at     TEXT,
+    channel     TEXT    NOT NULL DEFAULT 'APP' CHECK (channel IN ('APP','EMAIL','NOTIFICATION')),
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (student_id, target_type, target_id, tier),
     FOREIGN KEY (student_id) REFERENCES Students(student_id) ON DELETE CASCADE
 );
 
@@ -229,9 +219,7 @@ CREATE TABLE IF NOT EXISTS ExamStudyPlans (
 );
 
 -- Index cho hiệu năng truy vấn
-CREATE INDEX IF NOT EXISTS IX_Users_Username ON Users(username);
 CREATE INDEX IF NOT EXISTS IX_Students_StudentCode ON Students(student_code);
-CREATE INDEX IF NOT EXISTS IX_Students_UserId ON Students(user_id);
 CREATE INDEX IF NOT EXISTS IX_Grades_Student_Semester ON Grades(student_id, semester);
 CREATE INDEX IF NOT EXISTS IX_Timetables_Student_Day ON Timetables(student_id, day_of_week, start_time);
 CREATE INDEX IF NOT EXISTS IX_StudySchedules_Student_Date ON StudySchedules(student_id, study_date, start_time);
