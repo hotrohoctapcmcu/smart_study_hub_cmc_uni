@@ -77,4 +77,4 @@ ok(state.schoolEvents.length === 0, "logout dọn schoolEvents");
 ok(state.exams.length === 0, "logout dọn exams");
 
 console.log(`\n==== IU SYNC FLOW FE TEST: ${pass} PASS, ${fail} FAIL ====`);
-process.exit(fail ? 1 : 0);
+if (fail) process.exit(1);

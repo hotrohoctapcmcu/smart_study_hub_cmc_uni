@@ -170,7 +170,7 @@ export const NAVIGATION_SECTIONS = [
     id: "tools",
     title: "CÔNG CỤ",
     icon: "i-spark",
-    routeIds: ["documents", "pomodoro", "school-email", "ai-tutor", "quiz", "flashcards"]
+    routeIds: ["documents", "pomodoro", "ai-tutor", "quiz", "flashcards"]
   },
   {
     id: "bottom",

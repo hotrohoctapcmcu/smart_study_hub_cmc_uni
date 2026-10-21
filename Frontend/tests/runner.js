@@ -13,6 +13,8 @@ async function runAllTests() {
     await import("./integration.test.js");
     await import("./iu-sync-flow.test.js");
     await import("./pomodoro.test.js");
+    await import("./ui-features.test.js");
+    await import("./browser-eval.test.js");
     const { runStudyPlannerTests } = await import("./study-planner.test.js");
     await runStudyPlannerTests();
     console.log("====================================================");

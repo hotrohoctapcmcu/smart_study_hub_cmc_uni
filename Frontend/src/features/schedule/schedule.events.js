@@ -25,53 +25,50 @@ export function attachScheduleEvents(containerEl) {
     });
   });
 
-  // 2. Chuyển ngày
-  const datePicker = containerEl.querySelector("#scheduleDatePicker");
-  if (datePicker) {
-    datePicker.addEventListener("change", (e) => {
-      if (e.target.value) {
-        updateActiveTabLocalState({ selectedDate: e.target.value });
-      }
-    });
-  }
-
-  const prevBtn = containerEl.querySelector("#schedulePrevDateBtn");
-  if (prevBtn) {
-    prevBtn.addEventListener("click", () => {
+  // 2. Lịch thu nhỏ: Nút lùi / tiến tháng điều khiển lịch
+  const miniPrevBtn = containerEl.querySelector("#miniCalPrevBtn");
+  if (miniPrevBtn) {
+    miniPrevBtn.addEventListener("click", () => {
       const activeTab = getActiveTab();
       const currentSelected = activeTab.tabState?.selectedDate || formatDateISO(new Date());
-      const mode = activeTab.tabState?.scheduleMode || "week";
-
-      let newDate;
-      if (mode === "day") {
-        newDate = shiftDateByDays(currentSelected, -1);
-      } else if (mode === "week") {
-        newDate = shiftDateByDays(currentSelected, -7);
-      } else {
-        newDate = shiftDateByMonths(currentSelected, -1);
-      }
+      const newDate = shiftDateByMonths(currentSelected, -1);
       updateActiveTabLocalState({ selectedDate: newDate });
     });
   }
 
-  const nextBtn = containerEl.querySelector("#scheduleNextDateBtn");
-  if (nextBtn) {
-    nextBtn.addEventListener("click", () => {
+  const miniNextBtn = containerEl.querySelector("#miniCalNextBtn");
+  if (miniNextBtn) {
+    miniNextBtn.addEventListener("click", () => {
       const activeTab = getActiveTab();
       const currentSelected = activeTab.tabState?.selectedDate || formatDateISO(new Date());
-      const mode = activeTab.tabState?.scheduleMode || "week";
-
-      let newDate;
-      if (mode === "day") {
-        newDate = shiftDateByDays(currentSelected, 1);
-      } else if (mode === "week") {
-        newDate = shiftDateByDays(currentSelected, 7);
-      } else {
-        newDate = shiftDateByMonths(currentSelected, 1);
-      }
+      const newDate = shiftDateByMonths(currentSelected, 1);
       updateActiveTabLocalState({ selectedDate: newDate });
     });
   }
+
+  // 3. Lịch thu nhỏ: Click chọn ngày trực tiếp
+  const miniDayBtns = containerEl.querySelectorAll("[data-mini-date]");
+  miniDayBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const date = btn.getAttribute("data-mini-date");
+      if (date) {
+        updateActiveTabLocalState({ selectedDate: date });
+      }
+    });
+  });
+
+  // 4. Lịch tháng: Click chọn ngày từ ô lưới
+  const monthCells = containerEl.querySelectorAll("[data-month-cell-date]");
+  monthCells.forEach((cell) => {
+    cell.addEventListener("click", (e) => {
+      if (!e.target.closest("[data-event-id]")) {
+        const date = cell.getAttribute("data-month-cell-date");
+        if (date) {
+          updateActiveTabLocalState({ selectedDate: date });
+        }
+      }
+    });
+  });
 
   // Helper mở Modal Xác nhận Xóa
   const openConfirmDeleteModal = (session) => {

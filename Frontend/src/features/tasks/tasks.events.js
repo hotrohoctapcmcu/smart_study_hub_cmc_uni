@@ -1,13 +1,12 @@
-/**
- * UniStudy CMC - Tasks Events
- */
 import { state, addLocalTask, updateLocalTask, deleteLocalTask, notifyStateChange } from "../../app/state.js";
 import { updateActiveTabLocalState } from "../../app/workspace.js";
 import { validateTask } from "./tasks.validation.js";
-import { renderTaskModal } from "./tasks.view.js";
+import { renderTaskModal, renderTaskDetailModal } from "./tasks.view.js";
 import { attachModalEvents } from "../../shared/components/modal.js";
 
 export function attachTasksEvents(containerEl) {
+  const modalHost = containerEl.querySelector("#taskModalHost");
+
   // 1. Chuyển tab lọc (Tất cả / Đang làm / Sắp đến hạn / Hoàn thành)
   const tabBtns = containerEl.querySelectorAll("[data-task-tab]");
   tabBtns.forEach((btn) => {
@@ -17,13 +16,129 @@ export function attachTasksEvents(containerEl) {
     });
   });
 
-  // 2. Mở modal thêm / sửa task
+  // Helper mở Modal Khung chi tiết công việc
+  const openDetailModal = (task) => {
+    if (!modalHost || !task) return;
+
+    modalHost.innerHTML = renderTaskDetailModal(task);
+    const modalEl = modalHost.querySelector("#taskDetailViewModal");
+
+    const close = () => {
+      modalHost.innerHTML = "";
+    };
+
+    attachModalEvents(modalEl, close);
+
+    // Tích checklist trực tiếp trong khung chi tiết
+    const chkBoxes = modalEl.querySelectorAll(".interactive-chk-box");
+    chkBoxes.forEach((box) => {
+      box.addEventListener("change", (e) => {
+        const itemId = box.getAttribute("data-interactive-chk-id");
+        const isChecked = e.target.checked;
+
+        // Cập nhật mảng checklist
+        const updatedChecklist = (task.checklist || []).map((item) => {
+          if (item.id === itemId) {
+            return { ...item, done: isChecked };
+          }
+          return item;
+        });
+
+        // Tính toán chuyển trạng thái tự động theo checklist
+        let newStatus = task.status;
+        if (updatedChecklist.length > 0) {
+          const allDone = updatedChecklist.every((i) => i.done);
+          const anyDone = updatedChecklist.some((i) => i.done);
+
+          if (allDone) {
+            newStatus = "Hoàn thành";
+          } else if (anyDone) {
+            newStatus = "Đang làm";
+          } else if (task.status === "Hoàn thành") {
+            // Bỏ tích mục của công việc hoàn thành thì mở lại công việc
+            newStatus = "Đang làm";
+          }
+        }
+
+        task.checklist = updatedChecklist;
+        task.status = newStatus;
+
+        // Lưu vào store cục bộ
+        updateLocalTask(task.id, {
+          checklist: updatedChecklist,
+          status: newStatus
+        });
+
+        // Cập nhật giao diện trong modal trực tiếp
+        const badge = modalEl.querySelector("#taskDetailStatusBadge");
+        if (badge) {
+          badge.className = `status-tag ${newStatus === "Hoàn thành" ? "completed" : newStatus === "Đang làm" ? "in-progress" : "not-started"}`;
+          badge.textContent = newStatus === "Hoàn thành" ? "✓ Hoàn thành" : newStatus === "Đang làm" ? "⏳ Đang làm" : "○ Chưa làm";
+        }
+
+        const progressEl = modalEl.querySelector("#taskDetailChecklistProgress");
+        if (progressEl && updatedChecklist.length > 0) {
+          const doneCount = updatedChecklist.filter((i) => i.done).length;
+          progressEl.textContent = `${Math.round((doneCount / updatedChecklist.length) * 100)}%`;
+        }
+
+        const row = box.closest(".checklist-interactive-row");
+        if (row) {
+          if (isChecked) {
+            row.classList.add("done");
+            row.style.background = "var(--page)";
+            const textSpan = row.querySelector("span");
+            if (textSpan) {
+              textSpan.style.textDecoration = "line-through";
+              textSpan.style.color = "var(--ink-400)";
+            }
+          } else {
+            row.classList.remove("done");
+            row.style.background = "white";
+            const textSpan = row.querySelector("span");
+            if (textSpan) {
+              textSpan.style.textDecoration = "none";
+              textSpan.style.color = "var(--ink-900)";
+            }
+          }
+        }
+      });
+    });
+
+    // Nút Sửa trong khung chi tiết
+    const editBtn = modalEl.querySelector("#taskDetailEditBtn");
+    if (editBtn) {
+      editBtn.addEventListener("click", () => {
+        close();
+        openModal(task);
+      });
+    }
+
+    // Nút Xóa trong khung chi tiết
+    const deleteBtn = modalEl.querySelector("#taskDetailDeleteBtn");
+    if (deleteBtn) {
+      deleteBtn.addEventListener("click", () => {
+        const ok = window.confirm(`Bạn có chắc chắn muốn xóa công việc "${task.title}" không?`);
+        if (ok) {
+          deleteLocalTask(task.id);
+          close();
+        }
+      });
+    }
+  };
+
+  // Helper mở modal Thêm / Sửa task
   const openModal = (initialData = null) => {
-    const modalHost = containerEl.querySelector("#taskModalHost");
     if (!modalHost) return;
 
     // Clone checklist để sửa cục bộ trong form
-    let localChecklist = initialData?.checklist ? [...initialData.checklist] : [];
+    let localChecklist = initialData?.checklist
+      ? initialData.checklist.map((c) => ({
+          id: c.id || `chk_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+          text: c.text,
+          done: Boolean(c.done)
+        }))
+      : [];
 
     modalHost.innerHTML = renderTaskModal(initialData ? { ...initialData, checklist: localChecklist } : null);
     const modalEl = modalHost.querySelector("#taskDetailModal");
@@ -40,13 +155,14 @@ export function attachTasksEvents(containerEl) {
     const addItemBtn = modalEl.querySelector("#addChecklistItemBtn");
 
     const renderLocalChecklist = () => {
+      if (!checklistHost) return;
       checklistHost.innerHTML = localChecklist
         .map(
-          (item, idx) => `
-        <div class="checklist-item-row ${item.done ? "done" : ""}" data-checklist-idx="${idx}">
-          <input type="checkbox" class="checklist-toggle-box" ${item.done ? "checked" : ""} />
-          <span style="flex:1;font-size:0.86rem;">${item.text}</span>
-          <button type="button" class="checklist-remove-btn" style="color:var(--red-600);font-size:0.75rem;">Xóa</button>
+          (item) => `
+        <div class="checklist-item-row ${item.done ? "done" : ""}" data-item-id="${item.id}" style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--ink-200);border-radius:6px;background:${item.done ? "var(--page)" : "white"};">
+          <input type="checkbox" class="checklist-toggle-box" ${item.done ? "checked" : ""} style="cursor:pointer;" />
+          <input type="text" class="checklist-text-input" value="${item.text}" style="flex:1;border:none;background:transparent;font-size:0.88rem;outline:none;" />
+          <button type="button" class="checklist-remove-btn" style="color:var(--red-600);font-size:0.75rem;border:none;background:transparent;cursor:pointer;padding:2px 6px;">Xóa</button>
         </div>
       `
         )
@@ -60,6 +176,13 @@ export function attachTasksEvents(containerEl) {
         });
       });
 
+      // Gắn sự kiện sửa text
+      checklistHost.querySelectorAll(".checklist-text-input").forEach((input, i) => {
+        input.addEventListener("input", (e) => {
+          localChecklist[i].text = e.target.value;
+        });
+      });
+
       // Gắn sự kiện xóa
       checklistHost.querySelectorAll(".checklist-remove-btn").forEach((btn, i) => {
         btn.addEventListener("click", () => {
@@ -69,13 +192,26 @@ export function attachTasksEvents(containerEl) {
       });
     };
 
-    if (addItemBtn && newItemInput) {
-      addItemBtn.addEventListener("click", () => {
-        const text = newItemInput.value.trim();
-        if (text) {
-          localChecklist.push({ text, done: false });
-          newItemInput.value = "";
-          renderLocalChecklist();
+    const addCheckItem = () => {
+      if (!newItemInput) return;
+      const text = newItemInput.value.trim();
+      if (text) {
+        localChecklist.push({
+          id: `chk_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+          text,
+          done: false
+        });
+        newItemInput.value = "";
+        renderLocalChecklist();
+      }
+    };
+
+    if (addItemBtn) addItemBtn.addEventListener("click", addCheckItem);
+    if (newItemInput) {
+      newItemInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addCheckItem();
         }
       });
     }
@@ -88,13 +224,22 @@ export function attachTasksEvents(containerEl) {
       form.addEventListener("submit", (e) => {
         e.preventDefault();
         const fd = new FormData(form);
+
+        // Lọc bỏ các mục checklist chỉ chứa khoảng trắng
+        const cleanChecklist = localChecklist
+          .map((i) => ({ ...i, text: i.text.trim() }))
+          .filter((i) => i.text.length > 0);
+
         const data = {
-          title: fd.get("title"),
-          subject: fd.get("subject"),
+          title: fd.get("title")?.trim(),
+          startTime: fd.get("startTime") || null,
           due: fd.get("due"),
-          priority: fd.get("priority"),
-          status: fd.get("status"),
-          checklist: localChecklist
+          note: fd.get("note")?.trim() || "",
+          description: fd.get("note")?.trim() || "",
+          subject: fd.get("subject")?.trim() || "Học tập cá nhân",
+          priority: fd.get("priority") || "Trung bình",
+          status: fd.get("status") || "Chưa làm",
+          checklist: cleanChecklist
         };
 
         const check = validateTask(data);
@@ -119,10 +264,68 @@ export function attachTasksEvents(containerEl) {
   if (createBtn) createBtn.addEventListener("click", () => openModal());
   if (emptyCreateBtn) emptyCreateBtn.addEventListener("click", () => openModal());
 
-  // 3. Nút Sửa trên bảng
+  // 2. Mở khung chi tiết khi nhấn vào dòng / tiêu đề công việc
+  const detailTriggers = containerEl.querySelectorAll("[data-open-task-detail]");
+  detailTriggers.forEach((el) => {
+    el.addEventListener("click", (e) => {
+      // Bỏ qua nếu click trực tiếp vào nút hoặc checkbox
+      if (e.target.closest("button, input, select")) return;
+      const taskId = el.getAttribute("data-open-task-detail");
+      const task = state.tasks.find((t) => t.id === taskId);
+      if (task) {
+        openDetailModal(task);
+      }
+    });
+  });
+
+  // 3. Checkbox hoàn thành nhanh trên bảng danh sách
+  const quickCompleteBoxes = containerEl.querySelectorAll(".task-quick-complete-box");
+  quickCompleteBoxes.forEach((box) => {
+    box.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+    box.addEventListener("change", (e) => {
+      e.stopPropagation();
+      const taskId = box.getAttribute("data-quick-complete-id");
+      const task = state.tasks.find((t) => t.id === taskId);
+      if (!task) return;
+
+      const isChecking = e.target.checked;
+
+      if (isChecking) {
+        // Đánh dấu hoàn thành ngay: đồng thời đánh dấu toàn bộ checklist hoàn thành
+        const updatedChecklist = (task.checklist || []).map((i) => ({ ...i, done: true }));
+        updateLocalTask(task.id, {
+          status: "Hoàn thành",
+          checklist: updatedChecklist
+        });
+      } else {
+        // Bỏ tích công việc sẽ mở lại
+        if (task.checklist && task.checklist.some((i) => i.done)) {
+          const ok = window.confirm("Bạn có muốn mở lại công việc này và đặt lại toàn bộ checklist không?");
+          if (ok) {
+            const resetChecklist = task.checklist.map((i) => ({ ...i, done: false }));
+            updateLocalTask(task.id, {
+              status: "Đang làm",
+              checklist: resetChecklist
+            });
+          } else {
+            e.target.checked = true; // Hủy thao tác bỏ tích
+          }
+        } else {
+          updateLocalTask(task.id, {
+            status: "Đang làm"
+          });
+        }
+      }
+    });
+  });
+
+  // 4. Nút Sửa trên bảng
   const editBtns = containerEl.querySelectorAll("[data-edit-task-id]");
   editBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
       const id = btn.getAttribute("data-edit-task-id");
       const task = state.tasks.find((t) => t.id === id);
       if (task) {
@@ -131,10 +334,11 @@ export function attachTasksEvents(containerEl) {
     });
   });
 
-  // 4. Nút Xóa trên bảng
+  // 5. Nút Xóa trên bảng
   const deleteBtns = containerEl.querySelectorAll("[data-delete-task-id]");
   deleteBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
       const id = btn.getAttribute("data-delete-task-id");
       const ok = window.confirm("Bạn có chắc chắn muốn xóa công việc này?");
       if (ok) {
@@ -142,24 +346,4 @@ export function attachTasksEvents(containerEl) {
       }
     });
   });
-
-  // 5. Thay đổi trực tiếp Trạng thái trên dropdown bảng
-  const statusSelects = containerEl.querySelectorAll("[data-change-status-id]");
-  statusSelects.forEach((sel) => {
-    sel.addEventListener("change", (e) => {
-      const id = sel.getAttribute("data-change-status-id");
-      updateLocalTask(id, { status: e.target.value });
-    });
-  });
-
-  // 6. Checkbox chọn tất cả
-  const selectAllBox = containerEl.querySelector("#selectAllTasksCheckbox");
-  if (selectAllBox) {
-    selectAllBox.addEventListener("change", (e) => {
-      const rowBoxes = containerEl.querySelectorAll(".task-row-checkbox");
-      rowBoxes.forEach((b) => {
-        b.checked = e.target.checked;
-      });
-    });
-  }
 }

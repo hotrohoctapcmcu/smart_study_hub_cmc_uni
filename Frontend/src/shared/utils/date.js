@@ -175,3 +175,80 @@ export function shiftDateByMonths(dateStr, monthsDelta) {
   return formatDateISO(dt);
 }
 
+/**
+ * Lấy các phân đoạn tuần (Thứ Hai – Chủ Nhật) thuộc một tháng cụ thể (chỉ tính phần ngày trong tháng)
+ * @param {number} year - Ví dụ 2026
+ * @param {number} monthIndex - 0 đến 11 (0 = Tháng 1, 9 = Tháng 10)
+ * @returns {Array<{
+ *   weekIndex: number,
+ *   weekLabel: string,
+ *   dateRangeLabel: string,
+ *   startDateStr: string,
+ *   endDateStr: string,
+ *   startDay: number,
+ *   endDay: number,
+ *   daysCount: number
+ * }>}
+ */
+export function getWeeksOfMonth(year, monthIndex) {
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const weeks = [];
+  let currentStartDay = 1;
+  let weekIndex = 1;
+
+  while (currentStartDay <= daysInMonth) {
+    const curDate = new Date(year, monthIndex, currentStartDay);
+    const dayOfWeek = curDate.getDay(); // 0 is Sunday, 1 is Monday
+    const daysToSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+    const currentEndDay = Math.min(daysInMonth, currentStartDay + daysToSunday);
+
+    const pad = (n) => String(n).padStart(2, "0");
+    const mPad = pad(monthIndex + 1);
+    const startDateStr = `${year}-${mPad}-${pad(currentStartDay)}`;
+    const endDateStr = `${year}-${mPad}-${pad(currentEndDay)}`;
+
+    weeks.push({
+      weekIndex,
+      weekLabel: `Tuần ${weekIndex}`,
+      dateRangeLabel: `${pad(currentStartDay)}/${mPad} – ${pad(currentEndDay)}/${mPad}`,
+      startDateStr,
+      endDateStr,
+      startDay: currentStartDay,
+      endDay: currentEndDay,
+      daysCount: currentEndDay - currentStartDay + 1
+    });
+
+    currentStartDay = currentEndDay + 1;
+    weekIndex++;
+  }
+
+  return weeks;
+}
+
+/**
+ * Lấy danh sách tất cả các ngày trong một tháng cụ thể (1 đến 28/29/30/31)
+ * @param {number} year
+ * @param {number} monthIndex
+ * @returns {Array<{dateStr: string, dayNumber: number, dayOfWeek: number, dayName: string, date: Date}>}
+ */
+export function getMonthDays(year, monthIndex) {
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const days = [];
+  const dayNames = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+  const pad = (n) => String(n).padStart(2, "0");
+  const mPad = pad(monthIndex + 1);
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dt = new Date(year, monthIndex, d);
+    days.push({
+      dateStr: `${year}-${mPad}-${pad(d)}`,
+      dayNumber: d,
+      dayOfWeek: dt.getDay(),
+      dayName: dayNames[dt.getDay()],
+      date: dt
+    });
+  }
+  return days;
+}
+
+

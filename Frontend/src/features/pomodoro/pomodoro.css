@@ -71,15 +71,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 40px;
+  gap: 48px;
   width: 100%;
-  max-width: 640px;
-  margin: 10px 0 28px;
+  max-width: 720px;
+  margin: 10px 0 24px;
 }
 
 .pomo-fox-container {
-  width: 160px;
-  height: 160px;
+  width: 150px;
+  height: 150px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
@@ -93,42 +93,79 @@
 }
 
 .pomo-clock-wrap {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.pomo-countdown-text {
-  font-size: 4.8rem;
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  color: var(--ink-950);
-  font-variant-numeric: tabular-nums;
-  margin-bottom: 12px;
-  user-select: none;
-}
-
-.pomo-progress-bar-bg {
-  width: 100%;
-  max-width: 320px;
-  height: 8px;
-  background: var(--ink-100);
-  border-radius: 99px;
-  overflow: hidden;
+/* Vòng tròn tiến độ SVG đếm ngược */
+.pomo-circle-wrap {
+  position: relative;
+  width: 270px;
+  height: 270px;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 14px;
 }
 
-.pomo-progress-bar-fill {
+.pomo-circle-svg {
+  width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, var(--violet-600), var(--violet-400));
-  border-radius: 99px;
-  transition: width 0.3s ease;
+  transform: rotate(-90deg);
+  overflow: visible;
 }
 
-.pomo-progress-bar-fill.fill-break {
-  background: linear-gradient(90deg, var(--orange-500), var(--amber-500));
+.pomo-circle-track {
+  fill: none;
+  stroke: var(--ink-100);
+  stroke-width: 12px;
+}
+
+.pomo-circle-bar {
+  fill: none;
+  stroke: url(#pomoGradStudy);
+  stroke-width: 12px;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.4s ease;
+}
+
+.pomo-circle-bar.bar-break {
+  stroke: url(#pomoGradBreak);
+}
+
+.pomo-circle-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.pomo-countdown-text {
+  font-size: clamp(2.2rem, 5.5vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--ink-950);
+  font-variant-numeric: tabular-nums;
+  margin: 6px 0 2px;
+  user-select: none;
+}
+
+.pomo-circle-sub {
+  font-size: 0.78rem;
+  color: var(--ink-500);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .pomo-motivational-quote {
@@ -297,10 +334,10 @@
   color: var(--amber-600);
 }
 
-/* Responsive Mobile */
-@media (max-width: 640px) {
+/* Responsive Mobile & Tablet */
+@media (max-width: 768px) {
   .pomo-timer-card {
-    padding: 24px 16px;
+    padding: 24px 16px 32px;
   }
 
   .pomo-core-display {
@@ -309,13 +346,15 @@
     margin: 4px 0 20px;
   }
 
-  .pomo-fox-container {
-    width: 100px;
-    height: 100px;
+  .pomo-circle-wrap {
+    width: 230px;
+    height: 230px;
   }
 
-  .pomo-countdown-text {
-    font-size: 3.6rem;
+  .pomo-fox-container {
+    order: 2;
+    width: 90px;
+    height: 90px;
   }
 
   .pomo-settings-bar {
@@ -332,13 +371,28 @@
   .pomo-actions-bar {
     width: 100%;
     flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px; /* Tránh bị che bởi floating mini-chat */
   }
 
   .pomo-actions-bar button {
     width: 100%;
+    min-height: 44px;
   }
 
   .pomo-history-card {
     padding: 20px 14px;
+    margin-bottom: 30px;
+  }
+}
+
+@media (max-width: 390px) {
+  .pomo-circle-wrap {
+    width: 200px;
+    height: 200px;
+  }
+
+  .pomo-countdown-text {
+    font-size: 2.1rem;
   }
 }

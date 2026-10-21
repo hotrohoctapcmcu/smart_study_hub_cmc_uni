@@ -120,12 +120,19 @@ export function renderTasksView() {
 
                   return `
                     <tr class="${isCompleted ? "completed-row" : ""}" data-task-id="${task.id}">
-                      <td>
-                        <input type="checkbox" class="task-row-checkbox" data-task-checkbox="${task.id}" />
+                      <td style="width:40px;">
+                        <input 
+                          type="checkbox" 
+                          class="task-quick-complete-box" 
+                          data-quick-complete-id="${task.id}" 
+                          ${isCompleted ? "checked" : ""} 
+                          aria-label="Đánh dấu hoàn thành" 
+                          title="${isCompleted ? "Đã hoàn thành (nhấn để mở lại)" : "Đánh dấu hoàn thành nhanh"}" 
+                        />
                       </td>
-                      <td class="task-title-cell">
+                      <td class="task-title-cell" data-open-task-detail="${task.id}" style="cursor:pointer;" title="Nhấn xem chi tiết công việc">
                         <strong>${task.title}</strong>
-                        <span>${task.subject}</span>
+                        <span>${task.subject || "Học tập cá nhân"}</span>
                       </td>
                       <td>
                         <div style="font-weight:600;font-size:0.86rem;">
@@ -136,14 +143,12 @@ export function renderTasksView() {
                         </div>
                       </td>
                       <td>
-                        <select class="task-status-select" data-change-status-id="${task.id}" style="border:1px solid var(--ink-200);border-radius:6px;padding:4px 8px;font-size:0.82rem;font-weight:600;background:white;">
-                          <option value="Chưa làm" ${task.status === "Chưa làm" ? "selected" : ""}>Chưa làm</option>
-                          <option value="Đang làm" ${task.status === "Đang làm" ? "selected" : ""}>Đang làm</option>
-                          <option value="Hoàn thành" ${task.status === "Hoàn thành" ? "selected" : ""}>Hoàn thành</option>
-                        </select>
+                        <span class="status-tag ${statusClass}">
+                          ${task.status === "Hoàn thành" ? "✓ Hoàn thành" : task.status === "Đang làm" ? "⏳ Đang làm" : "○ Chưa làm"}
+                        </span>
                       </td>
                       <td>
-                        <span class="priority-tag ${priorityClass}">● ${task.priority}</span>
+                        <span class="priority-tag ${priorityClass}">● ${task.priority || "Trung bình"}</span>
                       </td>
                       <td>
                         ${
@@ -153,10 +158,10 @@ export function renderTasksView() {
                         }
                       </td>
                       <td style="text-align:right;">
-                        <button type="button" class="icon-button" data-edit-task-id="${task.id}" aria-label="Sửa công việc" style="display:inline-grid;width:32px;height:32px;">
+                        <button type="button" class="icon-button" data-edit-task-id="${task.id}" aria-label="Sửa công việc" style="display:inline-grid;width:32px;height:32px;" title="Chỉnh sửa công việc">
                           <svg style="width:14px;height:14px;"><use href="#i-edit"></use></svg>
                         </button>
-                        <button type="button" class="icon-button" data-delete-task-id="${task.id}" aria-label="Xóa công việc" style="display:inline-grid;width:32px;height:32px;color:var(--red-600);">
+                        <button type="button" class="icon-button" data-delete-task-id="${task.id}" aria-label="Xóa công việc" style="display:inline-grid;width:32px;height:32px;color:var(--red-600);" title="Xóa công việc">
                           <svg style="width:14px;height:14px;"><use href="#i-trash"></use></svg>
                         </button>
                       </td>
@@ -177,14 +182,19 @@ export function renderTasksView() {
         }
       </div>
 
-      <!-- Container Host Modal Form -->
+      <!-- Container Host Modal Form & Detail -->
       <div id="taskModalHost"></div>
     </div>
   `;
 }
 
 /**
- * Render Modal Thêm / Chỉnh sửa công việc kèm Checklist
+ * Render Modal Thêm / Chỉnh sửa công việc theo thứ tự yêu cầu:
+ * 1) Tên công việc.
+ * 2) Thời gian bắt đầu và thời hạn kết thúc do người dùng nhập.
+ * 3) Checklist.
+ * 4) Mô tả.
+ * Phần tùy chọn phụ: Môn học và Mức độ ưu tiên.
  */
 export function renderTaskModal(taskData = null) {
   const isEdit = Boolean(taskData && taskData.id);
@@ -192,72 +202,58 @@ export function renderTaskModal(taskData = null) {
 
   const bodyHtml = `
     <form id="taskModalForm" style="display:flex;flex-direction:column;gap:14px;">
+      <!-- 1) Tên công việc -->
       <label>
-        <span class="small" style="font-weight:600;display:block;margin-bottom:4px;">Tên công việc *</span>
+        <span class="small" style="font-weight:700;display:block;margin-bottom:4px;color:var(--ink-950);">1. Tên công việc *</span>
         <input 
           type="text" 
           name="title" 
           required 
-          placeholder="Ví dụ: Hoàn thành báo cáo Lab 4" 
+          placeholder="Ví dụ: Hoàn thành bài tập lớn môn Lập trình Web" 
           value="${taskData?.title || ""}"
-          style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;"
+          style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;font-size:0.92rem;"
         />
       </label>
 
-      <label>
-        <span class="small" style="font-weight:600;display:block;margin-bottom:4px;">Môn học</span>
-        <input 
-          type="text" 
-          name="subject" 
-          placeholder="Ví dụ: Cấu trúc dữ liệu & GT" 
-          value="${taskData?.subject || ""}"
-          style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;"
-        />
-      </label>
+      <!-- 2) Thời gian bắt đầu và Thời hạn hoàn thành -->
+      <div>
+        <span class="small" style="font-weight:700;display:block;margin-bottom:6px;color:var(--ink-950);">2. Thời gian thực hiện</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <label>
+            <span class="small" style="font-weight:600;display:block;margin-bottom:4px;color:var(--ink-700);">Bắt đầu</span>
+            <input 
+              type="datetime-local" 
+              name="startTime" 
+              value="${taskData?.startTime || ""}"
+              style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:8px 10px;font-size:0.86rem;"
+            />
+          </label>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <label>
-          <span class="small" style="font-weight:600;display:block;margin-bottom:4px;">Hạn nộp (Deadline) *</span>
-          <input 
-            type="datetime-local" 
-            name="due" 
-            required 
-            value="${taskData?.due || ""}"
-            style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;"
-          />
-        </label>
-
-        <label>
-          <span class="small" style="font-weight:600;display:block;margin-bottom:4px;">Mức độ ưu tiên</span>
-          <select name="priority" style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;background:white;">
-            <option value="Cao" ${taskData?.priority === "Cao" ? "selected" : ""}>Cao</option>
-            <option value="Trung bình" ${!taskData || taskData?.priority === "Trung bình" ? "selected" : ""}>Trung bình</option>
-            <option value="Thấp" ${taskData?.priority === "Thấp" ? "selected" : ""}>Thấp</option>
-          </select>
-        </label>
+          <label>
+            <span class="small" style="font-weight:600;display:block;margin-bottom:4px;color:var(--ink-700);">Hạn hoàn thành *</span>
+            <input 
+              type="datetime-local" 
+              name="due" 
+              required 
+              value="${taskData?.due || ""}"
+              style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:8px 10px;font-size:0.86rem;"
+            />
+          </label>
+        </div>
       </div>
 
-      <label>
-        <span class="small" style="font-weight:600;display:block;margin-bottom:4px;">Trạng thái</span>
-        <select name="status" style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;background:white;">
-          <option value="Chưa làm" ${!taskData || taskData?.status === "Chưa làm" ? "selected" : ""}>Chưa làm</option>
-          <option value="Đang làm" ${taskData?.status === "Đang làm" ? "selected" : ""}>Đang làm</option>
-          <option value="Hoàn thành" ${taskData?.status === "Hoàn thành" ? "selected" : ""}>Hoàn thành</option>
-        </select>
-      </label>
-
-      <!-- Vùng Checklist Items -->
-      <div style="margin-top:6px;border-top:1px solid var(--ink-100);padding-top:12px;">
-        <span class="small" style="font-weight:700;display:block;margin-bottom:8px;">Danh sách việc nhỏ (Checklist)</span>
+      <!-- 3) Checklist -->
+      <div style="border-top:1px solid var(--ink-100);padding-top:12px;">
+        <span class="small" style="font-weight:700;display:block;margin-bottom:8px;color:var(--ink-950);">3. Danh sách mục cần làm (Checklist)</span>
         
-        <div id="modalChecklistItemsHost">
+        <div id="modalChecklistItemsHost" style="display:flex;flex-direction:column;gap:6px;">
           ${checklist
             .map(
-              (item, idx) => `
-            <div class="checklist-item-row ${item.done ? "done" : ""}" data-checklist-idx="${idx}">
+              (item) => `
+            <div class="checklist-item-row ${item.done ? "done" : ""}" data-item-id="${item.id}">
               <input type="checkbox" class="checklist-toggle-box" ${item.done ? "checked" : ""} />
-              <span style="flex:1;font-size:0.86rem;">${item.text}</span>
-              <button type="button" class="checklist-remove-btn" style="color:var(--red-600);font-size:0.75rem;">Xóa</button>
+              <input type="text" class="checklist-text-input" value="${item.text}" style="flex:1;border:none;background:transparent;font-size:0.88rem;outline:none;" />
+              <button type="button" class="checklist-remove-btn" style="color:var(--red-600);font-size:0.75rem;border:none;background:transparent;cursor:pointer;">Xóa</button>
             </div>
           `
             )
@@ -268,15 +264,56 @@ export function renderTaskModal(taskData = null) {
           <input 
             type="text" 
             id="newChecklistItemInput" 
-            placeholder="Thêm mục việc nhỏ cần làm..." 
+            placeholder="Thêm mục việc nhỏ (nhấn Enter hoặc Thêm mục)..." 
             style="flex:1;border:1px solid var(--ink-200);border-radius:6px;padding:6px 10px;font-size:0.84rem;" 
           />
           <button type="button" class="button secondary small" id="addChecklistItemBtn">Thêm mục</button>
         </div>
       </div>
 
-      <div class="badge-draft" style="width:fit-content;margin-top:8px;">
-        📌 Bản nháp cục bộ — Chưa lưu server
+      <!-- 4) Mô tả -->
+      <div>
+        <label>
+          <span class="small" style="font-weight:700;display:block;margin-bottom:4px;color:var(--ink-950);">4. Mô tả chi tiết</span>
+          <textarea 
+            name="note" 
+            rows="3" 
+            placeholder="Ghi chú thêm về yêu cầu đề bài, tài liệu cần nộp, hướng dẫn của giảng viên..." 
+            style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:8px 12px;font-size:0.88rem;font-family:inherit;resize:vertical;"
+          >${taskData?.note || taskData?.description || ""}</textarea>
+        </label>
+      </div>
+
+      <!-- Tùy chọn phụ (Môn học & Mức độ ưu tiên) -->
+      <details style="background:#fbfaff;border:1px solid var(--ink-200);border-radius:8px;padding:8px 12px;">
+        <summary style="font-size:0.82rem;font-weight:700;color:var(--ink-700);cursor:pointer;">
+          ⚙️ Tùy chọn bổ sung (Môn học & Mức độ ưu tiên)
+        </summary>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;">
+          <label>
+            <span class="small" style="font-weight:600;display:block;margin-bottom:4px;">Môn học</span>
+            <input 
+              type="text" 
+              name="subject" 
+              placeholder="Ví dụ: Cấu trúc dữ liệu & GT" 
+              value="${taskData?.subject || ""}"
+              style="width:100%;border:1px solid var(--ink-200);border-radius:6px;padding:6px 10px;font-size:0.84rem;"
+            />
+          </label>
+
+          <label>
+            <span class="small" style="font-weight:600;display:block;margin-bottom:4px;">Mức độ ưu tiên</span>
+            <select name="priority" style="width:100%;border:1px solid var(--ink-200);border-radius:6px;padding:6px 10px;background:white;font-size:0.84rem;">
+              <option value="Cao" ${taskData?.priority === "Cao" ? "selected" : ""}>Cao</option>
+              <option value="Trung bình" ${!taskData || taskData?.priority === "Trung bình" ? "selected" : ""}>Trung bình</option>
+              <option value="Thấp" ${taskData?.priority === "Thấp" ? "selected" : ""}>Thấp</option>
+            </select>
+          </label>
+        </div>
+      </details>
+
+      <div class="badge-draft" style="width:fit-content;margin-top:4px;">
+        📌 Lưu cục bộ phiên làm việc — Tương thích Sprint 1
       </div>
     </form>
   `;
@@ -292,6 +329,102 @@ export function renderTaskModal(taskData = null) {
     id: "taskDetailModal",
     title: isEdit ? "Chỉnh sửa công việc" : "Thêm công việc học tập",
     bodyHtml,
-    footerHtml
+    footerHtml,
+    customClass: "task-modal-dialog"
+  });
+}
+
+/**
+ * Render Khung chi tiết công việc (Task Detail Modal)
+ * - Cho phép tích checklist trực tiếp trong khung này
+ * - Tích hết checklist tự chuyển sang "Hoàn thành"
+ * - Tích một phần chuyển sang "Đang làm"
+ * - Bỏ tích mục của công việc hoàn thành thì mở lại công việc
+ */
+export function renderTaskDetailModal(task) {
+  const checklist = task.checklist || [];
+  const checklistTotal = checklist.length;
+  const checklistDone = checklist.filter((i) => i.done).length;
+  const isCompleted = task.status === "Hoàn thành";
+
+  const bodyHtml = `
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <!-- Tiêu đề & Trạng thái -->
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span id="taskDetailStatusBadge" class="status-tag ${isCompleted ? "completed" : task.status === "Đang làm" ? "in-progress" : "not-started"}">
+            ${isCompleted ? "✓ Hoàn thành" : task.status === "Đang làm" ? "⏳ Đang làm" : "○ Chưa làm"}
+          </span>
+          <span class="priority-tag ${task.priority === "Cao" ? "high" : task.priority === "Trung bình" ? "medium" : "low"}">
+            ● ${task.priority || "Trung bình"}
+          </span>
+          ${task.subject ? `<span class="eyebrow" style="font-size:0.75rem;">${task.subject}</span>` : ""}
+        </div>
+        <h3 style="margin:0;font-size:1.35rem;color:var(--ink-950);">${task.title}</h3>
+      </div>
+
+      <!-- Thời gian: Bắt đầu & Hạn hoàn thành -->
+      <div style="background:#f8fafc;border:1px solid var(--ink-200);border-radius:10px;padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <span class="tiny muted" style="font-weight:700;text-transform:uppercase;display:block;margin-bottom:2px;">Bắt đầu:</span>
+          <span style="font-size:0.9rem;font-weight:600;color:var(--ink-800);">
+            ${task.startTime ? formatDateTimeVN(task.startTime) : "Chưa đặt mốc bắt đầu"}
+          </span>
+        </div>
+        <div>
+          <span class="tiny muted" style="font-weight:700;text-transform:uppercase;display:block;margin-bottom:2px;">Hạn hoàn thành:</span>
+          <span style="font-size:0.9rem;font-weight:700;color:${task.due ? "var(--violet-700)" : "var(--ink-800)"};">
+            ${task.due ? formatDateTimeVN(task.due) : "Chưa đặt hạn"}
+          </span>
+        </div>
+      </div>
+
+      <!-- Checklist trực tiếp -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-weight:700;font-size:0.92rem;color:var(--ink-950);">Danh sách checklist (${checklistDone}/${checklistTotal})</span>
+          <span id="taskDetailChecklistProgress" class="tiny muted">${checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) + "%" : "Chưa có mục"}</span>
+        </div>
+
+        <div id="taskDetailChecklistHost" style="display:flex;flex-direction:column;gap:6px;">
+          ${
+            checklistTotal > 0
+              ? checklist
+                  .map(
+                    (item) => `
+                <label class="checklist-interactive-row ${item.done ? "done" : ""}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--ink-200);border-radius:8px;background:${item.done ? "var(--page)" : "white"};cursor:pointer;">
+                  <input type="checkbox" class="interactive-chk-box" data-interactive-chk-id="${item.id}" ${item.done ? "checked" : ""} style="width:18px;height:18px;cursor:pointer;" />
+                  <span style="flex:1;font-size:0.9rem;${item.done ? "text-decoration:line-through;color:var(--ink-400);" : "color:var(--ink-900);"}">${item.text}</span>
+                </label>
+              `
+                  )
+                  .join("")
+              : `<div class="muted small" style="font-style:italic;">Công việc này không có mục checklist nào.</div>`
+          }
+        </div>
+      </div>
+
+      <!-- Mô tả -->
+      <div>
+        <span style="font-weight:700;font-size:0.92rem;color:var(--ink-950);display:block;margin-bottom:6px;">Mô tả & Hướng dẫn</span>
+        <div style="background:white;border:1px solid var(--ink-200);border-radius:8px;padding:12px;font-size:0.9rem;line-height:1.5;color:var(--ink-800);min-height:50px;">
+          ${task.note || task.description || '<span class="muted small" style="font-style:italic;">Chưa có mô tả chi tiết.</span>'}
+        </div>
+      </div>
+    </div>
+  `;
+
+  const footerHtml = `
+    <button type="button" class="button danger ghost" id="taskDetailDeleteBtn" data-task-id="${task.id}">Xóa công việc</button>
+    <button type="button" class="button primary" id="taskDetailEditBtn" data-task-id="${task.id}">Chỉnh sửa</button>
+    <button type="button" class="button ghost" data-close-modal="taskDetailViewModal">Đóng</button>
+  `;
+
+  return renderModal({
+    id: "taskDetailViewModal",
+    title: "Chi tiết công việc",
+    bodyHtml,
+    footerHtml,
+    customClass: "task-detail-dialog"
   });
 }

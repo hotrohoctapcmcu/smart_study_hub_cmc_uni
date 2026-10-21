@@ -17,7 +17,9 @@ function handleGlobalKeydown(e) {
   }
 }
 
-window.addEventListener("keydown", handleGlobalKeydown);
+if (typeof window !== "undefined") {
+  window.addEventListener("keydown", handleGlobalKeydown);
+}
 
 /**
  * Render modal wrapper HTML

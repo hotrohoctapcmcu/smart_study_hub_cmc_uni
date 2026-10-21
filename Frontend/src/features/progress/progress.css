@@ -1,0 +1,518 @@
+/**
+ * UniStudy CMC - Progress Styles (Sprint 2)
+ */
+
+.progress-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.progress-period-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: white;
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--ink-200);
+}
+
+.progress-period-tabs .view-mode-btn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--ink-700);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.progress-period-tabs .view-mode-btn.active {
+  background: var(--violet-600);
+  color: white;
+  box-shadow: 0 2px 6px rgba(91, 33, 182, 0.2);
+}
+
+/* Metrics Grid */
+.progress-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.progress-metric-card {
+  background: white;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease;
+}
+
+.progress-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.metric-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.metric-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.metric-icon-wrap svg {
+  width: 20px;
+  height: 20px;
+}
+
+.metric-value-text {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--ink-950);
+  line-height: 1.2;
+}
+
+.metric-label-text {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink-800);
+  margin-top: 4px;
+}
+
+.metric-sub-note {
+  font-size: 0.75rem;
+  color: var(--ink-500);
+  margin-top: 6px;
+}
+
+/* Charts Grid */
+.progress-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.progress-card {
+  background: white;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+}
+
+.progress-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Bar Chart */
+.progress-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  height: 220px;
+  padding: 10px 0 0;
+  border-bottom: 2px solid var(--ink-200);
+}
+
+.progress-bar-chart.chart-scrollable {
+  overflow-x: auto;
+  padding-bottom: 8px;
+  gap: 8px;
+}
+
+.progress-bar-chart.chart-scrollable .bar-chart-column {
+  min-width: 38px;
+}
+
+.bar-chart-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.bar-chart-column.highlight .bar-fill-inner {
+  background: linear-gradient(180deg, #f59e0b, #d97706);
+  box-shadow: 0 0 8px rgba(217, 119, 6, 0.4);
+}
+
+.bar-value-bubble {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--violet-700);
+  margin-bottom: 6px;
+  white-space: nowrap;
+}
+
+.bar-fill-track {
+  width: 100%;
+  max-width: 36px;
+  height: 160px;
+  background: var(--ink-50);
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.bar-fill-inner {
+  width: 100%;
+  background: linear-gradient(180deg, var(--violet-500), var(--violet-700));
+  border-radius: 6px 6px 0 0;
+  transition: height 0.3s ease;
+}
+
+.bar-fill-inner[style*="height:0%"],
+.bar-fill-inner[style*="height: 0%"] {
+  display: none;
+}
+
+.bar-label-text {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--ink-600);
+  margin-top: 10px;
+  white-space: nowrap;
+}
+
+.bar-sub-text {
+  font-size: 0.68rem;
+  color: var(--ink-400);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.progress-insight-box {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fdf4ff;
+  border: 1px solid #f0abfc;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-empty-hint {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--ink-50);
+  text-align: center;
+}
+
+/* Heatmap */
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.heat-chip {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.study-heatmap-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 200px;
+}
+
+/* Day Heatmap: 24 ô giờ xếp 6x4 hoặc scroll */
+.day-heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.day-heat-cell {
+  height: 44px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+  font-size: 0.72rem;
+  color: var(--ink-800);
+}
+
+.day-heat-cell:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-sm);
+}
+
+.day-heat-time {
+  font-size: 0.68rem;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.day-heat-val {
+  font-weight: 700;
+}
+
+/* Week Heatmap */
+.heatmap-header-row,
+.heatmap-data-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.heatmap-header-row {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-500);
+  margin-bottom: 4px;
+}
+
+.heatmap-day-label {
+  font-size: 0.82rem;
+  color: var(--ink-800);
+}
+
+.heatmap-cell {
+  height: 26px;
+  border-radius: 6px;
+  transition: transform 0.15s ease;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.04);
+}
+
+/* Month Heatmap: Lưới 7 cột (ngày 1..31) */
+.month-heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.month-heat-day {
+  aspect-ratio: 1;
+  min-height: 34px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.month-heat-day:hover {
+  transform: scale(1.08);
+  box-shadow: var(--shadow-sm);
+}
+
+.month-heat-daynum {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-800);
+}
+
+.month-heat-mins {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--ink-700);
+}
+
+.heat-0 {
+  background: var(--ink-100);
+}
+
+.heat-1 {
+  background: #ddd6fe;
+}
+
+.heat-2 {
+  background: #a78bfa;
+}
+
+.heat-3 {
+  background: #6d28d9;
+}
+
+.heat-3 .month-heat-daynum,
+.heat-3 .month-heat-mins,
+.heat-3 .day-heat-time,
+.heat-3 .day-heat-val {
+  color: white !important;
+}
+
+/* Subject Progress Grid */
+.subject-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.subject-progress-item {
+  background: var(--ink-50);
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--ink-200);
+}
+
+@media (max-width: 900px) {
+  .progress-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   Line Chart Styles (SVG-based for UniStudy CMC)
+   ========================================================================== */
+
+.line-chart-outer-container {
+  display: flex;
+  position: relative;
+  width: 100%;
+  background: white;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.line-chart-y-axis-column {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  width: 52px;
+  flex-shrink: 0;
+  background: white;
+  border-right: 1px solid var(--ink-200);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 24px 8px 44px 4px;
+  box-sizing: border-box;
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-500);
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.03);
+}
+
+.line-chart-scroll-viewport {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  position: relative;
+  outline: none;
+}
+
+.line-chart-scroll-viewport:focus-visible {
+  outline: 2px solid var(--violet-400);
+  outline-offset: -2px;
+}
+
+.line-chart-svg {
+  display: block;
+}
+
+.chart-grid-line {
+  stroke: var(--ink-100);
+  stroke-dasharray: 4 4;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--violet-600);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-area {
+  fill: url(#purpleAreaGrad);
+}
+
+.chart-dot {
+  cursor: pointer;
+  transition: r 0.2s ease, fill 0.2s ease, stroke-width 0.2s ease;
+}
+
+.chart-dot:hover,
+.chart-point-interactive:hover .chart-dot,
+.chart-point-interactive:focus .chart-dot {
+  r: 7;
+  fill: var(--violet-700);
+  stroke: #ffffff;
+  stroke-width: 2.5;
+}
+
+.chart-val-text {
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  fill: var(--violet-700);
+  pointer-events: none;
+}
+
+.chart-val-highlight {
+  fill: #581c87;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.chart-x-label {
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  fill: var(--ink-600);
+  pointer-events: none;
+}
+
+.badge-accent-purple {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: var(--violet-50);
+  color: var(--violet-700);
+  border: 1px solid var(--violet-200);
+  border-radius: var(--radius-full);
+}
+

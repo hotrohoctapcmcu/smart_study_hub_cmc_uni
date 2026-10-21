@@ -1,0 +1,173 @@
+/**
+ * UniStudy CMC - School Email Styles (Sprint 2)
+ */
+
+.school-email-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.school-email-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.school-email-api-banner {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(91, 33, 182, 0.12));
+  border: 1px solid var(--violet-200);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.email-controls-card {
+  background: white;
+  padding: 16px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--ink-200);
+  box-shadow: var(--shadow-sm);
+}
+
+.email-tabs-filter {
+  display: flex;
+  gap: 6px;
+  background: var(--ink-50);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--ink-200);
+  flex-wrap: wrap;
+}
+
+.email-tabs-filter .view-mode-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-700);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.email-tabs-filter .view-mode-btn.active {
+  background: var(--violet-600);
+  color: white;
+}
+
+.email-list-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.email-item-card {
+  background: white;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.email-item-card.unread {
+  border-left: 4px solid var(--violet-600);
+  background: #faf8ff;
+}
+
+.email-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.email-avatar-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--violet-100);
+  color: var(--violet-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.email-avatar-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.email-sender-name {
+  font-size: 0.95rem;
+  color: var(--ink-950);
+  display: block;
+}
+
+.email-sender-address {
+  font-size: 0.75rem;
+  color: var(--ink-500);
+  display: block;
+}
+
+.email-date-text {
+  font-size: 0.78rem;
+  color: var(--ink-500);
+}
+
+.email-subject-line {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink-950);
+}
+
+.email-preview-text {
+  font-size: 0.88rem;
+  color: var(--ink-700);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* AI Extracted Boxes */
+.extracted-deadline-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.extracted-exam-box {
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.email-item-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}

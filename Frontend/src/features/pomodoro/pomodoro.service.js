@@ -305,6 +305,13 @@ export function setTimeValues(hours = 0, minutes = 25, seconds = 0, breakMinutes
 }
 
 /**
+ * Cập nhật thời lượng học và nghỉ (phút) tương thích với test suite
+ */
+export function setDurations(workMinutes = 25, breakMinutes = 5) {
+  return setTimeValues(0, workMinutes, 0, breakMinutes);
+}
+
+/**
  * Tạm dừng phiên đang chạy
  */
 export function pauseSession() {
@@ -485,6 +492,8 @@ export function getState() {
   const time = getRemainingTime();
   return {
     ...currentSession,
+    workDurationMinutes: currentSession.workMinutes !== undefined ? currentSession.workMinutes : 25,
+    breakDurationMinutes: currentSession.breakMinutes !== undefined ? currentSession.breakMinutes : 5,
     displayTime: time.text,
     hoursLeft: time.hours,
     minutesLeft: time.minutes,

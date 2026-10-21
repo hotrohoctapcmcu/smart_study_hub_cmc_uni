@@ -170,3 +170,52 @@
   text-decoration: line-through;
   opacity: 0.6;
 }
+
+.task-quick-complete-box {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--green-600);
+}
+
+.status-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.status-tag.completed {
+  background: var(--green-100);
+  color: var(--green-700);
+}
+
+.status-tag.in-progress {
+  background: var(--sky-100);
+  color: var(--sky-700);
+}
+
+.status-tag.not-started {
+  background: var(--ink-200);
+  color: var(--ink-800);
+}
+
+.task-title-cell:hover strong {
+  color: var(--violet-700);
+  text-decoration: underline;
+}
+
+.task-modal-dialog .modal-dialog,
+.task-detail-dialog .modal-dialog {
+  max-width: 540px;
+  width: 92%;
+}
+
+.checklist-interactive-row {
+  transition: all 0.15s ease;
+}
+
+.checklist-interactive-row:hover {
+  border-color: var(--violet-300) !important;
+}

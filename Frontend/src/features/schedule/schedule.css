@@ -53,69 +53,342 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* Cụm điều hướng ngày: [‹] [Ô chọn ngày 📅] [›] căn cùng chiều cao 38px */
-.schedule-date-navigator {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
+/* BỐ CỤC 2 CỘT CHO LỊCH HỌC */
+.schedule-body-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: 20px;
+  align-items: start;
 }
 
-.schedule-nav-arrow {
-  width: 38px;
-  height: 38px;
-  border-radius: 8px;
+.schedule-main-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.schedule-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 290px;
+}
+
+/* LỊCH THU NHỎ (MINI CALENDAR) */
+.schedule-mini-card {
+  background: white;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.mini-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.mini-cal-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--ink-950);
+}
+
+.mini-nav-arrow {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   border: 1px solid var(--ink-200);
   background: white;
-  color: var(--ink-800);
+  cursor: pointer;
   display: grid;
   place-items: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
+  color: var(--ink-700);
   padding: 0;
+  transition: all 0.15s ease;
 }
 
-.schedule-nav-arrow:hover {
+.mini-nav-arrow:hover {
   background: var(--violet-50);
-  color: var(--violet-700);
   border-color: var(--violet-300);
+  color: var(--violet-700);
 }
 
-.schedule-nav-arrow svg {
-  width: 18px;
-  height: 18px;
+.mini-nav-arrow svg {
+  width: 14px;
+  height: 14px;
 }
 
-.schedule-date-input {
-  height: 38px;
-  border: 1px solid var(--ink-200);
-  border-radius: 8px;
-  padding: 0 12px;
-  font-size: 0.88rem;
-  background: white;
-  color: var(--ink-950);
-  outline: none;
-  transition: border-color 0.15s ease;
-  box-sizing: border-box;
-  font-family: inherit;
-}
-
-.schedule-date-input:focus {
-  border-color: var(--violet-600);
-}
-
-.schedule-period-badge {
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 14px;
-  border-radius: 8px;
-  background: #f2eff6;
-  color: var(--ink-800);
-  font-size: 0.88rem;
+.mini-cal-days-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.72rem;
   font-weight: 700;
+  color: var(--ink-500);
+  margin-bottom: 6px;
+}
+
+.mini-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.mini-day-cell {
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-800);
+  cursor: pointer;
+  position: relative;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.mini-day-cell:hover {
+  background: var(--ink-100);
+}
+
+.mini-day-cell.today {
+  color: var(--violet-700);
+  font-weight: 800;
+  background: var(--violet-50);
+}
+
+.mini-day-cell.selected {
+  border: 2px solid var(--violet-600) !important;
+  background: var(--violet-100) !important;
+  color: var(--violet-900) !important;
+  font-weight: 800;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--violet-600);
+}
+
+.mini-day-cell.empty {
+  cursor: default;
+}
+
+.mini-event-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--violet-600);
+  position: absolute;
+  bottom: 2px;
+}
+
+/* CHÚ GIẢI MÀU SẮC LỊCH */
+.schedule-legend-card {
+  background: white;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.legend-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--ink-950);
+  margin-bottom: 12px;
+}
+
+.legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: var(--ink-700);
+  font-weight: 500;
+}
+
+.legend-badge-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.legend-badge-color.school {
+  background: #fef9c3;
+  border: 1px solid #ca8a04;
+}
+
+.legend-badge-color.study {
+  background: #dcfce7;
+  border: 1px solid #16a34a;
+}
+
+.legend-badge-color.conflict {
+  background: #fee2e2;
+  border: 1px solid #dc2626;
+}
+
+/* LỊCH THÁNG CHÍNH (MONTH VIEW) */
+.schedule-month-container {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--ink-200);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.schedule-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  width: 100%;
+}
+
+.month-col-header {
+  padding: 12px 6px;
+  text-align: center;
+  background: #fbfaff;
+  border-bottom: 2px solid var(--ink-200);
+  font-size: 0.84rem;
+  color: var(--ink-900);
+  border-right: 1px solid var(--ink-100);
+}
+
+.month-col-header:last-child {
+  border-right: none;
+}
+
+.month-grid-cell {
+  min-height: 105px;
+  padding: 6px;
+  border-right: 1px solid var(--ink-100);
+  border-bottom: 1px solid var(--ink-100);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: white;
+  transition: background 0.15s ease;
   box-sizing: border-box;
+  position: relative;
+}
+
+.month-grid-cell:nth-child(7n) {
+  border-right: none;
+}
+
+.month-grid-cell.selected {
+  box-shadow: inset 0 0 0 2px var(--violet-600);
+  background: #faf5ff;
+  border-radius: 4px;
+}
+
+.month-grid-cell.today {
+  background: #fcfaff;
+}
+
+.month-grid-cell.other-month {
+  background: #fafafc;
+  opacity: 0.4;
+}
+
+.month-cell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.month-day-num {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink-800);
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 99px;
+}
+
+.month-day-num.today-badge {
+  background: var(--violet-600);
+  color: white;
+}
+
+.month-event-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ink-500);
+  background: var(--ink-100);
+  border-radius: 99px;
+  padding: 1px 6px;
+}
+
+.month-cell-events {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.month-event-chip {
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  border-left: 3px solid transparent;
+}
+
+.month-event-chip:hover {
+  transform: translateX(1px);
+  filter: brightness(0.96);
+}
+
+.month-event-chip.school {
+  background: #fef9c3;
+  color: #713f12;
+  border-left-color: #ca8a04;
+}
+
+.month-event-chip.study {
+  background: #dcfce7;
+  color: #14532d;
+  border-left-color: #16a34a;
+}
+
+.month-event-chip.conflict {
+  background: #fee2e2;
+  color: #7f1d1d;
+  border-left-color: #dc2626;
+}
+
+.month-event-chip .chip-time {
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.month-event-chip .chip-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -295,26 +568,20 @@
   width: 92%;
 }
 
+@media (max-width: 960px) {
+  .schedule-body-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-side-col {
+    width: 100%;
+  }
+}
+
 @media (max-width: 640px) {
   .schedule-header-controls {
     padding: 12px 14px;
     gap: 12px;
-  }
-
-  .schedule-date-navigator {
-    gap: 4px;
-    flex-wrap: nowrap;
-  }
-
-  .schedule-date-input {
-    max-width: 135px;
-    font-size: 0.82rem;
-    padding: 0 6px;
-  }
-
-  .schedule-period-badge {
-    font-size: 0.82rem;
-    padding: 0 8px;
   }
 
   .day-event-row {
@@ -326,5 +593,15 @@
   .event-card {
     min-height: 48px;
     padding: 8px 10px;
+  }
+
+  .month-grid-cell {
+    min-height: 60px;
+    padding: 3px;
+  }
+
+  .month-event-chip {
+    font-size: 0.65rem;
+    padding: 2px 4px;
   }
 }

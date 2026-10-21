@@ -34,35 +34,12 @@ export function renderScheduleView() {
 
   return `
     <div class="schedule-container">
-      <!-- Dải điều hướng & Chế độ xem -->
+      <!-- Dải điều hướng & Chế độ xem: Bỏ cụm nút tua trước/sau, ô chọn ngày và nhãn tháng/năm ở toolbar chính -->
       <div class="schedule-header-controls">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-          <div class="view-mode-tabs" role="tablist">
-            <button type="button" class="view-mode-btn ${mode === "day" ? "active" : ""}" data-schedule-mode="day">Ngày</button>
-            <button type="button" class="view-mode-btn ${mode === "week" ? "active" : ""}" data-schedule-mode="week">Tuần</button>
-            <button type="button" class="view-mode-btn ${mode === "month" ? "active" : ""}" data-schedule-mode="month">Tháng</button>
-          </div>
-
-          <!-- Cụm điều hướng ngày: [‹] [Ô chọn ngày 📅] [›] -->
-          <div class="schedule-date-navigator">
-            <button type="button" class="icon-button schedule-nav-arrow" id="schedulePrevDateBtn" aria-label="Khoảng thời gian trước" title="Khoảng thời gian trước">
-              <svg><use href="#i-chevron-left"></use></svg>
-            </button>
-            <input 
-              type="date" 
-              id="scheduleDatePicker" 
-              class="schedule-date-input"
-              aria-label="Chọn ngày xem lịch"
-              value="${selectedDateStr}" 
-            />
-            <button type="button" class="icon-button schedule-nav-arrow" id="scheduleNextDateBtn" aria-label="Khoảng thời gian kế tiếp" title="Khoảng thời gian kế tiếp">
-              <svg><use href="#i-chevron-right"></use></svg>
-            </button>
-          </div>
-
-          <span class="schedule-period-badge">
-            ${periodTitle}
-          </span>
+        <div class="view-mode-tabs" role="tablist">
+          <button type="button" class="view-mode-btn ${mode === "day" ? "active" : ""}" data-schedule-mode="day">Ngày</button>
+          <button type="button" class="view-mode-btn ${mode === "week" ? "active" : ""}" data-schedule-mode="week">Tuần</button>
+          <button type="button" class="view-mode-btn ${mode === "month" ? "active" : ""}" data-schedule-mode="month">Tháng</button>
         </div>
 
         <div style="display:flex;align-items:center;gap:10px;">
@@ -95,14 +72,25 @@ export function renderScheduleView() {
           : ""
       }
 
-      <!-- Vùng hiển thị Lịch theo chế độ -->
-      ${
-        mode === "week"
-          ? renderWeekView(selectedDateStr, allEvents, conflictingIds)
-          : mode === "day"
-          ? renderDayView(selectedDateStr, allEvents, conflictingIds)
-          : renderMonthView(selectedDateStr, allEvents, conflictingIds)
-      }
+      <!-- BỐ CỤC 2 CỘT: LỊCH CHÍNH LỚN BÊN TRÁI, LỊCH THU NHỎ VÀ CHÚ GIẢI BÊN PHẢI -->
+      <div class="schedule-body-layout">
+        <!-- Cột trái: Lịch chính chiếm phần lớn chiều rộng -->
+        <div class="schedule-main-col">
+          ${
+            mode === "week"
+              ? renderWeekView(selectedDateStr, allEvents, conflictingIds)
+              : mode === "day"
+              ? renderDayView(selectedDateStr, allEvents, conflictingIds)
+              : renderMonthView(selectedDateStr, allEvents, conflictingIds)
+          }
+        </div>
+
+        <!-- Cột phải: Lịch thu nhỏ & Chú giải màu -->
+        <div class="schedule-side-col">
+          ${renderMiniCalendar(selectedDateStr, allEvents)}
+          ${renderColorLegend()}
+        </div>
+      </div>
 
       <!-- Modal Thêm / Sửa lịch tự học -->
       <div id="studySessionModalContainer"></div>
@@ -115,6 +103,97 @@ export function renderScheduleView() {
 
       <!-- Modal Giải quyết xung đột -->
       <div id="conflictResolutionModalContainer"></div>
+    </div>
+  `;
+}
+
+/**
+ * Render Lịch tháng thu nhỏ (Mini Calendar) điều khiển lịch chính
+ */
+function renderMiniCalendar(selectedDateStr, allEvents) {
+  const parts = selectedDateStr.split("-");
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10) - 1;
+  const todayStr = formatDateISO(new Date());
+
+  const firstDay = new Date(y, m, 1);
+  const lastDay = new Date(y, m + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const startDayOfWeek = (firstDay.getDay() + 6) % 7;
+  const totalSlots = Math.ceil((startDayOfWeek + daysInMonth) / 7) * 7;
+
+  const datesWithEvents = new Set(allEvents.map((e) => e.date));
+
+  let cellsHtml = "";
+  for (let i = 0; i < totalSlots; i++) {
+    const dayNum = i - startDayOfWeek + 1;
+    if (dayNum >= 1 && dayNum <= daysInMonth) {
+      const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+      const isSelected = dateStr === selectedDateStr;
+      const isToday = dateStr === todayStr;
+      const hasEvents = datesWithEvents.has(dateStr);
+
+      cellsHtml += `
+        <button type="button" 
+          class="mini-day-cell ${isSelected ? "selected" : ""} ${isToday ? "today" : ""} ${hasEvents ? "has-events" : ""}" 
+          data-mini-date="${dateStr}"
+          title="${dateStr}${hasEvents ? " (Có lịch học)" : ""}">
+          <span>${dayNum}</span>
+          ${hasEvents ? `<span class="mini-event-dot"></span>` : ""}
+        </button>
+      `;
+    } else {
+      cellsHtml += `<div class="mini-day-cell empty"></div>`;
+    }
+  }
+
+  return `
+    <div class="schedule-mini-card">
+      <div class="mini-cal-header">
+        <button type="button" class="mini-nav-arrow" id="miniCalPrevBtn" title="Tháng trước" aria-label="Tháng trước">
+          <svg><use href="#i-chevron-left"></use></svg>
+        </button>
+        <span class="mini-cal-title" id="miniCalTitle">Tháng ${m + 1} / ${y}</span>
+        <button type="button" class="mini-nav-arrow" id="miniCalNextBtn" title="Tháng sau" aria-label="Tháng sau">
+          <svg><use href="#i-chevron-right"></use></svg>
+        </button>
+      </div>
+
+      <div class="mini-cal-days-header">
+        <span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span>
+      </div>
+
+      <div class="mini-cal-grid">
+        ${cellsHtml}
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Render Chú giải màu lịch học
+ */
+function renderColorLegend() {
+  return `
+    <div class="schedule-legend-card">
+      <div class="legend-header">
+        <svg style="width:16px;height:16px;color:var(--violet-700);"><use href="#i-spark"></use></svg>
+        <strong>Chú giải màu sắc</strong>
+      </div>
+      <div class="legend-list">
+        <div class="legend-item">
+          <span class="legend-badge-color school"></span>
+          <span>Lịch trường CMC (Vàng)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-badge-color study"></span>
+          <span>Lịch tự học cá nhân (Xanh)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-badge-color conflict"></span>
+          <span>Trùng lịch học (Đỏ)</span>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -259,10 +338,83 @@ function renderDayView(selectedDateStr, allEvents, conflictingIds) {
  * Render Lịch tháng
  */
 function renderMonthView(selectedDateStr, allEvents, conflictingIds) {
+  const parts = selectedDateStr.split("-");
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10) - 1;
+  const todayStr = formatDateISO(new Date());
+
+  const firstDay = new Date(y, m, 1);
+  const lastDay = new Date(y, m + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const startDayOfWeek = (firstDay.getDay() + 6) % 7; // Monday = 0
+  const numWeeks = Math.ceil((startDayOfWeek + daysInMonth) / 7);
+  const totalSlots = numWeeks * 7;
+
+  const dayHeadersHtml = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
+    .map((name) => `<div class="month-col-header"><strong>${name}</strong></div>`)
+    .join("");
+
+  let cellsHtml = "";
+  for (let i = 0; i < totalSlots; i++) {
+    const dayNum = i - startDayOfWeek + 1;
+    const isCurrentMonth = dayNum >= 1 && dayNum <= daysInMonth;
+
+    if (isCurrentMonth) {
+      const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+      const isSelected = dateStr === selectedDateStr;
+      const isToday = dateStr === todayStr;
+
+      const dayEvents = allEvents
+        .filter((e) => e.date === dateStr)
+        .sort((a, b) => (a.start > b.start ? 1 : -1));
+
+      const eventBadgesHtml = dayEvents
+        .map((ev) => {
+          const isConflict = conflictingIds.has(ev.id);
+          const isStudy = ev.source === "Tự thêm" || !ev.source;
+          const typeClass = isConflict ? "conflict" : isStudy ? "study" : "school";
+
+          return `
+            <div class="month-event-chip ${typeClass}" 
+              data-event-id="${ev.id}" 
+              tabindex="0" 
+              role="button" 
+              title="${ev.start} - ${ev.end}: ${ev.title || ev.subject}">
+              <span class="chip-time">${ev.start}</span>
+              <span class="chip-title">${ev.title || ev.subject}</span>
+            </div>
+          `;
+        })
+        .join("");
+
+      cellsHtml += `
+        <div class="month-grid-cell ${isSelected ? "selected" : ""} ${isToday ? "today" : ""}" data-month-cell-date="${dateStr}">
+          <div class="month-cell-header">
+            <span class="month-day-num ${isToday ? "today-badge" : ""}">${dayNum}</span>
+            ${dayEvents.length > 0 ? `<span class="month-event-count">${dayEvents.length}</span>` : ""}
+          </div>
+          <div class="month-cell-events">
+            ${eventBadgesHtml}
+          </div>
+        </div>
+      `;
+    } else {
+      cellsHtml += `
+        <div class="month-grid-cell other-month">
+          <div class="month-cell-header">
+            <span class="month-day-num muted"></span>
+          </div>
+        </div>
+      `;
+    }
+  }
+
   return `
-    <div style="background:white;border-radius:var(--radius-lg);padding:30px;border:1px solid var(--ink-200);text-align:center;">
-      <h3 style="margin:0 0 10px;">Lịch tháng</h3>
-      <p class="muted">Đang xem tháng chứa ngày ${formatDateVN(selectedDateStr)}. Dùng Lịch tuần hoặc Lịch ngày để xem chi tiết theo tiết học.</p>
+    <div class="schedule-month-container">
+      <div class="schedule-month-grid">
+        ${dayHeadersHtml}
+        ${cellsHtml}
+      </div>
     </div>
   `;
 }

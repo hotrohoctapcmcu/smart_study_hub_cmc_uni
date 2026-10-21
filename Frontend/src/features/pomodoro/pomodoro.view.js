@@ -36,6 +36,11 @@ export function renderPomodoroView() {
 
   const isLocked = isRunning || isPaused;
 
+  const totalMs = ((pState.mode === "study" ? pState.totalWorkSeconds : pState.totalBreakSeconds) || 25 * 60) * 1000;
+  const remainingMs = typeof pState.remainingMs === "number" ? Math.max(0, pState.remainingMs) : totalMs;
+  const ratio = totalMs > 0 ? Math.max(0, Math.min(1, remainingMs / totalMs)) : 1;
+  const dashOffset = (722.57 * (1 - ratio)).toFixed(2);
+
   // Render các nút hành động tương ứng với trạng thái
   let actionsHtml = "";
   if (pState.state === "idle") {
@@ -178,26 +183,45 @@ export function renderPomodoroView() {
 
       <!-- Main Timer Card -->
       <div class="pomo-timer-card">
-        <!-- Huy hiệu chế độ -->
-        <div class="pomo-badge-wrap">
-          <span class="pomo-mode-badge ${isBreakMode || isBreakCompleted ? "badge-break" : "badge-study"}">
-            <svg style="width:14px;height:14px;"><use href="${isBreakMode || isBreakCompleted ? "#i-spark" : "#i-clock"}"></use></svg>
-            <span>${badgeModeLabel}</span>
-          </span>
-        </div>
-
-        <!-- Cụm trung tâm: Đồng hồ số đếm ngược và Sticker Cáo CMC -->
+        <!-- Cụm trung tâm: Đồng hồ vòng tròn và Sticker Cáo CMC -->
         <div class="pomo-core-display">
-          <!-- Cột bên: Sticker Cáo CMC linh động -->
+          <!-- Cột bên: Sticker Cáo CMC linh động (đặt bên cạnh hoặc phía dưới, không đè lên đồng hồ) -->
           <div class="pomo-fox-container">
             <img src="${foxImageSrc}" alt="Linh vật Cáo CMC Pomodoro" class="pomo-fox-img" />
           </div>
 
-          <!-- Đồng hồ số trung tâm -->
+          <!-- Đồng hồ vòng tròn SVG với bộ đếm ở chính giữa -->
           <div class="pomo-clock-wrap">
-            <div class="pomo-countdown-text" id="pomoCountdownDisplay">${pState.displayTime}</div>
-            <div class="pomo-progress-bar-bg">
-              <div class="pomo-progress-bar-fill ${isBreakMode ? "fill-break" : ""}" style="width: ${pState.progress}%;"></div>
+            <div class="pomo-circle-wrap">
+              <svg class="pomo-circle-svg" viewBox="0 0 280 280" aria-hidden="true">
+                <defs>
+                  <linearGradient id="pomoGradStudy" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#7c3aed" />
+                    <stop offset="100%" stop-color="#9333ea" />
+                  </linearGradient>
+                  <linearGradient id="pomoGradBreak" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#f97316" />
+                    <stop offset="100%" stop-color="#ea580c" />
+                  </linearGradient>
+                </defs>
+                <circle class="pomo-circle-track" cx="140" cy="140" r="115" />
+                <circle 
+                  id="pomoCircleProgress" 
+                  class="pomo-circle-bar ${isBreakMode ? "bar-break" : ""}" 
+                  cx="140" 
+                  cy="140" 
+                  r="115" 
+                  style="stroke-dasharray: 722.57; stroke-dashoffset: ${dashOffset};" 
+                />
+              </svg>
+              <div class="pomo-circle-center">
+                <span class="pomo-mode-badge ${isBreakMode || isBreakCompleted ? "badge-break" : "badge-study"}" id="pomoCenterBadge">
+                  <svg style="width:12px;height:12px;"><use href="${isBreakMode || isBreakCompleted ? "#i-spark" : "#i-clock"}"></use></svg>
+                  <span>${badgeModeLabel}</span>
+                </span>
+                <div class="pomo-countdown-text" id="pomoCountdownDisplay">${pState.displayTime}</div>
+                <span class="pomo-circle-sub">${isBreakMode ? "Giờ nghỉ ngơi" : "Tập trung học tập"}</span>
+              </div>
             </div>
             <p class="pomo-motivational-quote">${motivationalText}</p>
           </div>

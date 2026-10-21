@@ -22,6 +22,9 @@ import {
 import { renderPomodoroView } from "./pomodoro.view.js";
 
 let unsubscribeService = null;
+let lastState = null;
+let lastMode = null;
+let lastHistoryCount = 0;
 
 export function attachPomodoroEvents(containerEl) {
   if (unsubscribeService) {
@@ -29,13 +32,45 @@ export function attachPomodoroEvents(containerEl) {
     unsubscribeService = null;
   }
 
-  unsubscribeService = subscribePomodoro(() => {
-    if (document.body.contains(containerEl)) {
+  // Khởi tạo state theo dõi
+  lastState = null;
+  lastMode = null;
+  lastHistoryCount = 0;
+
+  unsubscribeService = subscribePomodoro((pState) => {
+    if (!document.body.contains(containerEl)) {
+      if (unsubscribeService) {
+        unsubscribeService();
+        unsubscribeService = null;
+      }
+      return;
+    }
+
+    const currentHistoryCount = pState.history ? pState.history.length : 0;
+    const isStateChanged = pState.state !== lastState || pState.mode !== lastMode || currentHistoryCount !== lastHistoryCount;
+
+    if (isStateChanged) {
+      lastState = pState.state;
+      lastMode = pState.mode;
+      lastHistoryCount = currentHistoryCount;
       containerEl.innerHTML = renderPomodoroView();
       bindDomEvents(containerEl);
-    } else if (unsubscribeService) {
-      unsubscribeService();
-      unsubscribeService = null;
+    } else {
+      // Nhịp đếm giây thông thường: Chỉ cập nhật số đếm và vòng tròn SVG, không render lại toàn trang
+      const countdownEl = containerEl.querySelector("#pomoCountdownDisplay");
+      if (countdownEl && countdownEl.textContent !== pState.displayTime) {
+        countdownEl.textContent = pState.displayTime;
+      }
+
+      const ringEl = containerEl.querySelector("#pomoCircleProgress");
+      if (ringEl) {
+        const totalSec = pState.mode === "study" ? pState.totalWorkSeconds : pState.totalBreakSeconds;
+        const totalMs = (totalSec || 25 * 60) * 1000;
+        const remainingMs = typeof pState.remainingMs === "number" ? Math.max(0, pState.remainingMs) : totalMs;
+        const ratio = totalMs > 0 ? Math.max(0, Math.min(1, remainingMs / totalMs)) : 1;
+        const dashOffset = (722.57 * (1 - ratio)).toFixed(2);
+        ringEl.style.strokeDashoffset = `${dashOffset}`;
+      }
     }
   });
 
