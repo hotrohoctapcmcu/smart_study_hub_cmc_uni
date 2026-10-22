@@ -6,7 +6,19 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  animation: fadeIn 0.2s ease;
+  animation: progressFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.2s ease;
+}
+
+@keyframes progressFadeIn {
+  from {
+    opacity: 0.35;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .progress-header {
@@ -20,15 +32,16 @@
 .progress-period-tabs {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   background: white;
   padding: 4px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--ink-200);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .progress-period-tabs .view-mode-btn {
-  padding: 6px 14px;
+  padding: 6px 16px;
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
@@ -36,14 +49,76 @@
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .progress-period-tabs .view-mode-btn.active {
   background: var(--violet-600);
   color: white;
-  box-shadow: 0 2px 6px rgba(91, 33, 182, 0.2);
+  box-shadow: 0 2px 8px rgba(91, 33, 182, 0.25);
 }
+
+/* Date Navigator & Period Badge */
+.schedule-date-navigator {
+  display: inline-flex;
+  align-items: center;
+  background: white;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-lg);
+  padding: 3px 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  gap: 4px;
+}
+
+.schedule-nav-arrow {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--ink-700);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.schedule-nav-arrow:hover {
+  background: var(--violet-50);
+  color: var(--violet-700);
+}
+
+.schedule-nav-arrow svg {
+  width: 16px;
+  height: 16px;
+}
+
+.schedule-date-input {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink-900);
+  padding: 4px 6px;
+  outline: none;
+  cursor: pointer;
+}
+
+.schedule-period-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: var(--violet-50);
+  color: var(--violet-700);
+  border: 1px solid var(--violet-200);
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 
 /* Metrics Grid */
 .progress-metrics-grid {

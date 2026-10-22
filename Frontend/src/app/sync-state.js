@@ -88,6 +88,7 @@ export function deselectAllSources() {
  */
 export function setSourceStatus(sourceId, status) {
   if (syncState.sourceStatuses[sourceId] !== undefined) {
+    if (syncState.sourceStatuses[sourceId] === status) return;
     syncState.sourceStatuses[sourceId] = status;
     notifyStateChange();
   }
@@ -97,10 +98,9 @@ export function setSourceStatus(sourceId, status) {
  * Cập nhật thông báo riêng của một nguồn (không ảnh hưởng nguồn khác).
  */
 export function setSourceMessage(sourceId, message) {
-  if (syncState.sourceMessages[sourceId] === undefined) {
-    syncState.sourceMessages[sourceId] = "";
-  }
-  syncState.sourceMessages[sourceId] = message || "";
+  const nextMsg = message || "";
+  if (syncState.sourceMessages[sourceId] === nextMsg) return;
+  syncState.sourceMessages[sourceId] = nextMsg;
   notifyStateChange();
 }
 
@@ -108,11 +108,14 @@ export function setSourceMessage(sourceId, message) {
  * Ghi mốc đồng bộ thành công cho một nguồn.
  */
 export function markSourceSynced(sourceId) {
+  const isAlreadySynced = syncState.sourceStatuses[sourceId] === "synced";
   const now = new Date().toISOString();
   syncState.lastSyncTimestamps[sourceId] = now;
   syncState.lastSyncTimestamp = now;
   syncState.sourceStatuses[sourceId] = "synced";
-  notifyStateChange();
+  if (!isAlreadySynced) {
+    notifyStateChange();
+  }
 }
 
 /**

@@ -36,6 +36,53 @@ export async function getSyncSources() {
   return res;
 }
 
+let isCheckingSourceStatuses = false;
+
+/**
+ * Kiểm tra và đồng bộ trạng thái kết nối của các cổng IU và EduX từ API Backend.
+ * Cập nhật syncState.sourceStatuses để UI (bao gồm Aside) phản ánh chính xác trạng thái kết nối.
+ */
+export async function checkAndRefreshSourceStatuses() {
+  if (isCheckingSourceStatuses) return;
+  isCheckingSourceStatuses = true;
+  try {
+    // 1. Kiểm tra IU
+    const iuStatusPromise = fetchIuStatus().catch(() => ({ ok: false, connected: false }));
+    // 2. Kiểm tra EDUX
+    const eduxStatusPromise = fetchEduxStatus().catch(() => ({ ok: false, connected: false }));
+
+    const [iuRes, eduxRes] = await Promise.all([iuStatusPromise, eduxStatusPromise]);
+
+    // Xử lý IU
+    const hasIuData = (state.schoolEvents && state.schoolEvents.length > 0) || Boolean(state.studentProfile?.studentId && state.studentProfile.studentId !== "Chưa có dữ liệu");
+    if (hasIuData) {
+      setSourceStatus("iu", "synced");
+    } else if (iuRes.connected) {
+      setSourceStatus("iu", "portal_opened");
+      setSourceMessage("iu", "Đã kết nối cổng đào tạo IU.");
+    }
+
+    // Xử lý EDUX
+    const hasEduxData = (state.tasks || []).some((t) => t.source === "EDUX");
+    if (hasEduxData) {
+      setSourceStatus("edux", "synced");
+      if (eduxRes.email) syncState.eduxEmail = eduxRes.email;
+    } else if (eduxRes.connected) {
+      setSourceStatus("edux", "portal_opened");
+      if (eduxRes.email) {
+        syncState.eduxEmail = eduxRes.email;
+        setSourceMessage("edux", `Đã có phiên EduX (${eduxRes.email}). Bấm "Đồng bộ EduX" để cập nhật bài tập.`);
+      }
+    }
+  } catch (err) {
+    console.warn("[SyncService] Lỗi cập nhật trạng thái nguồn:", err);
+  } finally {
+    isCheckingSourceStatuses = false;
+  }
+}
+
+
+
 /**
  * Bắt đầu job đồng bộ lên server (sau khi có backend)
  */

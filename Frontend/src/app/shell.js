@@ -17,7 +17,7 @@ import { mountStudyPlanner } from "../features/study-planner/study-planner.js";
 import { mountExams } from "../features/exams/exams.js";
 import { mountNotifications } from "../features/notifications/notifications.js";
 import { mountSync } from "../features/sync/sync.js";
-import { mountProfile } from "../features/profile/profile.js?v=5";
+import { mountProfile } from "../features/profile/profile.js";
 import { mountPomodoro } from "../features/pomodoro/pomodoro.js?v=4";
 import { mountDocuments } from "../features/documents/documents.js";
 import { mountProgress } from "../features/progress/progress.js";

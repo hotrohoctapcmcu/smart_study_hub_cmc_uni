@@ -5,13 +5,16 @@ import { getActiveTab, updateActiveTabLocalState } from "../../app/workspace.js"
 import { shiftDateByDays, shiftDateByMonths, formatDateISO } from "../../shared/utils/date.js";
 
 export function attachProgressEvents(containerEl, uiState, reRenderCallback) {
+  const activeTab = getActiveTab();
+
   // 1. Chuyển chu kỳ Ngày / Tuần / Tháng
   const periodBtns = containerEl.querySelectorAll("[data-period]");
   periodBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
       const p = btn.getAttribute("data-period");
+      if (uiState.period === p) return;
       uiState.period = p;
-      updateActiveTabLocalState({ progressPeriod: p });
+      if (activeTab?.tabState) activeTab.tabState.progressPeriod = p;
       reRenderCallback();
     });
   });
@@ -22,7 +25,7 @@ export function attachProgressEvents(containerEl, uiState, reRenderCallback) {
     datePicker.addEventListener("change", (e) => {
       if (e.target.value) {
         uiState.selectedDate = e.target.value;
-        updateActiveTabLocalState({ progressDate: e.target.value });
+        if (activeTab?.tabState) activeTab.tabState.progressDate = e.target.value;
         reRenderCallback();
       }
     });
@@ -42,7 +45,7 @@ export function attachProgressEvents(containerEl, uiState, reRenderCallback) {
         nextDate = shiftDateByMonths(cur, -1);
       }
       uiState.selectedDate = nextDate;
-      updateActiveTabLocalState({ progressDate: nextDate });
+      if (activeTab?.tabState) activeTab.tabState.progressDate = nextDate;
       reRenderCallback();
     });
   }
@@ -61,7 +64,7 @@ export function attachProgressEvents(containerEl, uiState, reRenderCallback) {
         nextDate = shiftDateByMonths(cur, 1);
       }
       uiState.selectedDate = nextDate;
-      updateActiveTabLocalState({ progressDate: nextDate });
+      if (activeTab?.tabState) activeTab.tabState.progressDate = nextDate;
       reRenderCallback();
     });
   }

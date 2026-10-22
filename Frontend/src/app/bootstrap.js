@@ -57,7 +57,7 @@ export function bootstrap() {
     try {
       const [
         { fetchProfileFromApi },
-        { fetchSchoolSchedules },
+        { fetchSchoolSchedules, checkAndRefreshSourceStatuses },
         { fetchStudySchedules },
         { fetchTasksFromApi },
         { fetchExamsFromApi },
@@ -84,6 +84,9 @@ export function bootstrap() {
         fetchExamsFromApi(),
         fetchNotificationsFromApi()
       ]);
+
+      // Sau khi tải dữ liệu xong, đồng bộ trạng thái kết nối nguồn
+      await checkAndRefreshSourceStatuses();
     } catch (err) {
       logger.warn("Không thể tải toàn bộ dữ liệu khởi tạo từ backend:", err);
     }

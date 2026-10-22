@@ -8,6 +8,8 @@ import { timeStringToMinutes } from "../../shared/utils/date.js";
 export const HOUR_HEIGHT = 60; // 60px cho mỗi giờ -> 1px mỗi phút
 export const TOTAL_GRID_HEIGHT = 24 * HOUR_HEIGHT; // 1440px
 export const HOURS_24 = Array.from({ length: 24 }, (_, i) => i);
+export const GRID_HOURS_2H = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
+
 
 /**
  * Chuyển số phút sang chuỗi "HH:MM"

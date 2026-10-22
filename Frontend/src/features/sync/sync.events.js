@@ -15,7 +15,8 @@ import {
   logoutEdux,
   fetchEduxStatus,
   pullEduxData,
-  mergeEduxTasks
+  mergeEduxTasks,
+  checkAndRefreshSourceStatuses
 } from "./sync.service.js";
 
 /**
@@ -147,18 +148,10 @@ export function attachSyncEvents(containerEl) {
     });
   }
 
-  // ─── Khôi phục trạng thái phiên EduX đang có trên server ───────────────
-  if (syncState.sourceStatuses.edux === "unconnected") {
-    fetchEduxStatus()
-      .then((status) => {
-        if (!status.ok || !status.connected) return;
-        syncState.eduxEmail = status.email || null;
-        setSourceStatus("edux", "portal_opened");
-        setSourceMessage(
-          "edux",
-          `Đã có phiên EduX${status.email ? ` (${status.email})` : ""}. Bấm "Đồng bộ EduX" để cập nhật bài tập.`
-        );
-      })
-      .catch(() => { /* backend chưa chạy — giữ trạng thái chưa kết nối */ });
+  // ─── Khôi phục trạng thái kết nối các cổng từ API server nếu chưa xác định ───
+  if (syncState.sourceStatuses.iu === "unconnected" && syncState.sourceStatuses.edux === "unconnected") {
+    checkAndRefreshSourceStatuses();
   }
 }
+
+

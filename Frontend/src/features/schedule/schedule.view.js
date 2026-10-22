@@ -10,6 +10,7 @@ import { renderModal } from "../../shared/components/modal.js";
 import { 
   HOUR_HEIGHT, 
   HOURS_24, 
+  GRID_HOURS_2H,
   splitOvernightEvents, 
   layoutDayEvents 
 } from "./schedule.grid.js";
@@ -282,14 +283,17 @@ export function renderWeekHourlyGrid(selectedDateStr, allEvents, conflictingIds)
       const dayEvents = processedEvents.filter((e) => e.date === d.dateStr);
       const { positionedEvents } = layoutDayEvents(dayEvents);
 
-      // 24 hàng giờ nền
-      const hourRowsHtml = HOURS_24.map((h) => {
+      // 12 hàng lưới giờ (2 giờ trên 1 lưới: 00:00 -> 02:00, 02:00 -> 04:00, ...)
+      const hourRowsHtml = GRID_HOURS_2H.map((h) => {
+        const nextH = h + 2;
+        const startStr = `${String(h).padStart(2, "0")}:00`;
+        const endStr = `${String(nextH).padStart(2, "0")}:00`;
         return `
           <div class="grid-hour-row" 
             data-slot-date="${d.dateStr}" 
             data-slot-hour="${h}"
-            title="Nhấn để xếp lịch tự học lúc ${String(h).padStart(2, "0")}:00 ngày ${d.dateStr}">
-            <div class="grid-half-hour-line"></div>
+            title="Nhấn để xếp lịch tự học (${startStr} – ${endStr}) ngày ${d.dateStr}">
+            <div class="grid-half-hour-line" title="${String(h + 1).padStart(2, "0")}:00"></div>
           </div>
         `;
       }).join("");
@@ -308,14 +312,18 @@ export function renderWeekHourlyGrid(selectedDateStr, allEvents, conflictingIds)
     })
     .join("");
 
-  // 4. Cột mốc giờ bên trái (00:00 - 23:00)
-  const timeGutterHtml = HOURS_24.map((h) => {
+  // 4. Cột mốc giờ bên trái (00:00, 02:00, 04:00 ... 22:00, 24:00)
+  const timeGutterHtml = GRID_HOURS_2H.map((h) => {
     return `
       <div class="grid-time-gutter-slot ${h === 0 ? "slot-zero" : ""}" style="top:${h * HOUR_HEIGHT}px;">
         <span>${String(h).padStart(2, "0")}:00</span>
       </div>
     `;
-  }).join("");
+  }).join("") + `
+    <div class="grid-time-gutter-slot" style="top:${24 * HOUR_HEIGHT}px;">
+      <span>24:00</span>
+    </div>
+  `;
 
   return `
     <div class="schedule-grid-container">
@@ -392,14 +400,17 @@ export function renderDayHourlyGrid(selectedDateStr, allEvents, conflictingIds) 
     `;
   }
 
-  // 3. 24 hàng giờ nền
-  const hourRowsHtml = HOURS_24.map((h) => {
+  // 3. 12 hàng lưới giờ (2 giờ trên 1 lưới: 00:00 -> 02:00, ...)
+  const hourRowsHtml = GRID_HOURS_2H.map((h) => {
+    const nextH = h + 2;
+    const startStr = `${String(h).padStart(2, "0")}:00`;
+    const endStr = `${String(nextH).padStart(2, "0")}:00`;
     return `
       <div class="grid-hour-row" 
         data-slot-date="${selectedDateStr}" 
         data-slot-hour="${h}"
-        title="Nhấn để xếp lịch tự học lúc ${String(h).padStart(2, "0")}:00">
-        <div class="grid-half-hour-line"></div>
+        title="Nhấn để xếp lịch tự học (${startStr} – ${endStr})">
+        <div class="grid-half-hour-line" title="${String(h + 1).padStart(2, "0")}:00"></div>
       </div>
     `;
   }).join("");
@@ -409,14 +420,18 @@ export function renderDayHourlyGrid(selectedDateStr, allEvents, conflictingIds) 
     .map((ev) => renderEventBlock(ev, conflictingIds))
     .join("");
 
-  // 4. Cột mốc giờ bên trái (00:00 - 23:00)
-  const timeGutterHtml = HOURS_24.map((h) => {
+  // 4. Cột mốc giờ bên trái (00:00, 02:00, 04:00 ... 22:00, 24:00)
+  const timeGutterHtml = GRID_HOURS_2H.map((h) => {
     return `
       <div class="grid-time-gutter-slot ${h === 0 ? "slot-zero" : ""}" style="top:${h * HOUR_HEIGHT}px;">
         <span>${String(h).padStart(2, "0")}:00</span>
       </div>
     `;
-  }).join("");
+  }).join("") + `
+    <div class="grid-time-gutter-slot" style="top:${24 * HOUR_HEIGHT}px;">
+      <span>24:00</span>
+    </div>
+  `;
 
   return `
     <div class="schedule-grid-container single-day-mode">

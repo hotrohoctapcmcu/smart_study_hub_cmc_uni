@@ -1,84 +1,32 @@
 /**
  * UniStudy CMC - Profile Events
  */
-import { state, resetSessionState, notifyStateChange } from "../../app/state.js";
+import { resetSessionState } from "../../app/state.js";
 import { resetWorkspaceTabs } from "../../app/workspace.js";
-import { syncState, resetSyncState } from "../../app/sync-state.js";
-import { attachSourceSelectorEvents } from "../../shared/components/source-selector.js";
-import { openSchoolPortals } from "../sync/sync.auth-window.js";
-import { getIuBridge, syncIuAuto, logoutIu, logoutEdux } from "../sync/sync.service.js";
-import { changeCurrentTabRoute } from "../../app/workspace.js";
-import { renderProfileEditModal } from "./profile.view.js";
-import { attachModalEvents } from "../../shared/components/modal.js";
-import { saveStudentProfileApi } from "./profile.service.js";
+import { resetSyncState } from "../../app/sync-state.js";
+import { logoutIu, logoutEdux } from "../sync/sync.service.js";
+import { fetchProfileFromApi } from "./profile.service.js";
 
 export function attachProfileEvents(containerEl) {
-  attachSourceSelectorEvents(containerEl);
-
-  // Nút Đồng bộ ngay (luồng tự động trong Electron, fallback popup ở web thuần)
-  const syncNowBtn = containerEl.querySelector("#profileSyncNowBtn");
-  if (syncNowBtn) {
-    syncNowBtn.addEventListener("click", async () => {
-      const canIuAuto = getIuBridge() && syncState.selectedSources.includes("iu");
-
-      // EduX cần email + mật khẩu nên không thể chạy tự động từ trang Hồ sơ:
-      // chuyển sang trang Đồng bộ nơi có form đăng nhập EduX.
-      if (syncState.selectedSources.includes("edux") && !canIuAuto) {
-        changeCurrentTabRoute("sync");
-        notifyStateChange();
-        return;
-      }
-
-      if (canIuAuto) {
-        syncNowBtn.disabled = true;
-        try {
-          await syncIuAuto();
-        } catch { /* message đã set trong service */ } finally {
-          syncNowBtn.disabled = false;
+  // Nút Cập nhật bảng điểm
+  const refreshGradesBtn = containerEl.querySelector("#refreshGradesBtn");
+  if (refreshGradesBtn) {
+    refreshGradesBtn.addEventListener("click", async () => {
+      refreshGradesBtn.disabled = true;
+      const originalText = refreshGradesBtn.innerHTML;
+      refreshGradesBtn.innerHTML = `
+        <svg style="animation:spin 1s linear infinite;"><use href="#i-refresh"></use></svg>
+        <span>Đang cập nhật...</span>
+      `;
+      try {
+        await fetchProfileFromApi();
+      } catch (err) {
+        console.warn("[Profile] Lỗi cập nhật bảng điểm từ backend:", err);
+      } finally {
+        if (refreshGradesBtn.isConnected) {
+          refreshGradesBtn.disabled = false;
+          refreshGradesBtn.innerHTML = originalText;
         }
-        return;
-      }
-      openSchoolPortals(syncState.selectedSources);
-      notifyStateChange();
-    });
-  }
-
-  // Mở modal chỉnh sửa hồ sơ
-  const editBtn = containerEl.querySelector("#openEditProfileBtn");
-  if (editBtn) {
-    editBtn.addEventListener("click", () => {
-      const modalHost = containerEl.querySelector("#profileEditModalHost");
-      if (!modalHost) return;
-
-      modalHost.innerHTML = renderProfileEditModal(state.studentProfile);
-      const modalEl = modalHost.querySelector("#profileEditModal");
-
-      const close = () => {
-        modalHost.innerHTML = "";
-      };
-
-      attachModalEvents(modalEl, close);
-
-      const form = modalEl.querySelector("#profileEditForm");
-      if (form) {
-        form.addEventListener("submit", (e) => {
-          e.preventDefault();
-          const fd = new FormData(form);
-          const newProfile = {
-            ...(state.studentProfile || {}),
-            name: fd.get("name")?.trim() || "Chưa có dữ liệu",
-            studentId: fd.get("studentId")?.trim() || "Chưa có dữ liệu",
-            email: fd.get("email")?.trim() || "Chưa có dữ liệu"
-          };
-          state.studentProfile = newProfile;
-          close();
-          notifyStateChange();
-
-          // Ghi lên server để lần mở sau (và các tab khác) đọc lại được.
-          saveStudentProfileApi(newProfile).catch((err) =>
-            console.warn("[Profile] Lỗi lưu hồ sơ lên server:", err)
-          );
-        });
       }
     });
   }

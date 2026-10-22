@@ -1,14 +1,24 @@
 /**
- * UniStudy CMC - Profile Feature Styles (Theo Ảnh 12)
+ * UniStudy CMC - Profile Feature Styles (Hồ sơ học tập cá nhân)
  */
 .profile-container {
-  max-width: 1100px;
+  max-width: 1140px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  animation: fadeIn 0.25s ease;
 }
 
+.profile-header-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Thẻ chính Hồ sơ sinh viên */
 .profile-main-card {
   background: white;
   border-radius: var(--radius-xl);
@@ -16,7 +26,7 @@
   box-shadow: var(--shadow-sm);
   padding: 32px;
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 220px 1fr;
   gap: 36px;
   align-items: center;
 }
@@ -29,8 +39,8 @@
 }
 
 .profile-avatar-wrap {
-  width: 180px;
-  height: 180px;
+  width: 170px;
+  height: 170px;
   margin: 0 auto;
   border-radius: 50%;
   background: var(--violet-100);
@@ -48,43 +58,367 @@
   display: block;
 }
 
-.profile-info-grid {
+.profile-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-code-tag,
+.profile-major-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.profile-code-tag {
+  background: var(--violet-50);
+  color: var(--violet-800);
+  border: 1px solid var(--violet-200);
+}
+
+.profile-code-tag strong {
+  font-weight: 700;
+  color: var(--violet-950);
+  letter-spacing: 0.02em;
+}
+
+.profile-major-tag {
+  background: var(--blue-50);
+  color: var(--blue-800);
+  border: 1px solid var(--blue-200);
+}
+
+.profile-major-tag strong {
+  font-weight: 700;
+  color: var(--blue-950);
+}
+
+.sem-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  background: #f1f5f9;
+  color: #334155;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+}
+
+/* Thống kê GPA & Tín chỉ */
+.profile-stats-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  margin-top: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
 }
 
-@media (max-width: 600px) {
-  .profile-info-grid {
-    grid-template-columns: 1fr;
-  }
+.profile-stat-card {
+  background: white;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.profile-field-box {
-  background: var(--page);
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
+.profile-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-.profile-field-box span {
-  display: block;
-  font-size: 0.76rem;
-  color: var(--ink-600);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 2px;
+.stat-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
-.profile-field-box strong {
-  font-size: 0.95rem;
+.stat-icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+}
+
+.stat-icon-wrap svg {
+  width: 22px;
+  height: 22px;
+}
+
+.stat-card-value {
+  font-size: 2rem;
+  font-weight: 800;
   color: var(--ink-950);
+  line-height: 1.15;
 }
 
-.profile-sync-settings-card {
+.stat-card-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink-800);
+  margin-top: 6px;
+}
+
+.stat-card-sub {
+  font-size: 0.78rem;
+  color: var(--ink-500);
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+/* Huy hiệu xếp loại */
+.classification-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.classification-badge.badge-success {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.classification-badge.badge-info {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.classification-badge.badge-violet {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+.classification-badge.badge-warning {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.classification-badge.badge-orange {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.classification-badge.badge-danger {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.classification-badge.badge-neutral {
+  background: var(--ink-100);
+  color: var(--ink-700);
+}
+
+/* Thanh tiến độ tín chỉ */
+.credit-progress-bar-wrap {
+  width: 100%;
+  height: 8px;
+  background: var(--ink-100);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.credit-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--emerald-500), var(--emerald-600));
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+/* Card Bảng điểm */
+.profile-grades-card {
   background: white;
   border-radius: var(--radius-xl);
   border: 1px solid var(--ink-200);
   box-shadow: var(--shadow-sm);
-  padding: 28px;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.grades-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.grades-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-lg);
+}
+
+.grades-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  text-align: left;
+}
+
+.grades-table th {
+  background: #f9f8fc;
+  padding: 12px 14px;
+  font-weight: 700;
+  color: var(--ink-700);
+  border-bottom: 2px solid var(--ink-200);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.grades-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ink-100);
+  color: var(--ink-900);
+}
+
+.grades-table tbody tr:hover {
+  background: #faf8fd;
+}
+
+.code-badge {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--violet-700);
+  background: var(--violet-50);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--violet-200);
+}
+
+.grade-letter-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.grade-letter-pill.a {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.grade-letter-pill.b {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.grade-letter-pill.c {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.grade-letter-pill.d {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.grade-letter-pill.f {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.result-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.result-pill.pass {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.result-pill.fail {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.grades-empty-box {
+  padding: 40px 20px;
+  text-align: center;
+  background: var(--page);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--ink-200);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Hộp tham chiếu đối chiếu GPA 4.0 */
+.gpa-reference-box {
+  background: #faf8fd;
+  border: 1px solid var(--violet-200);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+}
+
+.gpa-ref-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 0.88rem;
+  color: var(--violet-950);
+}
+
+.gpa-ref-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.gpa-ref-item {
+  background: white;
+  border: 1px solid var(--ink-200);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: all 0.15s ease;
+}
+
+.gpa-ref-item.current-rank {
+  border-color: var(--violet-600);
+  background: #f5f0fb;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+}
+
+.gpa-ref-rank {
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.gpa-ref-range {
+  font-size: 0.74rem;
+  color: var(--ink-600);
+  font-weight: 500;
 }

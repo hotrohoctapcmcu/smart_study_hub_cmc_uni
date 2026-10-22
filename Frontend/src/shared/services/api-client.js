@@ -37,10 +37,29 @@ export async function apiRequest(endpointDef, options = {}) {
   let timeoutId = null;
   try {
     let url = `${APP_CONFIG.apiBaseUrl}${endpointDef.path}`;
+    const queryParams = new URLSearchParams();
+
     if (options.params) {
       Object.keys(options.params).forEach((key) => {
-        url = url.replace(`:${key}`, encodeURIComponent(options.params[key]));
+        if (url.includes(`:${key}`)) {
+          url = url.replace(`:${key}`, encodeURIComponent(options.params[key]));
+        } else if (options.params[key] !== null && options.params[key] !== undefined && options.params[key] !== "") {
+          queryParams.append(key, options.params[key]);
+        }
       });
+    }
+
+    if (options.queryParams) {
+      Object.keys(options.queryParams).forEach((key) => {
+        if (options.queryParams[key] !== null && options.queryParams[key] !== undefined && options.queryParams[key] !== "") {
+          queryParams.append(key, options.queryParams[key]);
+        }
+      });
+    }
+
+    const queryString = queryParams.toString();
+    if (queryString) {
+      url += (url.includes("?") ? "&" : "?") + queryString;
     }
 
     // Timeout chỉ áp cho request không do bên gọi tự huỷ (options.signal).
