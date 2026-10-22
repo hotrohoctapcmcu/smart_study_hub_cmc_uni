@@ -54,7 +54,9 @@ const { renderSyncView } = await import("../src/features/sync/sync.view.js");
 resetSyncState();
 let html = renderSyncView();
 ok(html.includes("Hệ thống Quản lý Đào tạo (IU)"), "selector hiển thị card IU");
-ok(!html.includes("EduX") && !html.includes("edux"), "không còn EduX trên giao diện");
+ok(html.includes("EduX CMC"), "selector hiển thị card EduX");
+ok(html.includes('id="eduxLoginForm"'), "có form đăng nhập EduX trên trang đồng bộ");
+ok(!html.includes('type="password" value='), "không render lại mật khẩu EduX từ state");
 
 syncState.isSyncing = true;
 html = renderSyncView();
@@ -62,10 +64,13 @@ ok(html.includes("Đang đồng bộ..."), "đang sync hiện text Đang đồng
 
 syncState.isSyncing = false;
 syncState.sourceStatuses.iu = "synced";
+syncState.sourceStatuses.edux = "unconnected";
 syncState.lastSyncTimestamp = new Date("2026-10-15T15:00:00").toISOString();
 html = renderSyncView();
 ok(html.includes('id="iuLogoutBtn"'), "sync xong hiện nút Ngắt kết nối IU");
-ok(html.includes("Lần đồng bộ IU gần nhất"), "hiện mốc thời gian đồng bộ");
+ok(html.includes("Lần đồng bộ gần nhất"), "hiện mốc thời gian đồng bộ");
+ok(html.includes("Đã đồng bộ") && html.includes("Chưa kết nối"),
+  "IU và EduX hiển thị trạng thái khác nhau trên cùng giao diện");
 resetSyncState();
 
 // 4. Reset dọn sạch schoolEvents/exams nguồn Trường khi logout phiên

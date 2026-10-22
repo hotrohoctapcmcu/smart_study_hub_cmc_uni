@@ -5,6 +5,7 @@
  */
 import { calculateRemainingTime } from "../shared/utils/date.js";
 import { getSchoolEmails, markAllSchoolEmailsAsRead } from "../features/school-email/school-email.service.js";
+import { resetAiChat } from "../features/ai-tutor/ai-tutor.store.js";
 
 const listeners = new Set();
 
@@ -91,6 +92,11 @@ export function resetSessionState() {
   state.miniChatOpen = false;
   state.tabPickerOpen = false;
   state.activeModal = null;
+  try {
+    resetAiChat();
+  } catch (err) {
+    console.warn("[State] Lỗi đặt lại hội thoại trợ lý AI:", err);
+  }
   notifyStateChange();
 }
 
@@ -192,6 +198,7 @@ export function addLocalStudyPlan(planData) {
     freeSlotLabel: planData.freeSlotLabel || "Buổi tối (19:00 – 22:00)",
     targetHours: Number(planData.targetHours) || 10,
     note: planData.note?.trim() || "",
+    isMock: true,
     statusLabel: "Kế hoạch học tập đề xuất",
     sessions: Array.isArray(planData.sessions) ? planData.sessions : [],
     createdAt: new Date().toISOString()

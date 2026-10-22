@@ -1,6 +1,12 @@
 "use strict";
 
-const { executeQuery, getPool } = require("../connection/db");
+const {
+    executeQuery,
+    getPool,
+    beginTransaction,
+    commitTransaction,
+    rollbackTransaction
+} = require("../connection/db");
 
 const VALID_GRADES = ["A+", "A", "B+", "B", "C+", "C", "D+", "D", "F"];
 
@@ -36,11 +42,11 @@ async function saveIUData(studentCode, dataIU) {
         subjectsCount: 0
     };
 
-    // Lấy db instance để chạy transaction thủ công
-    const db = await getPool();
+    // Lấy db instance (đảm bảo connection đã sẵn sàng trước khi mở transaction)
+    await getPool();
 
     try {
-        db.run("BEGIN;");
+        await beginTransaction();
 
         // ────────────────────────────────────────────────────────────────
         // 1. Đồng bộ hồ sơ sinh viên (upsert theo student_code)
@@ -261,12 +267,12 @@ async function saveIUData(studentCode, dataIU) {
             }
         }
 
-        db.run("COMMIT;");
+        await commitTransaction();
         console.log("[SYNC] Đồng bộ IU hoàn tất:", result);
         return result;
 
     } catch (err) {
-        try { db.run("ROLLBACK;"); } catch (_) {}
+        await rollbackTransaction();
         console.error("[SYNC] Lỗi đồng bộ IU, đã rollback:", err.message);
         throw err;
     }

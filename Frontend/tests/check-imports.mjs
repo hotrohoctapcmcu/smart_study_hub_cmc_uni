@@ -3,8 +3,10 @@
  */
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, resolve, dirname, relative } from 'path';
+import { fileURLToPath } from 'url';
 
-const base = 'd:/Reporitory/smart_study_hub_cmc_uni/Frontend';
+// Suy ra thư mục Frontend từ vị trí file để chạy được trên mọi máy.
+const base = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 function walk(dir) {
   const files = [];

@@ -1,6 +1,6 @@
 /**
  * UniStudy CMC - API Endpoints Registry
- * Khai báo tập trung method và path theo API Backend Sprint 1
+ * Khai báo tập trung method và path theo API Backend Sprint 1.
  */
 export const ENDPOINTS = {
   // Lịch học & thời khóa biểu
@@ -15,6 +15,7 @@ export const ENDPOINTS = {
     // Lịch tự học (Study Schedules)
     getStudy: { method: "GET", path: "/api/v1/schedules/study" },
     createStudy: { method: "POST", path: "/api/v1/schedules/study" },
+    updateStudy: { method: "PUT", path: "/api/v1/schedules/study/:id" },
     updateStudyStatus: { method: "PATCH", path: "/api/v1/schedules/study/:id/status" },
     deleteStudy: { method: "DELETE", path: "/api/v1/schedules/study/:id" },
     freeSlots: { method: "GET", path: "/api/v1/schedules/study/free-slots" }
@@ -32,7 +33,10 @@ export const ENDPOINTS = {
     addChecklistItem: { method: "POST", path: "/api/v1/tasks/:taskId/checklist" },
     updateChecklistItem: { method: "PUT", path: "/api/v1/tasks/checklist/:itemId" },
     toggleChecklistItem: { method: "PATCH", path: "/api/v1/tasks/checklist/:itemId/done" },
-    deleteChecklistItem: { method: "DELETE", path: "/api/v1/tasks/checklist/:itemId" }
+    deleteChecklistItem: { method: "DELETE", path: "/api/v1/tasks/checklist/:itemId" },
+    // Bài tập AI lấy từ EDUX (đã chuẩn hoá về shape task)
+    eduxList: { method: "GET", path: "/api/v1/tasks/edux" },
+    eduxById: { method: "GET", path: "/api/v1/tasks/edux/:id" }
   },
   // Thông báo & Nhắc nhở
   notifications: {
@@ -48,6 +52,7 @@ export const ENDPOINTS = {
     list: { method: "GET", path: "/api/v1/exams" },
     upcoming: { method: "GET", path: "/api/v1/exams/upcoming" },
     create: { method: "POST", path: "/api/v1/exams" },
+    update: { method: "PUT", path: "/api/v1/exams/:id" },
     delete: { method: "DELETE", path: "/api/v1/exams/:id" },
     studyPlans: { method: "GET", path: "/api/v1/exams/study-plans" },
     createStudyPlan: { method: "POST", path: "/api/v1/exams/study-plans" },
@@ -66,10 +71,21 @@ export const ENDPOINTS = {
     getSources: { method: "GET", path: "/api/v1/sync/sources" },
     startSync: { method: "POST", path: "/api/v1/sync" },
     getStatus: { method: "GET", path: "/api/v1/sync/status" },
+    // Nhánh IU tự động (Electron bridge -> API -> IU -> DB)
     iuSaveSession: { method: "POST", path: "/api/v1/sync/iu/session" },
     iuPull: { method: "POST", path: "/api/v1/sync/iu/pull" },
     iuGroup: { method: "POST", path: "/api/v1/sync/iu/group" },
-    iuStatus: { method: "GET", path: "/api/v1/sync/iu/status" }
+    iuStatus: { method: "GET", path: "/api/v1/sync/iu/status" },
+    // Nhánh EDUX (đăng nhập bằng tài khoản EDUX -> phiên RAM -> kéo bài tập)
+    eduxSaveSession: { method: "POST", path: "/api/v1/sync/edux/session" },
+    eduxPull: { method: "POST", path: "/api/v1/sync/edux/pull" },
+    eduxStatus: { method: "GET", path: "/api/v1/sync/edux/status" },
+    eduxDeleteSession: { method: "DELETE", path: "/api/v1/sync/edux/session" }
+  },
+  // Trợ lý AI
+  ai: {
+    status: { method: "GET", path: "/api/v1/ai/status" },
+    ask: { method: "POST", path: "/api/v1/ai/ask" }
   },
   // Dashboard
   dashboard: {

@@ -63,21 +63,48 @@ const dbConfig = {
 let _db = null;
 let _persistTimer = null;
 
+// Số transaction đang mở. sql.js không cho đọc trạng thái transaction, mà
+// export() trong lúc transaction đang mở sẽ ÂM THẦM ROLLBACK nó (dữ liệu đã ghi
+// biến mất, câu COMMIT sau đó ném "cannot commit - no transaction is active").
+// Vì vậy phải chặn persist khi còn transaction chưa đóng.
+let _txDepth = 0;
+
 /**
  * Ghi database (đang nằm trong RAM của sql.js) xuống file .db ngay lập tức.
  * sql.js KHÔNG tự ghi file — nếu chỉ export lúc closePool() thì file
  * data/unistudy.db sẽ không bao giờ xuất hiện khi app đang chạy, và mất sạch
  * dữ liệu nếu app bị kill / crash. Vì vậy mọi thao tác ghi đều được persist.
+ *
+ * BỎ QUA khi đang có transaction mở: export() lúc đó sẽ rollback transaction
+ * đang chạy. Persist sẽ được gọi lại ngay sau COMMIT/ROLLBACK.
+ *
+ * @param {boolean} [force] - ghi kể cả khi transaction đang mở (chỉ dùng lúc thoát tiến trình,
+ *                            chấp nhận mất phần chưa commit để cứu phần đã commit).
  */
-function persistNow() {
+function persistNow(force = false) {
     if (!_db) return;
+    if (_txDepth > 0 && !force) return;
     try {
         const dbDir = path.dirname(DB_FILE);
         if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
         fs.writeFileSync(DB_FILE, Buffer.from(_db.export()));
     } catch (err) {
         console.error('[DB] Không ghi được file SQLite:', err.message);
+    } finally {
+        // export() của sql.js tạo lại handle nội bộ và TẮT foreign_keys.
+        // Nếu không bật lại, mọi ràng buộc khóa ngoại biến mất sau lần persist
+        // đầu tiên (dữ liệu mồ côi, xóa nhầm bản ghi của người khác...).
+        batKhoaNgoai();
     }
+}
+
+/**
+ * Bật lại ràng buộc khóa ngoại cho connection đang mở.
+ * Gọi sau mỗi lần export() và ở cuối quá trình khởi tạo schema.
+ */
+function batKhoaNgoai() {
+    if (!_db) return;
+    try { _db.run('PRAGMA foreign_keys = ON;'); } catch (_) { /* bỏ qua */ }
 }
 
 /**
@@ -92,13 +119,76 @@ function schedulePersist() {
     if (typeof _persistTimer.unref === 'function') _persistTimer.unref();
 }
 
+/**
+ * Mở một transaction. Phải gọi commitTransaction() hoặc rollbackTransaction()
+ * để đóng; nếu không, persist sẽ bị chặn (xem persistNow).
+ */
+async function beginTransaction() {
+    const db = await getPool();
+    db.run('BEGIN;');
+    _txDepth++;
+}
+
+/**
+ * Commit transaction đang mở và ghi dữ liệu ra file.
+ */
+async function commitTransaction() {
+    const db = await getPool();
+    try {
+        db.run('COMMIT;');
+    } finally {
+        _txDepth = Math.max(0, _txDepth - 1);
+        if (_txDepth === 0) persistNow();
+    }
+}
+
+/**
+ * Rollback transaction đang mở (bỏ toàn bộ thay đổi chưa commit).
+ * Bỏ qua an toàn nếu transaction đã đóng vì lý do khác.
+ */
+async function rollbackTransaction() {
+    const db = await getPool();
+    try {
+        db.run('ROLLBACK;');
+    } catch (_) {
+        // Transaction đã đóng sẵn — không còn gì để rollback.
+    } finally {
+        _txDepth = Math.max(0, _txDepth - 1);
+        if (_txDepth === 0) persistNow();
+    }
+}
+
+/**
+ * Bọc một nhóm thao tác ghi trong 1 transaction SQLite.
+ * Mọi lỗi giữa chừng đều rollback toàn bộ, và dữ liệu được persist đúng một
+ * lần sau khi transaction đóng (kể cả khi bên trong có await dài — lúc đó
+ * timer persist sẽ thấy _txDepth > 0 và bỏ qua thay vì phá transaction).
+ *
+ * @template T
+ * @param {() => Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+async function withTransaction(fn) {
+    await beginTransaction();
+    try {
+        const result = await fn();
+        await commitTransaction();
+        return result;
+    } catch (err) {
+        await rollbackTransaction();
+        throw err;
+    }
+}
+
 // Đảm bảo dữ liệu được ghi ra file khi tiến trình thoát (kể cả bị kill mềm).
+// force=true: lúc này không còn cơ hội chạy tiếp, thà mất phần chưa commit
+// còn hơn mất toàn bộ file.
 process.once('exit', () => {
     if (_persistTimer) { clearTimeout(_persistTimer); _persistTimer = null; }
-    persistNow();
+    persistNow(true);
 });
-process.once('SIGINT', () => { persistNow(); });
-process.once('SIGTERM', () => { persistNow(); });
+process.once('SIGINT', () => { persistNow(true); });
+process.once('SIGTERM', () => { persistNow(true); });
 
 /**
  * Chạy câu query trả về mảng rows (dùng nội bộ cho db.js).
@@ -188,22 +278,12 @@ async function getPool() {
         // Kích hoạt khóa ngoại
         db.run('PRAGMA foreign_keys = ON;');
 
-        // Kiểm tra xem database đã có dữ liệu seed chưa;
-        // nếu bảng quan trọng nào trống thì chạy schema khởi tạo (tạo bảng + dữ liệu mẫu).
-        // CREATE TABLE IF NOT EXISTS + INSERT OR IGNORE đảm bảo an toàn, không xóa dữ liệu thật.
-        let needSchema = false;
-        try {
-            const checks = ['Students', 'Subjects'];
-            for (const tbl of checks) {
-                const rows = queryAll(db, `SELECT 1 FROM ${tbl} LIMIT 1;`);
-                if (rows.length === 0) { needSchema = true; break; }
-            }
-        } catch (_) {
-            needSchema = true;
-        }
-        if (needSchema) {
-            runSchema(db);
-        }
+        // Luôn chạy schema: toàn bộ câu lệnh đều là CREATE TABLE/INDEX IF NOT EXISTS
+        // nên an toàn với DB đã có dữ liệu, và đảm bảo bảng mới thêm sau này
+        // (vd EduxAssignments) xuất hiện trên file .db cũ.
+        // Trước đây chỉ chạy khi Students/Subjects trống, nên nâng cấp phiên bản
+        // xong vẫn thiếu bảng và mọi truy vấn mới đều "no such table".
+        runSchema(db);
 
         // Nâng cấp cấu trúc cũ (file .db tạo từ schema trước đây) lên schema hiện tại.
         migrateSchema(db);
@@ -274,6 +354,22 @@ function runSchema(db) {
  * @param {Database} db - sql.js database instance
  */
 function migrateSchema(db) {
+    // Các cột bổ sung sau này — thêm bằng ALTER TABLE vì CREATE TABLE IF NOT EXISTS
+    // không đụng tới bảng đã tồn tại. Chạy TRƯỚC khối Students bên dưới: khối đó
+    // return sớm khi bảng Students đã đúng schema, nếu đặt sau sẽ không bao giờ chạy.
+    themCotNeuThieu(db, 'Assignments', 'priority', "TEXT NOT NULL DEFAULT 'MEDIUM'");
+
+    // Chạy TRƯỚC khối Students vì khối đó return sớm khi bảng Students đã đúng schema.
+    migrateEduxAssignments(db);
+
+    // Cột phụ có thể thiếu ở file .db tạo từ schema cũ trước khi có bảng này.
+    themCotNeuThieu(db, 'EduxAssignments', 'subject_ext_id', 'TEXT');
+    themCotNeuThieu(db, 'EduxAssignments', 'model_id', 'TEXT');
+    themCotNeuThieu(db, 'EduxAssignments', 'chapter', 'TEXT');
+    themCotNeuThieu(db, 'EduxAssignments', 'highest_score', 'INTEGER');
+    themCotNeuThieu(db, 'EduxAssignments', 'doc_done', 'INTEGER NOT NULL DEFAULT 0');
+    themCotNeuThieu(db, 'EduxAssignments', 'doc_total', 'INTEGER NOT NULL DEFAULT 0');
+
     try {
         const cols = queryAll(db, 'PRAGMA table_info("Students");').map(c => c.name);
         if (!cols.length) return; // chưa có bảng — runSchema đã lo
@@ -325,6 +421,116 @@ function migrateSchema(db) {
         }
     } catch (err) {
         console.error('[DB] Không kiểm tra được schema Students:', err.message);
+    }
+}
+
+/**
+ * Đưa bảng EduxAssignments (file .db tạo từ schema cũ) về đúng schema hiện tại.
+ *
+ * Schema cũ khóa bài tập EDUX theo `student_id`; schema hiện tại khóa theo
+ * `user_id` (NGUOI_DUNG_ID) vì EDUX không phụ thuộc hồ sơ IU. Nhưng
+ * `CREATE TABLE IF NOT EXISTS` không sửa được bảng đã tồn tại, nên file .db cũ
+ * vẫn thiếu cột user_id và mọi truy vấn bài tập EDUX đều "no such column: user_id"
+ * (GET /api/v1/tasks/edux trả 500).
+ *
+ * Cách xử lý: dựng bảng mới theo schema hiện tại, copy dữ liệu cũ sang
+ * (student_id → user_id, giữ nguyên edux_id để không đổi khóa), rồi thay thế
+ * bảng cũ. Chỉ chạy khi phát hiện bảng di sản — không đụng gì tới database
+ * đúng schema.
+ *
+ * @param {Database} db - sql.js database instance
+ */
+function migrateEduxAssignments(db) {
+    try {
+        const cols = queryAll(db, 'PRAGMA table_info("EduxAssignments");').map(c => c.name);
+        if (!cols.length) return;             // bảng chưa có — runSchema đã tạo đúng schema
+        if (cols.includes('user_id')) return; // đã đúng schema hiện tại
+
+        // Bảng cũ có thể thiếu vài cột phụ — cột nào không có thì dùng giá trị mặc định.
+        const pick = (name, fallback) => cols.includes(name) ? name : fallback;
+        const userId = cols.includes('student_id') ? 'student_id' : 'NULL';
+
+        db.run('PRAGMA foreign_keys = OFF;');
+        db.run('BEGIN;');
+        try {
+            db.run(`CREATE TABLE EduxAssignments_new (
+                edux_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id        INTEGER NOT NULL,
+                external_id    TEXT    NOT NULL,
+                title          TEXT    NOT NULL,
+                subject_name   TEXT,
+                subject_ext_id TEXT,
+                model_id       TEXT,
+                chapter        TEXT,
+                description    TEXT,
+                status         TEXT    NOT NULL DEFAULT 'Chưa làm',
+                priority       TEXT    NOT NULL DEFAULT 'MEDIUM'
+                                       CHECK (priority IN ('LOW','MEDIUM','HIGH','URGENT')),
+                highest_score  INTEGER,
+                doc_done       INTEGER NOT NULL DEFAULT 0,
+                doc_total      INTEGER NOT NULL DEFAULT 0,
+                synced_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+                created_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+                updated_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+                UNIQUE (user_id, external_id)
+            );`);
+
+            db.run(`INSERT INTO EduxAssignments_new
+                        (edux_id, user_id, external_id, title, subject_name,
+                         subject_ext_id, model_id, chapter, description, status,
+                         priority, highest_score, doc_done, doc_total, synced_at,
+                         created_at, updated_at)
+                    SELECT ${pick('edux_id', 'NULL')},
+                           ${userId},
+                           external_id,
+                           title,
+                           ${pick('subject_name', 'NULL')},
+                           ${pick('subject_ext_id', 'NULL')},
+                           ${pick('model_id', 'NULL')},
+                           ${pick('chapter', 'NULL')},
+                           ${pick('description', 'NULL')},
+                           ${pick('status', "'Chưa làm'")},
+                           ${pick('priority', "'MEDIUM'")},
+                           ${pick('highest_score', 'NULL')},
+                           ${pick('doc_done', '0')},
+                           ${pick('doc_total', '0')},
+                           ${pick('synced_at', "datetime('now')")},
+                           ${pick('created_at', "datetime('now')")},
+                           ${pick('updated_at', "datetime('now')")}
+                    FROM EduxAssignments;`);
+
+            db.run('DROP TABLE EduxAssignments;');
+            db.run('ALTER TABLE EduxAssignments_new RENAME TO EduxAssignments;');
+            db.run('COMMIT;');
+            console.log('[DB] Đã nâng cấp bảng EduxAssignments: student_id → user_id.');
+        } catch (err) {
+            try { db.run('ROLLBACK;'); } catch (_) { }
+            console.error('[DB] Nâng cấp bảng EduxAssignments thất bại:', err.message);
+        } finally {
+            db.run('PRAGMA foreign_keys = ON;');
+        }
+    } catch (err) {
+        console.error('[DB] Không kiểm tra được schema EduxAssignments:', err.message);
+    }
+}
+
+/**
+ * Thêm cột vào bảng nếu file .db cũ chưa có cột đó.
+ * @param {Database} db
+ * @param {string} table
+ * @param {string} column
+ * @param {string} definition - phần định nghĩa cột trong ALTER TABLE
+ */
+function themCotNeuThieu(db, table, column, definition) {
+    try {
+        const cols = queryAll(db, `PRAGMA table_info("${table}");`).map(c => c.name);
+        if (!cols.length) return; // bảng chưa tồn tại — runSchema sẽ tạo đúng cấu trúc
+        if (cols.includes(column)) return;
+
+        db.run(`ALTER TABLE "${table}" ADD COLUMN ${column} ${definition};`);
+        console.log(`[DB] Đã thêm cột ${table}.${column}.`);
+    } catch (err) {
+        console.error(`[DB] Không thêm được cột ${table}.${column}:`, err.message);
     }
 }
 
@@ -435,4 +641,15 @@ const sql = {
     TIME: 'TEXT'
 };
 
-module.exports = { getPool, closePool, executeQuery, executeProcedure, sql };
+module.exports = {
+    getPool,
+    closePool,
+    executeQuery,
+    executeProcedure,
+    withTransaction,
+    beginTransaction,
+    commitTransaction,
+    rollbackTransaction,
+    batKhoaNgoai,
+    sql
+};

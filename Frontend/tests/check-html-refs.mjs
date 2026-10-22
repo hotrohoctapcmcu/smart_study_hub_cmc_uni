@@ -1,6 +1,9 @@
 import { readFileSync, statSync } from 'fs';
-import { resolve } from 'path';
-const base = 'd:/Reporitory/smart_study_hub_cmc_uni/Frontend';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+// Suy ra thư mục Frontend từ vị trí file để chạy được trên mọi máy.
+const base = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(base + '/index.html', 'utf-8');
 
 // Check CSS

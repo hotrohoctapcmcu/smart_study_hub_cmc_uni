@@ -1,9 +1,42 @@
 /**
  * UniStudy CMC - Source Selector Component
  * Dùng chung trên trang Sync và trang Profile theo quy tắc AGENTS.md
+ *
+ * Mỗi nguồn hiển thị trạng thái riêng (IU và EduX độc lập):
+ * chưa kết nối / đã mở cổng / đang đồng bộ / đã đồng bộ / lỗi.
  */
 import { SYNC_SOURCES } from "../config/sync-sources.js";
 import { syncState, toggleSourceSelection, selectAllSources, deselectAllSources } from "../../app/sync-state.js";
+
+const NHAN_TRANG_THAI = {
+  unconnected: "Chưa kết nối",
+  portal_opened: "Đã đăng nhập",
+  syncing: "Đang đồng bộ...",
+  synced: "Đã đồng bộ",
+  error: "Lỗi kết nối"
+};
+
+const MAU_TRANG_THAI = {
+  unconnected: "var(--ink-500)",
+  portal_opened: "var(--violet-700)",
+  syncing: "var(--amber-600)",
+  synced: "var(--emerald-600)",
+  error: "var(--red-600)"
+};
+
+/**
+ * Nhãn + màu trạng thái của một nguồn, dùng chung cho mọi view.
+ * @param {string} sourceId
+ * @returns {{key: string, label: string, color: string}}
+ */
+export function getSourceStatusInfo(sourceId) {
+  const key = syncState.sourceStatuses?.[sourceId] || "unconnected";
+  return {
+    key,
+    label: NHAN_TRANG_THAI[key] || NHAN_TRANG_THAI.unconnected,
+    color: MAU_TRANG_THAI[key] || MAU_TRANG_THAI.unconnected
+  };
+}
 
 export function renderSourceSelector() {
   const selected = syncState.selectedSources;
@@ -13,6 +46,7 @@ export function renderSourceSelector() {
 
   const itemsHtml = SYNC_SOURCES.map((source) => {
     const isChecked = selected.includes(source.id);
+    const status = getSourceStatusInfo(source.id);
     return `
       <div class="source-item-card ${isChecked ? "selected" : ""}" data-source-id="${source.id}">
         <div class="source-checkbox-custom">
@@ -21,6 +55,9 @@ export function renderSourceSelector() {
         <div class="source-item-info">
           <strong>${source.name}</strong>
           <p>${source.description}</p>
+          <span class="source-status-badge" data-source-status="${source.id}" style="color:${status.color};">
+            ● ${status.label}
+          </span>
         </div>
         <span class="eyebrow" style="margin-left:auto;font-size:0.75rem;">${source.code}</span>
       </div>
@@ -41,8 +78,8 @@ export function renderSourceSelector() {
           }
         </div>
         <div class="source-item-info">
-          <strong>Hệ thống đào tạo CMC (IU)</strong>
-          <p>Đồng bộ lịch học, lịch thi, hạn nộp bài tập và tài liệu từ cổng IU</p>
+          <strong>Tất cả nguồn dữ liệu CMC</strong>
+          <p>Đồng bộ song song IU (lịch học, lịch thi, điểm) và EduX (bài giảng, bài tập AI)</p>
         </div>
       </div>
 

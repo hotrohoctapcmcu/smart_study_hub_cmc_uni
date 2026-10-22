@@ -8,13 +8,26 @@ const STORAGE_KEYS = {
   notes: "unistudy_notebook_pages"
 };
 
+// ID của dữ liệu mẫu cũ từng được seed sẵn (doc-1..3, note-1..2).
+// Chỉ loại đúng các ID này — KHÔNG lọc theo tiền tố, vì tài liệu/ghi chú do
+// người dùng tạo cũng sinh ID dạng `doc-<timestamp>` / `note-<timestamp>`
+// (xem documents.service.js), lọc theo tiền tố sẽ xoá sạch dữ liệu thật khi
+// tải lại trang.
+const LEGACY_SEED_IDS = new Set([
+  "doc-1", "doc-2", "doc-3",
+  "note-1", "note-2"
+]);
+
+function locBoDuLieuMau(danhSach) {
+  if (!Array.isArray(danhSach)) return [];
+  return danhSach.filter((item) => !LEGACY_SEED_IDS.has(item?.id));
+}
+
 export function loadStoredDocuments() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.documents);
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    // Lọc bỏ dữ liệu seed mock cũ nếu có trong localStorage
-    return Array.isArray(parsed) ? parsed.filter(d => !d.id?.startsWith("doc-")) : [];
+    return locBoDuLieuMau(JSON.parse(raw));
   } catch {
     return [];
   }
@@ -32,9 +45,7 @@ export function loadStoredNotes() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.notes);
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    // Lọc bỏ dữ liệu seed mock cũ nếu có trong localStorage
-    return Array.isArray(parsed) ? parsed.filter(n => !n.id?.startsWith("note-")) : [];
+    return locBoDuLieuMau(JSON.parse(raw));
   } catch {
     return [];
   }

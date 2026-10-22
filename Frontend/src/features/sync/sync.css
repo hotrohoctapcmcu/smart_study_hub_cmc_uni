@@ -81,3 +81,90 @@
     justify-content: center;
   }
 }
+
+/* ─── Nhánh EduX: đăng nhập bằng tài khoản EduX ───────────────────────── */
+.edux-login-card {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--violet-200, #ddd6fe);
+  border-radius: var(--radius-md, 12px);
+  background: var(--violet-50, #f5f3ff);
+}
+
+.edux-login-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.edux-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.edux-login-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.edux-login-form input {
+  width: 100%;
+  border: 1px solid var(--ink-200);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.9rem;
+  background: white;
+  color: var(--ink-900);
+}
+
+.edux-login-form input:focus {
+  outline: 2px solid var(--violet-400, #a78bfa);
+  outline-offset: 1px;
+}
+
+.edux-login-form input:disabled {
+  background: var(--ink-100, #f1f5f9);
+  cursor: not-allowed;
+}
+
+.edux-login-session {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.edux-login-message {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: white;
+  border: 1px solid var(--violet-200, #ddd6fe);
+  color: var(--ink-800);
+  line-height: 1.45;
+}
+
+/* Nhãn trạng thái nhỏ trong card nguồn */
+.source-status-badge {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+@media (max-width: 640px) {
+  .edux-login-head {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .edux-login-session {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

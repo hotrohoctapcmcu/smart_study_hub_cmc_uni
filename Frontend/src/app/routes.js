@@ -64,7 +64,7 @@ export const ROUTES = {
     id: "ai-tutor",
     title: "Trợ lý AI",
     icon: "i-spark",
-    isImplemented: false,
+    isImplemented: true,
     inSidebar: true,
     description: "Hỏi đáp kiến thức và giải bài tập cùng trợ lý AI"
   },
@@ -72,7 +72,7 @@ export const ROUTES = {
     id: "ai-tutor",
     title: "Trợ lý AI",
     icon: "i-spark",
-    isImplemented: false,
+    isImplemented: true,
     inSidebar: true,
     description: "Hỏi đáp kiến thức và giải bài tập cùng trợ lý AI"
   },

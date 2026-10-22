@@ -45,6 +45,7 @@ export function mapStudyScheduleFromBackend(s) {
 export async function fetchStudySchedules() {
   const res = await apiRequest(ENDPOINTS.schedules.getStudy);
   if (!res.success) {
+    // Chưa có backend: giữ nguyên dữ liệu cục bộ, không ghi đè bằng mảng rỗng.
     if (res.unavailable) return state.studyEvents;
     throw new Error(res.error || "Không thể lấy lịch tự học từ máy chủ.");
   }
@@ -87,10 +88,39 @@ export async function createSelfStudy(sessionData) {
 }
 
 /**
- * Cập nhật lịch tự học theo ID
+ * Cập nhật lịch tự học theo ID (cập nhật cục bộ ngay, rồi ghi lên Backend API).
  */
 export async function updateSelfStudy(id, changes) {
   const updated = updateLocalStudySession(id, changes);
+
+  const numericId = String(id).replace(/^study-/, "");
+  if (numericId && !isNaN(Number(numericId))) {
+    const payload = {};
+    if (changes.title !== undefined) payload.title = changes.title;
+    if (changes.date !== undefined) payload.studyDate = changes.date;
+    if (changes.start !== undefined) payload.startTime = changes.start;
+    if (changes.end !== undefined) payload.endTime = changes.end;
+    if (changes.note !== undefined) payload.notes = changes.note;
+    if (changes.subjectId !== undefined) payload.subjectId = changes.subjectId;
+
+    if (Object.keys(payload).length > 0) {
+      try {
+        const res = await apiRequest(ENDPOINTS.schedules.updateStudy, {
+          params: { id: numericId },
+          body: payload
+        });
+        // Server từ chối thật sự (vd trùng lịch) -> tải lại để UI không hiển
+        // thị thay đổi chưa được lưu. Bỏ qua khi chỉ là "chưa kết nối backend",
+        // nếu không sẽ xoá mất bản ghi người dùng vừa sửa ở chế độ cục bộ.
+        if (!res.success && !res.unavailable) {
+          await fetchStudySchedules();
+        }
+      } catch (err) {
+        console.warn("[Schedule] Lỗi cập nhật lịch tự học trên server:", err);
+      }
+    }
+  }
+
   return updated;
 }
 

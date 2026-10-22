@@ -11,7 +11,14 @@
  * ===================================================================================
  */
 
-const { getPool, closePool, sql, executeQuery, executeProcedure } = require('./connection/db');
+const {
+    getPool,
+    closePool,
+    sql,
+    executeQuery,
+    executeProcedure,
+    withTransaction
+} = require('./connection/db');
 const sprint1Service = require('./sprint1Service');
 
 /**
@@ -32,6 +39,7 @@ async function ketNoiDatabase() {
         closePool,
         executeQuery,
         executeProcedure,
+        withTransaction,
 
         // ─── CHỨC NĂNG 18: HỒ SƠ HỌC TẬP CÁ NHÂN ──────────────────────
         layHoSo: sprint1Service.layHoSo,
@@ -55,6 +63,7 @@ async function ketNoiDatabase() {
         kiemTraXungDotLichTuHoc: sprint1Service.kiemTraXungDotLichTuHoc,
         xepLichTuHoc: sprint1Service.xepLichTuHoc,
         layLichTuHoc: sprint1Service.layLichTuHoc,
+        capNhatLichTuHoc: sprint1Service.capNhatLichTuHoc,
         timKhoangTrongTuHoc: sprint1Service.timKhoangTrongTuHoc,
         capNhatTrangThaiLichTuHoc: sprint1Service.capNhatTrangThaiLichTuHoc,
         xoaLichTuHoc: sprint1Service.xoaLichTuHoc,
@@ -84,11 +93,18 @@ async function ketNoiDatabase() {
         layLichThi: sprint1Service.layLichThi,
         layLichThiSapToi: sprint1Service.layLichThiSapToi,
         themLichThi: sprint1Service.themLichThi,
+        capNhatLichThi: sprint1Service.capNhatLichThi,
         xoaLichThi: sprint1Service.xoaLichThi,
         layKeHoachOnThi: sprint1Service.layKeHoachOnThi,
         taoKeHoachOnThi: sprint1Service.taoKeHoachOnThi,
         capNhatTrangThaiKeHoachOnThi: sprint1Service.capNhatTrangThaiKeHoachOnThi,
-        xoaKeHoachOnThi: sprint1Service.xoaKeHoachOnThi
+        xoaKeHoachOnThi: sprint1Service.xoaKeHoachOnThi,
+
+        // ─── ĐỒNG BỘ EDUX (BÀI TẬP AI LƯU XUỐNG SQLITE) ────────────────
+        luuBaiTapEDUX: sprint1Service.luuBaiTapEDUX,
+        layBaiTapEDUX: sprint1Service.layBaiTapEDUX,
+        capNhatTrangThaiBaiTapEDUX: sprint1Service.capNhatTrangThaiBaiTapEDUX,
+        xoaBaiTapEDUX: sprint1Service.xoaBaiTapEDUX
 
         
     };

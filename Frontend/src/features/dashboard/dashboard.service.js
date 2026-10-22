@@ -11,7 +11,10 @@ export async function getDashboard() {
 }
 
 /**
- * Tải dữ liệu dashboard tổng hợp từ backend và đồng bộ vào state
+ * Tải dữ liệu dashboard tổng hợp từ backend và đồng bộ vào state.
+ * Chỉ notify khi profile thật sự thay đổi — tránh vòng lặp render
+ * (renderShell -> mountDashboard -> notify -> renderShell ...) gây trắng màn hình
+ * khi DB trống (profile = null).
  */
 export async function fetchDashboardData() {
   const res = await getDashboard();
@@ -26,8 +29,9 @@ export async function fetchDashboardData() {
         gpa: d.profile.gpa_4_scale ?? 0,
         credits: d.profile.total_passed_credits ?? 0
       };
+      notifyStateChange();
     }
-    notifyStateChange();
+    // Không notify khi chưa có hồ sơ — giữ nguyên state để dừng vòng lặp.
     return d;
   }
   return null;

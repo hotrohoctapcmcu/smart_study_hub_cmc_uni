@@ -4,6 +4,7 @@ const baiTap = require('./baiTap');
 const nhacNho = require('./nhacNho');
 const kyThi = require('./kyThi');
 const dongBo = require('./dongBo');
+const troLyAI = require('./troLyAI');
 
 const MODULES = [
     { name: 'student', paths: ['/student'], router: sinhVien },
@@ -11,7 +12,8 @@ const MODULES = [
     { name: 'tasks', paths: ['/tasks', '/checklist'], router: baiTap },
     { name: 'notifications', paths: ['/notifications'], router: nhacNho },
     { name: 'exams', paths: ['/exams'], router: kyThi },
-    { name: 'sync', paths: ['/sync'], router: dongBo }
+    { name: 'sync', paths: ['/sync'], router: dongBo },
+    { name: 'ai', paths: ['/ai'], router: troLyAI }
 ];
 
 function setDbForAll(db) { 

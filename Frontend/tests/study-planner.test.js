@@ -51,9 +51,8 @@ export async function runStudyPlannerTests() {
     freeSlot: "morning",
     targetHours: 8
   });
-  assert(res.success === true, "Tạo kế hoạch học tập mô phỏng thành công");
-  assert(res.isMock === true, "Được đánh dấu là mô phỏng (isMock)");
-  assert(res.data.statusLabel === "Kế hoạch mô phỏng — chưa kết nối AI", "Mang nhãn 'Kế hoạch mô phỏng — chưa kết nối AI'");
+  assert(res.success === true, "Tạo kế hoạch học tập thành công");
+  assert(res.data.statusLabel === "Kế hoạch học tập đề xuất", "Mang nhãn 'Kế hoạch học tập đề xuất'");
 
   const plans = getStudyPlans();
   assert(plans.length === 1, "Kế hoạch được lưu vào state phiên");

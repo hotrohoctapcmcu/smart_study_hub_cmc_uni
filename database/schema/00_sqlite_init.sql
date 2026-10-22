@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS Assignments (
     assigned_at TEXT,
     deadline TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','IN_PROGRESS','COMPLETED','OVERDUE')),
+    priority TEXT NOT NULL DEFAULT 'MEDIUM' CHECK (priority IN ('LOW','MEDIUM','HIGH','URGENT')),
     submission_url TEXT,
     source TEXT NOT NULL DEFAULT 'LMS' CHECK (source IN ('LMS','TEACHER','SYSTEM','IU')),
     external_id TEXT,
@@ -174,6 +175,33 @@ CREATE TABLE IF NOT EXISTS Reminders (
     created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
     UNIQUE (student_id, target_type, target_id, tier),
     FOREIGN KEY (student_id) REFERENCES Students(student_id) ON DELETE CASCADE
+);
+
+-- Bài tập AI lấy từ EDUX (đồng bộ qua API, lưu xuống DB để mở lại app vẫn còn).
+-- Dùng khóa tự nhiên external_id (id ổn định `edux-<subjectId>-<modelId>`) để
+-- upsert không tạo bản ghi trùng sau mỗi lần đồng bộ.
+CREATE TABLE IF NOT EXISTS EduxAssignments (
+    edux_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    -- Khóa theo NGƯỜI DÙNG ỨNG DỤNG (NGUOI_DUNG_ID), không phải student_id:
+    -- EDUX là nguồn độc lập, người dùng có thể đồng bộ EDUX trước khi có hồ sơ IU.
+    user_id        INTEGER NOT NULL,
+    external_id    TEXT    NOT NULL,
+    title          TEXT    NOT NULL,
+    subject_name   TEXT,
+    subject_ext_id TEXT,
+    model_id       TEXT,
+    chapter        TEXT,
+    description    TEXT,
+    status         TEXT    NOT NULL DEFAULT 'Chưa làm',
+    priority       TEXT    NOT NULL DEFAULT 'MEDIUM'
+                           CHECK (priority IN ('LOW','MEDIUM','HIGH','URGENT')),
+    highest_score  INTEGER,
+    doc_done       INTEGER NOT NULL DEFAULT 0,
+    doc_total      INTEGER NOT NULL DEFAULT 0,
+    synced_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+    created_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (user_id, external_id)
 );
 
 -- Chức năng 9: Quản lý lịch thi và kế hoạch ôn thi

@@ -67,17 +67,17 @@ router.post('/multi-tier', xuLy(async req => {
 }, 201));
 
 router.patch('/:id/read', xuLy(async req => {
-    await db.danhDauDaGuiNhacNho(req.params.id);
+    await db.danhDauDaGuiNhacNho(req.params.id, NGUOI_DUNG_ID);
     return { message: 'Đã đánh dấu đã đọc.' };
 }));
 
 router.patch('/:id/sent', xuLy(async req => {
-    await db.danhDauDaGuiNhacNho(req.params.id);
+    await db.danhDauDaGuiNhacNho(req.params.id, NGUOI_DUNG_ID);
     return { message: 'Đã đánh dấu đã gửi thông báo.' };
 }));
 
 router.delete('/:id', xuLy(async req => {
-    await db.xoaNhacNho(req.params.id);
+    await db.xoaNhacNho(req.params.id, NGUOI_DUNG_ID);
     return { message: 'Đã xóa nhắc nhở.' };
 }));
 

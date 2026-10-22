@@ -12,6 +12,8 @@ async function runAllTests() {
     await import("./selfstudy-crud.test.js");
     await import("./integration.test.js");
     await import("./iu-sync-flow.test.js");
+    await import("./edux-sync-flow.test.js");
+    await import("./ai-tutor-flow.test.js");
     await import("./pomodoro.test.js");
     await import("./ui-features.test.js");
     await import("./browser-eval.test.js");

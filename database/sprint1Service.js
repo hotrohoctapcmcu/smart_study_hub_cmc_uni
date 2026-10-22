@@ -9,10 +9,23 @@
  * ===================================================================================
  */
 
-const { getPool, executeQuery, executeProcedure, sql } = require('./connection/db');
+const {
+    getPool,
+    executeQuery,
+    executeProcedure,
+    withTransaction,
+    sql
+} = require('./connection/db');
 const { saveIUData } = require('./functions/sync');
 
 // Helper: lấy student_id từ tham số đầu vào (chấp nhận student_id nguyên hoặc student_code)
+//
+// Ứng dụng chỉ có MỘT hồ sơ sinh viên (xem API/shared/nguoiDung.js), nhưng
+// NGUOI_DUNG_ID là hằng số cấu hình (mặc định 1) trong khi student_id là
+// AUTOINCREMENT. Hai giá trị này lệch nhau ngay khi bảng Students được tạo lại
+// hoặc dòng cũ bị xoá (vd đồng bộ IU lần đầu tạo id = 7). Khi đó mọi endpoint
+// trả rỗng dù dữ liệu vẫn còn trong DB.
+// Vì vậy: nếu không khớp id/student_code, rơi về hồ sơ duy nhất đang có.
 async function layStudentId(studentId) {
     const parsed = parseInt(studentId, 10);
     if (Number.isInteger(parsed) && parsed > 0) {
@@ -27,8 +40,13 @@ async function layStudentId(studentId) {
         'SELECT student_id FROM Students WHERE student_code = @code LIMIT 1',
         { code: String(studentId) }
     );
-    if (rows.length === 0) return null;
-    return rows[0].student_id;
+    if (rows.length > 0) return rows[0].student_id;
+
+    // Fallback: hệ thống một-hồ-sơ — dùng hồ sơ duy nhất nếu có.
+    const duyNhat = await executeQuery(
+        'SELECT student_id FROM Students ORDER BY student_id LIMIT 1'
+    );
+    return duyNhat.length > 0 ? duyNhat[0].student_id : null;
 }
 
 // Helper: chuyển parameter @name sang :name (executeQuery đã làm, nhưng đảm bảo an toàn)
@@ -383,11 +401,94 @@ async function themTietHoc(studentId, data = {}) {
     return idRes.length > 0 ? idRes[0] : null;
 }
 
-async function xoaTietHoc(timetableId) {
+/**
+ * Chuẩn hoá mức ưu tiên về đúng enum của cột Assignments.priority.
+ *
+ * Frontend dùng nhãn tiếng Việt ("Cao", "Trung bình", "Thấp") còn DB dùng
+ * LOW/MEDIUM/HIGH/URGENT. Nhận cả hai để không phụ thuộc bên nào đổi trước.
+ * Giá trị lạ rơi về MEDIUM thay vì làm hỏng CHECK constraint.
+ *
+ * @param {string} giaTri
+ * @returns {'LOW'|'MEDIUM'|'HIGH'|'URGENT'}
+ */
+function chuanHoaMucUuTien(giaTri) {
+    const raw = String(giaTri == null ? '' : giaTri).trim().toLowerCase();
+    if (!raw) return 'MEDIUM';
+
+    if (raw === 'urgent' || raw === 'khẩn cấp' || raw === 'khan cap') return 'URGENT';
+    if (raw === 'high' || raw === 'cao') return 'HIGH';
+    if (raw === 'low' || raw === 'thấp' || raw === 'thap') return 'LOW';
+    if (raw === 'medium' || raw === 'trung bình' || raw === 'trung binh') return 'MEDIUM';
+
+    return 'MEDIUM';
+}
+
+/**
+ * Xóa một dòng thuộc về sinh viên hiện tại.
+ *
+ * Mọi thao tác xóa/sửa đều phải giới hạn theo student_id: id trên URL do client
+ * gửi lên, nếu không lọc chủ sở hữu thì một request có thể sửa/xóa dữ liệu của
+ * hồ sơ khác (IDOR). Khi caller không truyền studentId (tương thích code cũ),
+ * giữ nguyên hành vi cũ.
+ *
+ * @param {string} table - tên bảng (whitelist bên dưới)
+ * @param {string} idColumn - cột khóa chính
+ * @param {number|string} id
+ * @param {number|string|null} studentId
+ * @returns {Promise<number>} số dòng bị ảnh hưởng
+ */
+const BANG_CHU_SO_HUU = new Set([
+    'Timetables', 'StudySchedules', 'Assignments', 'Checklists',
+    'Reminders', 'Exams', 'ExamStudyPlans'
+]);
+
+async function xoaTheoChuSoHuu(table, idColumn, id, studentId) {
+    if (!BANG_CHU_SO_HUU.has(table)) {
+        throw new Error(`Bảng không hỗ trợ xóa theo chủ sở hữu: ${table}`);
+    }
+
+    const params = { id: parseInt(id, 10) };
+    let sqlText = `DELETE FROM ${table} WHERE ${idColumn} = @id`;
+
+    if (studentId) {
+        const sid = await layStudentId(studentId);
+        if (!sid) return 0;
+        sqlText += ' AND student_id = @sid';
+        params.sid = sid;
+    }
+
+    await executeQuery(sqlText, params);
+    const changed = await executeQuery('SELECT changes() AS so_dong');
+    return changed.length ? Number(changed[0].so_dong) || 0 : 0;
+}
+
+/**
+ * Cập nhật một cột trạng thái của dòng thuộc sinh viên hiện tại.
+ * Trả về số dòng bị ảnh hưởng để caller biết bản ghi có tồn tại hay không.
+ */
+async function capNhatTrangThaiTheoChuSoHuu(table, idColumn, id, cot, giaTri, studentId) {
+    if (!BANG_CHU_SO_HUU.has(table)) {
+        throw new Error(`Bảng không hỗ trợ cập nhật theo chủ sở hữu: ${table}`);
+    }
+
+    const params = { id: parseInt(id, 10), gt: giaTri };
+    let sqlText = `UPDATE ${table} SET ${cot} = @gt, updated_at = datetime('now') WHERE ${idColumn} = @id`;
+
+    if (studentId) {
+        const sid = await layStudentId(studentId);
+        if (!sid) return 0;
+        sqlText += ' AND student_id = @sid';
+        params.sid = sid;
+    }
+
+    await executeQuery(sqlText, params);
+    const changed = await executeQuery('SELECT changes() AS so_dong');
+    return changed.length ? Number(changed[0].so_dong) || 0 : 0;
+}
+
+async function xoaTietHoc(timetableId, studentId = null) {
     if (!timetableId) throw new Error('timetableId là bắt buộc');
-    await executeQuery('DELETE FROM Timetables WHERE timetable_id = @tid', {
-        tid: parseInt(timetableId, 10)
-    });
+    await xoaTheoChuSoHuu('Timetables', 'timetable_id', timetableId, studentId);
     return true;
 }
 
@@ -522,6 +623,87 @@ async function xepLichTuHoc(studentId, data = {}) {
     return idRes.length > 0 ? idRes[0] : null;
 }
 
+/**
+ * Cập nhật một buổi tự học đã có (giờ/ngày/tiêu đề...).
+ *
+ * Trước đây FE sửa lịch tự học chỉ đổi state cục bộ nên thay đổi mất khi tải
+ * lại; endpoint này là đường ghi thật xuống DB. Vẫn kiểm tra xung đột như lúc
+ * tạo, và bỏ qua chính bản ghi đang sửa.
+ *
+ * @param {string} studentId
+ * @param {number|string} scheduleId
+ * @param {Object} data - { title?, studyDate?, startTime?, endTime?, subjectId?, notes?, status?, forceSave? }
+ */
+async function capNhatLichTuHoc(studentId, scheduleId, data = {}) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
+    if (!scheduleId) throw new Error('scheduleId là bắt buộc');
+
+    const sid = await layStudentId(studentId);
+    if (!sid) throw new Error('Không tìm thấy sinh viên');
+
+    const id = parseInt(scheduleId, 10);
+    const hienTai = await executeQuery(
+        'SELECT * FROM StudySchedules WHERE schedule_id = @id AND student_id = @sid LIMIT 1',
+        { id, sid }
+    );
+    if (hienTai.length === 0) return null;
+    const cu = hienTai[0];
+
+    const studyDate = data.studyDate || cu.study_date;
+    const startTime = data.startTime || cu.start_time;
+    const endTime = data.endTime || cu.end_time;
+
+    if (startTime && endTime) {
+        const [sh, sm] = String(startTime).split(':').map(Number);
+        const [eh, em] = String(endTime).split(':').map(Number);
+        if (!Number.isFinite(sh) || !Number.isFinite(sm) || !Number.isFinite(eh) || !Number.isFinite(em)) {
+            throw new Error('startTime và endTime phải có dạng HH:mm');
+        }
+        if ((eh * 60 + em) <= (sh * 60 + sm)) {
+            throw new Error('endTime phải sau startTime');
+        }
+    }
+
+    if (data.forceSave !== 1 && data.forceSave !== true) {
+        const conflicts = await kiemTraXungDotLichTuHoc(
+            studentId, studyDate, startTime, endTime, id
+        );
+        if (conflicts.length > 0) {
+            throw new Error('Khung giờ tự học bị trùng với lịch học chính khóa hoặc lịch tự học khác.');
+        }
+    }
+
+    const [sh2, sm2] = String(startTime).split(':').map(Number);
+    const [eh2, em2] = String(endTime).split(':').map(Number);
+    const durationMinutes = (eh2 * 60 + em2) - (sh2 * 60 + sm2);
+
+    await executeQuery(`
+        UPDATE StudySchedules
+        SET title = COALESCE(@title, title),
+            subject_id = COALESCE(@subId, subject_id),
+            study_date = @sd,
+            start_time = @st,
+            end_time = @et,
+            duration_minutes = @dur,
+            notes = COALESCE(@nt, notes),
+            updated_at = datetime('now')
+        WHERE schedule_id = @id AND student_id = @sid
+    `, {
+        title: data.title || null,
+        subId: data.subjectId ? parseInt(data.subjectId, 10) : null,
+        sd: studyDate,
+        st: startTime,
+        et: endTime,
+        dur: durationMinutes,
+        nt: data.notes !== undefined ? (data.notes || null) : null,
+        id,
+        sid
+    });
+
+    const res = await executeQuery('SELECT * FROM StudySchedules WHERE schedule_id = @id', { id });
+    return res.length > 0 ? res[0] : null;
+}
+
 async function layLichTuHoc(studentId, tuNgay = null, denNgay = null) {
     if (!studentId) throw new Error('studentId là bắt buộc');
     const sid = await layStudentId(studentId);
@@ -633,21 +815,17 @@ async function timKhoangTrongTuHoc(userId, ngay, thoiLuongPhut = 60) {
     return freeSlots;
 }
 
-async function capNhatTrangThaiLichTuHoc(scheduleId, status) {
+async function capNhatTrangThaiLichTuHoc(scheduleId, status, studentId = null) {
     if (!scheduleId || !status) throw new Error('scheduleId và status là bắt buộc');
-    await executeQuery(`
-        UPDATE StudySchedules
-        SET status = @st, updated_at = datetime('now')
-        WHERE schedule_id = @sid
-    `, { st: status, sid: parseInt(scheduleId, 10) });
-    return true;
+    const soDong = await capNhatTrangThaiTheoChuSoHuu(
+        'StudySchedules', 'schedule_id', scheduleId, 'status', status, studentId
+    );
+    return soDong > 0;
 }
 
-async function xoaLichTuHoc(scheduleId) {
+async function xoaLichTuHoc(scheduleId, studentId = null) {
     if (!scheduleId) throw new Error('scheduleId là bắt buộc');
-    await executeQuery('DELETE FROM StudySchedules WHERE schedule_id = @sid', {
-        sid: parseInt(scheduleId, 10)
-    });
+    await xoaTheoChuSoHuu('StudySchedules', 'schedule_id', scheduleId, studentId);
     return true;
 }
 
@@ -665,7 +843,7 @@ async function layDanhSachDeadline(studentId, trangThai = null) {
             SELECT a.assignment_id, a.student_id, a.subject_id,
                    sub.subject_code, sub.subject_name,
                    a.title, a.description, a.assigned_at, a.deadline,
-                   a.status, a.submission_url, a.source, a.external_id,
+                   a.status, a.priority, a.submission_url, a.source, a.external_id,
                    a.completed_at, a.created_at
             FROM Assignments a
             INNER JOIN Subjects sub ON a.subject_id = sub.subject_id
@@ -678,7 +856,7 @@ async function layDanhSachDeadline(studentId, trangThai = null) {
         SELECT a.assignment_id, a.student_id, a.subject_id,
                sub.subject_code, sub.subject_name,
                a.title, a.description, a.assigned_at, a.deadline,
-               a.status, a.submission_url, a.source, a.external_id,
+               a.status, a.priority, a.submission_url, a.source, a.external_id,
                a.completed_at, a.created_at
         FROM Assignments a
         INNER JOIN Subjects sub ON a.subject_id = sub.subject_id
@@ -692,6 +870,13 @@ async function layDeadlineSapToi(studentId, soNgay = 3) {
     const sid = await layStudentId(studentId);
     if (!sid) return [];
 
+    // SQLite chỉ nhận modifier dạng '+3 days' (không có khoảng trắng sau dấu).
+    // Trước đây truyền '+ 3 days' nên date('now', ...) trả NULL và truy vấn
+    // luôn rỗng — "Deadline sắp tới" không bao giờ hiện dù có bài đúng hạn.
+    const soNgayHopLe = Number.isFinite(Number(soNgay)) && Number(soNgay) >= 0
+        ? Math.floor(Number(soNgay))
+        : 3;
+
     return await executeQuery(`
         SELECT a.assignment_id, a.subject_id,
                sub.subject_code, sub.subject_name,
@@ -703,7 +888,7 @@ async function layDeadlineSapToi(studentId, soNgay = 3) {
           AND a.status IN ('PENDING', 'IN_PROGRESS')
           AND date(a.deadline) BETWEEN date('now') AND date('now', @d)
         ORDER BY a.deadline ASC
-    `, { sid, d: `+ ${soNgay} days` });
+    `, { sid, d: `+${soNgayHopLe} days` });
 }
 
 async function themBaiTap(studentId, data = {}) {
@@ -717,14 +902,17 @@ async function themBaiTap(studentId, data = {}) {
 
     await executeQuery(`
         INSERT INTO Assignments (student_id, subject_id, title, description,
-                                 assigned_at, deadline, status, submission_url, source, external_id)
-        VALUES (@sid, @subId, @title, @desc, datetime('now'), @dl, 'PENDING', @url, @src, @ext)
+                                 assigned_at, deadline, status, priority,
+                                 submission_url, source, external_id)
+        VALUES (@sid, @subId, @title, @desc, datetime('now'), @dl, 'PENDING', @pr,
+                @url, @src, @ext)
     `, {
         sid,
         subId: parseInt(data.subjectId, 10),
         title: data.title,
         desc: data.description || null,
         dl: data.deadline instanceof Date ? data.deadline.toISOString() : data.deadline,
+        pr: chuanHoaMucUuTien(data.priority),
         url: data.submissionUrl || null,
         src: data.source || 'SYSTEM',
         ext: data.externalId || null
@@ -764,48 +952,97 @@ async function themBaiTap(studentId, data = {}) {
     return newId ? { assignment_id: newId } : null;
 }
 
-async function capNhatBaiTap(assignmentId, data = {}) {
+async function capNhatBaiTap(assignmentId, data = {}, studentId = null) {
     if (!assignmentId) throw new Error('assignmentId là bắt buộc');
-    await executeQuery(`
+
+    const params = {
+        tl: data.title || null,
+        ds: data.description || null,
+        dl: data.deadline instanceof Date ? data.deadline.toISOString() : (data.deadline || null),
+        pr: data.priority !== undefined ? chuanHoaMucUuTien(data.priority) : null,
+        aid: parseInt(assignmentId, 10)
+    };
+
+    let sqlText = `
         UPDATE Assignments
         SET title = COALESCE(@tl, title),
             description = COALESCE(@ds, description),
             deadline = COALESCE(@dl, deadline),
+            priority = COALESCE(@pr, priority),
             updated_at = datetime('now')
-        WHERE assignment_id = @aid
-    `, {
-        tl: data.title || null, ds: data.description || null,
-        dl: data.deadline instanceof Date ? data.deadline.toISOString() : (data.deadline || null),
-        aid: parseInt(assignmentId, 10)
-    });
+        WHERE assignment_id = @aid`;
+
+    if (studentId) {
+        const sid = await layStudentId(studentId);
+        if (!sid) return null;
+        sqlText += ' AND student_id = @sid';
+        params.sid = sid;
+    }
+
+    await executeQuery(sqlText, params);
     const res = await executeQuery('SELECT * FROM Assignments WHERE assignment_id = @id', {
         id: parseInt(assignmentId, 10)
     });
     return res.length > 0 ? res[0] : null;
 }
 
-async function capNhatTrangThaiBaiTap(assignmentId, trangThai) {
+async function capNhatTrangThaiBaiTap(assignmentId, trangThai, studentId = null) {
     if (!assignmentId || !trangThai) throw new Error('assignmentId và trangThai là bắt buộc');
-    await executeQuery(`
+
+    const params = { st: trangThai, aid: parseInt(assignmentId, 10) };
+    let sqlText = `
         UPDATE Assignments
         SET status = @st,
             completed_at = CASE WHEN @st = 'COMPLETED' THEN datetime('now') ELSE NULL END,
             updated_at = datetime('now')
-        WHERE assignment_id = @aid
-    `, { st: trangThai, aid: parseInt(assignmentId, 10) });
+        WHERE assignment_id = @aid`;
+
+    if (studentId) {
+        const sid = await layStudentId(studentId);
+        if (!sid) return null;
+        sqlText += ' AND student_id = @sid';
+        params.sid = sid;
+    }
+
+    await executeQuery(sqlText, params);
     const res = await executeQuery('SELECT * FROM Assignments WHERE assignment_id = @id', {
         id: parseInt(assignmentId, 10)
     });
     return res.length > 0 ? res[0] : null;
 }
 
-async function xoaBaiTap(assignmentId) {
+/**
+ * Xóa bài tập kèm dữ liệu phụ thuộc.
+ *
+ * Checklists.assignment_id có khóa ngoại ON DELETE NO ACTION, nên phải xóa
+ * checklist con TRƯỚC khi xóa Assignments — nếu không SQLite chặn bằng
+ * "FOREIGN KEY constraint failed" và người dùng không xóa được bài tập nào
+ * đã có checklist.
+ */
+async function xoaBaiTap(assignmentId, studentId = null) {
     if (!assignmentId) throw new Error('assignmentId là bắt buộc');
-    await executeQuery("DELETE FROM Reminders WHERE target_type = 'ASSIGNMENT' AND target_id = @id", {
-        id: parseInt(assignmentId, 10)
-    });
-    await executeQuery('DELETE FROM Assignments WHERE assignment_id = @id', {
-        id: parseInt(assignmentId, 10)
+    const aid = parseInt(assignmentId, 10);
+
+    // Kiểm tra chủ sở hữu TRƯỚC khi xóa dữ liệu con, để không đụng tới
+    // checklist của bài tập thuộc hồ sơ khác.
+    if (studentId) {
+        const sid = await layStudentId(studentId);
+        if (!sid) return true;
+        const soHuu = await executeQuery(
+            'SELECT 1 FROM Assignments WHERE assignment_id = @id AND student_id = @sid LIMIT 1',
+            { id: aid, sid }
+        );
+        if (soHuu.length === 0) return true;
+    }
+
+    // Ba câu xóa phải cùng thành công hoặc cùng hủy, nếu không sẽ còn
+    // checklist/reminder mồ côi trỏ tới bài tập đã bị xóa.
+    await withTransaction(async () => {
+        await executeQuery("DELETE FROM Reminders WHERE target_type = 'ASSIGNMENT' AND target_id = @id", {
+            id: aid
+        });
+        await executeQuery('DELETE FROM Checklists WHERE assignment_id = @id', { id: aid });
+        await executeQuery('DELETE FROM Assignments WHERE assignment_id = @id', { id: aid });
     });
     return true;
 }
@@ -855,47 +1092,68 @@ async function themChecklist(studentId, data = {}) {
     return idRes.length > 0 ? idRes[0] : null;
 }
 
-async function capNhatChecklist(checklistId, data = {}) {
+async function capNhatChecklist(checklistId, data = {}, studentId = null) {
     if (!checklistId) throw new Error('checklistId là bắt buộc');
-    await executeQuery(`
+
+    const params = {
+        tl: data.title || null,
+        ds: data.description || null,
+        pr: data.priority || null,
+        dl: data.deadline || null,
+        cid: parseInt(checklistId, 10)
+    };
+
+    let sqlText = `
         UPDATE Checklists
         SET title = COALESCE(@tl, title),
             description = COALESCE(@ds, description),
             priority = COALESCE(@pr, priority),
             deadline = COALESCE(@dl, deadline),
             updated_at = datetime('now')
-        WHERE checklist_id = @cid
-    `, {
-        tl: data.title || null, ds: data.description || null,
-        pr: data.priority || null, dl: data.deadline || null,
-        cid: parseInt(checklistId, 10)
-    });
+        WHERE checklist_id = @cid`;
+
+    if (studentId) {
+        const sid = await layStudentId(studentId);
+        if (!sid) return null;
+        sqlText += ' AND student_id = @sid';
+        params.sid = sid;
+    }
+
+    await executeQuery(sqlText, params);
     const res = await executeQuery('SELECT * FROM Checklists WHERE checklist_id = @id', {
         id: parseInt(checklistId, 10)
     });
     return res.length > 0 ? res[0] : null;
 }
 
-async function hoanThanhChecklist(checklistId, isCompleted = true) {
+async function hoanThanhChecklist(checklistId, isCompleted = true, studentId = null) {
     if (!checklistId) throw new Error('checklistId là bắt buộc');
-    await executeQuery(`
+
+    const params = { ic: isCompleted ? 1 : 0, cid: parseInt(checklistId, 10) };
+    let sqlText = `
         UPDATE Checklists
         SET is_completed = @ic,
             completed_at = CASE WHEN @ic = 1 THEN datetime('now') ELSE NULL END,
             updated_at = datetime('now')
-        WHERE checklist_id = @cid
-    `, { ic: isCompleted ? 1 : 0, cid: parseInt(checklistId, 10) });
+        WHERE checklist_id = @cid`;
+
+    if (studentId) {
+        const sid = await layStudentId(studentId);
+        if (!sid) return null;
+        sqlText += ' AND student_id = @sid';
+        params.sid = sid;
+    }
+
+    await executeQuery(sqlText, params);
     const res = await executeQuery('SELECT * FROM Checklists WHERE checklist_id = @id', {
         id: parseInt(checklistId, 10)
     });
     return res.length > 0 ? res[0] : null;
 }
 
-async function xoaChecklist(checklistId) {
+async function xoaChecklist(checklistId, studentId = null) {
     if (!checklistId) throw new Error('checklistId là bắt buộc');
-    await executeQuery('DELETE FROM Checklists WHERE checklist_id = @cid', {
-        cid: parseInt(checklistId, 10)
-    });
+    await xoaTheoChuSoHuu('Checklists', 'checklist_id', checklistId, studentId);
     return true;
 }
 
@@ -997,21 +1255,29 @@ async function layNhacNhoDenHanChuaGui() {
     `);
 }
 
-async function danhDauDaGuiNhacNho(reminderId) {
+async function danhDauDaGuiNhacNho(reminderId, studentId = null) {
     if (!reminderId) throw new Error('reminderId là bắt buộc');
-    await executeQuery(`
+
+    const params = { rid: parseInt(reminderId, 10) };
+    let sqlText = `
         UPDATE Reminders
         SET is_sent = 1, sent_at = datetime('now')
-        WHERE reminder_id = @rid
-    `, { rid: parseInt(reminderId, 10) });
+        WHERE reminder_id = @rid`;
+
+    if (studentId) {
+        const sid = await layStudentId(studentId);
+        if (!sid) return false;
+        sqlText += ' AND student_id = @sid';
+        params.sid = sid;
+    }
+
+    await executeQuery(sqlText, params);
     return true;
 }
 
-async function xoaNhacNho(reminderId) {
+async function xoaNhacNho(reminderId, studentId = null) {
     if (!reminderId) throw new Error('reminderId là bắt buộc');
-    await executeQuery('DELETE FROM Reminders WHERE reminder_id = @rid', {
-        rid: parseInt(reminderId, 10)
-    });
+    await xoaTheoChuSoHuu('Reminders', 'reminder_id', reminderId, studentId);
     return true;
 }
 
@@ -1132,16 +1398,77 @@ async function themLichThi(studentId, data = {}) {
     return newId ? { exam_id: newId } : null;
 }
 
-async function xoaLichThi(examId) {
+/**
+ * Cập nhật một kỳ thi đã có. FE trước đây sửa kỳ thi chỉ trong state cục bộ.
+ */
+async function capNhatLichThi(studentId, examId, data = {}) {
+    if (!studentId) throw new Error('studentId là bắt buộc');
     if (!examId) throw new Error('examId là bắt buộc');
-    await executeQuery("DELETE FROM Reminders WHERE target_type = 'EXAM' AND target_id = @id", {
-        id: parseInt(examId, 10)
+
+    const sid = await layStudentId(studentId);
+    if (!sid) throw new Error('Không tìm thấy sinh viên');
+
+    const id = parseInt(examId, 10);
+    const hienTai = await executeQuery(
+        'SELECT * FROM Exams WHERE exam_id = @id AND student_id = @sid LIMIT 1',
+        { id, sid }
+    );
+    if (hienTai.length === 0) return null;
+    const cu = hienTai[0];
+
+    await executeQuery(`
+        UPDATE Exams
+        SET subject_id = COALESCE(@subId, subject_id),
+            exam_name = COALESCE(@name, exam_name),
+            exam_date = COALESCE(@ed, exam_date),
+            exam_time = COALESCE(@et, exam_time),
+            duration_minutes = COALESCE(@dur, duration_minutes),
+            room = COALESCE(@rm, room),
+            campus = COALESCE(@cp, campus),
+            exam_format = COALESCE(@ef, exam_format),
+            identification_number = COALESCE(@idn, identification_number),
+            updated_at = datetime('now')
+        WHERE exam_id = @id AND student_id = @sid
+    `, {
+        subId: data.subjectId ? parseInt(data.subjectId, 10) : null,
+        name: data.examName || null,
+        ed: data.examDate || null,
+        et: data.examTime || null,
+        dur: data.durationMinutes ? parseInt(data.durationMinutes, 10) : null,
+        rm: data.room || null,
+        cp: data.campus || null,
+        ef: data.examFormat || null,
+        idn: data.identificationNumber || null,
+        id,
+        sid
     });
-    await executeQuery('DELETE FROM ExamStudyPlans WHERE exam_id = @id', {
-        id: parseInt(examId, 10)
-    });
-    await executeQuery('DELETE FROM Exams WHERE exam_id = @id', {
-        id: parseInt(examId, 10)
+
+    const res = await executeQuery('SELECT * FROM Exams WHERE exam_id = @id', { id });
+    return res.length > 0 ? res[0] : null;
+}
+
+async function xoaLichThi(examId, studentId = null) {
+    if (!examId) throw new Error('examId là bắt buộc');
+    const eid = parseInt(examId, 10);
+
+    // ExamStudyPlans.exam_id là ON DELETE NO ACTION -> phải xóa kế hoạch ôn thi
+    // trước, nếu không SQLite chặn xóa kỳ thi đã có kế hoạch.
+    if (studentId) {
+        const sid = await layStudentId(studentId);
+        if (!sid) return true;
+        const soHuu = await executeQuery(
+            'SELECT 1 FROM Exams WHERE exam_id = @id AND student_id = @sid LIMIT 1',
+            { id: eid, sid }
+        );
+        if (soHuu.length === 0) return true;
+    }
+
+    await withTransaction(async () => {
+        await executeQuery("DELETE FROM Reminders WHERE target_type = 'EXAM' AND target_id = @id", {
+            id: eid
+        });
+        await executeQuery('DELETE FROM ExamStudyPlans WHERE exam_id = @id', { id: eid });
+        await executeQuery('DELETE FROM Exams WHERE exam_id = @id', { id: eid });
     });
     return true;
 }
@@ -1217,22 +1544,213 @@ async function taoKeHoachOnThi(studentId, data = {}) {
     return idRes.length > 0 ? idRes[0] : null;
 }
 
-async function capNhatTrangThaiKeHoachOnThi(planId, status) {
+async function capNhatTrangThaiKeHoachOnThi(planId, status, studentId = null) {
     if (!planId || !status) throw new Error('planId và status là bắt buộc');
-    await executeQuery(`
-        UPDATE ExamStudyPlans
-        SET status = @st, updated_at = datetime('now')
-        WHERE plan_id = @pid
-    `, { st: status, pid: parseInt(planId, 10) });
+    const soDong = await capNhatTrangThaiTheoChuSoHuu(
+        'ExamStudyPlans', 'plan_id', planId, 'status', status, studentId
+    );
+    return soDong > 0;
+}
+
+async function xoaKeHoachOnThi(planId, studentId = null) {
+    if (!planId) throw new Error('planId là bắt buộc');
+    await xoaTheoChuSoHuu('ExamStudyPlans', 'plan_id', planId, studentId);
     return true;
 }
 
-async function xoaKeHoachOnThi(planId) {
-    if (!planId) throw new Error('planId là bắt buộc');
-    await executeQuery('DELETE FROM ExamStudyPlans WHERE plan_id = @pid', {
-        pid: parseInt(planId, 10)
+// ===================================================================================
+// 7. ĐỒNG BỘ EDUX — BÀI TẬP AI LƯU XUỐNG SQLITE
+// ===================================================================================
+//
+// Trước đây /sync/edux/pull chỉ lưu kết quả vào Map trong RAM
+// (API/shared/edux-session.js), nên tắt app là mất sạch và mở lại không thấy
+// bài tập nào trong DB. Các hàm dưới đây ghi hẳn xuống bảng EduxAssignments.
+
+const NHAN_TRANG_THAI_EDUX = {
+    'Hoàn thành': 'COMPLETED',
+    'Đang làm': 'IN_PROGRESS',
+    'Chưa làm': 'PENDING'
+};
+
+/**
+ * Lưu (upsert) danh sách bài tập EDUX của một sinh viên.
+ *
+ * Ghi theo khóa tự nhiên (student_id, external_id) nên đồng bộ nhiều lần
+ * không sinh bản ghi trùng. Bài tập không còn trên EDUX sẽ bị xoá — trừ khi
+ * người dùng đã đổi trạng thái trên app (khi đó vẫn giữ để không mất tiến độ).
+ *
+ * @param {string|number} userId - NGUOI_DUNG_ID của ứng dụng (không phải student_id)
+ * @param {Array<object>} assignments - mảng từ mapBaiTap()
+ * @returns {Promise<{saved: number, removed: number}>}
+ */
+async function luuBaiTapEDUX(userId, assignments) {
+    if (!userId) throw new Error('userId là bắt buộc');
+    if (!Array.isArray(assignments)) throw new Error('assignments phải là mảng');
+
+    // EDUX không phụ thuộc hồ sơ IU: người dùng có thể đồng bộ EDUX trước khi
+    // có Students, nên khóa theo user ứng dụng chứ không tra student_id.
+    const uid = String(userId);
+
+    let saved = 0;
+    let removed = 0;
+
+    await withTransaction(async () => {
+        const giuLai = [];
+
+        for (const item of assignments) {
+            if (!item || !item.id) continue;
+
+            const tienDo = item.progress || {};
+            const docDone = Number(tienDo.daHoc) || 0;
+            const docTotal = Number(tienDo.tongSo) || 0;
+            const diemCaoNhat = Number.isFinite(Number(item.highestScore)) && item.highestScore !== null
+                ? Number(item.highestScore)
+                : null;
+
+            await executeQuery(`
+                INSERT INTO EduxAssignments (
+                    user_id, external_id, title, subject_name, subject_ext_id,
+                    model_id, chapter, description, status, priority,
+                    highest_score, doc_done, doc_total, synced_at
+                ) VALUES (
+                    @uid, @ext, @title, @subName, @subId,
+                    @modelId, @chapter, @desc, @status, @priority,
+                    @score, @docDone, @docTotal, datetime('now')
+                )
+                ON CONFLICT(user_id, external_id) DO UPDATE SET
+                    title         = excluded.title,
+                    subject_name  = excluded.subject_name,
+                    subject_ext_id= excluded.subject_ext_id,
+                    model_id      = excluded.model_id,
+                    chapter       = excluded.chapter,
+                    description   = excluded.description,
+                    status        = excluded.status,
+                    priority      = excluded.priority,
+                    highest_score = excluded.highest_score,
+                    doc_done      = excluded.doc_done,
+                    doc_total     = excluded.doc_total,
+                    synced_at     = datetime('now'),
+                    updated_at    = datetime('now')
+            `, {
+                uid,
+                ext: String(item.id),
+                title: item.title || 'Bài tập EDUX',
+                subName: item.subject || null,
+                subId: item.subjectId ? String(item.subjectId) : null,
+                modelId: item.modelId ? String(item.modelId) : null,
+                chapter: item.chapter || null,
+                desc: item.description || null,
+                status: item.status || 'Chưa làm',
+                priority: chuanHoaMucUuTien(item.priority),
+                score: diemCaoNhat,
+                docDone,
+                docTotal
+            });
+
+            giuLai.push(String(item.id));
+            saved++;
+        }
+
+        // Xoá bài EDUX không còn trên cổng trường.
+        const hienCo = await executeQuery(
+            'SELECT external_id FROM EduxAssignments WHERE user_id = @uid',
+            { uid }
+        );
+        for (const row of hienCo) {
+            if (giuLai.includes(row.external_id)) continue;
+            await executeQuery(
+                'DELETE FROM EduxAssignments WHERE user_id = @uid AND external_id = @ext',
+                { uid, ext: row.external_id }
+            );
+            removed++;
+        }
     });
-    return true;
+
+    return { saved, removed };
+}
+
+/**
+ * Đọc bài tập EDUX đã lưu trong DB, chuẩn hoá về đúng shape task của frontend
+ * (giống mapBaiTap của API/shared/edux-client.js) để FE hiển thị được ngay cả
+ * khi không có phiên EDUX trong RAM (vd mở lại app).
+ *
+ * @param {string|number} userId - NGUOI_DUNG_ID của ứng dụng (không phải student_id)
+ * @param {{subjectId?: string}} [opts]
+ * @returns {Promise<Array<object>>}
+ */
+async function layBaiTapEDUX(userId, opts = {}) {
+    if (!userId) throw new Error('userId là bắt buộc');
+
+    const uid = String(userId);
+    const params = { uid };
+    let sqlText = 'SELECT * FROM EduxAssignments WHERE user_id = @uid';
+
+    if (opts.subjectId) {
+        sqlText += ' AND subject_ext_id = @subId';
+        params.subId = String(opts.subjectId);
+    }
+
+    sqlText += ' ORDER BY subject_name ASC, chapter ASC, title ASC';
+
+    const rows = await executeQuery(sqlText, params);
+
+    return rows.map(row => ({
+        id: row.external_id,
+        title: row.title,
+        subject: row.subject_name || 'Học phần EDUX',
+        subjectId: row.subject_ext_id,
+        modelId: row.model_id,
+        chapter: row.chapter,
+        due: null, // EDUX không công bố hạn nộp
+        status: row.status,
+        priority: row.priority === 'HIGH' ? 'Cao'
+            : row.priority === 'LOW' ? 'Thấp'
+            : row.priority === 'URGENT' ? 'Khẩn cấp'
+            : 'Trung bình',
+        description: row.description || '',
+        progress: { daHoc: row.doc_done, tongSo: row.doc_total },
+        highestScore: row.highest_score,
+        source: 'EDUX',
+        isLocalDraft: false,
+        syncedAt: row.synced_at
+    }));
+}
+
+/**
+ * Cập nhật trạng thái một bài tập EDUX (người dùng tick trên app).
+ * Không gọi EDUX — chỉ ghi trạng thái nội bộ.
+ */
+async function capNhatTrangThaiBaiTapEDUX(userId, externalId, trangThai) {
+    if (!userId || !externalId) throw new Error('userId và externalId là bắt buộc');
+
+    const uid = String(userId);
+
+    await executeQuery(`
+        UPDATE EduxAssignments
+        SET status = @st, updated_at = datetime('now')
+        WHERE user_id = @uid AND external_id = @ext
+    `, { st: trangThai || 'Chưa làm', uid, ext: String(externalId) });
+
+    const res = await executeQuery(
+        'SELECT * FROM EduxAssignments WHERE user_id = @uid AND external_id = @ext',
+        { uid, ext: String(externalId) }
+    );
+    return res.length > 0 ? res[0] : null;
+}
+
+/**
+ * Xoá toàn bộ bài tập EDUX của sinh viên (logout EDUX / ngắt kết nối).
+ */
+async function xoaBaiTapEDUX(userId) {
+    if (!userId) throw new Error('userId là bắt buộc');
+    const uid = String(userId);
+
+    const truoc = await executeQuery(
+        'SELECT COUNT(*) AS so_luong FROM EduxAssignments WHERE user_id = @uid',
+        { uid }
+    );
+    await executeQuery('DELETE FROM EduxAssignments WHERE user_id = @uid', { uid });
+    return truoc.length ? Number(truoc[0].so_luong) || 0 : 0;
 }
 
 module.exports = {
@@ -1258,6 +1776,7 @@ module.exports = {
     kiemTraXungDotLichTuHoc,
     xepLichTuHoc,
     layLichTuHoc,
+    capNhatLichTuHoc,
     timKhoangTrongTuHoc,
     capNhatTrangThaiLichTuHoc,
     xoaLichTuHoc,
@@ -1287,9 +1806,16 @@ module.exports = {
     layLichThi,
     layLichThiSapToi,
     themLichThi,
+    capNhatLichThi,
     xoaLichThi,
     layKeHoachOnThi,
     taoKeHoachOnThi,
     capNhatTrangThaiKeHoachOnThi,
-    xoaKeHoachOnThi
+    xoaKeHoachOnThi,
+
+    // Đồng bộ EDUX — bài tập AI lưu xuống SQLite
+    luuBaiTapEDUX,
+    layBaiTapEDUX,
+    capNhatTrangThaiBaiTapEDUX,
+    xoaBaiTapEDUX
 };

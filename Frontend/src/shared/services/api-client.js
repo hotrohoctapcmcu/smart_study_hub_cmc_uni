@@ -19,7 +19,7 @@ export class ApiError extends Error {
 /**
  * Gửi HTTP request hoặc trả trạng thái chưa kết nối
  * @param {object} endpointDef - { method: string, path: string }
- * @param {object} [options] - { params, body, headers, signal }
+ * @param {object} [options] - { params, body, headers, signal, timeout, silent }
  * @returns {Promise<{success: boolean, data?: any, error?: string, unavailable: boolean}>}
  */
 export async function apiRequest(endpointDef, options = {}) {
@@ -43,9 +43,15 @@ export async function apiRequest(endpointDef, options = {}) {
       });
     }
 
+    // Timeout chỉ áp cho request không do bên gọi tự huỷ (options.signal).
+    // Trước đây điều kiện bị đảo: có signal thì lại tạo timeout gọi abort()
+    // trên controller null, còn không có signal thì không có timeout nào.
     const controller = options.signal ? null : new AbortController();
-    if (!controller) {
-      timeoutId = setTimeout(() => controller.abort(), 20000);
+    if (controller) {
+      timeoutId = setTimeout(
+        () => controller.abort(),
+        Number(options.timeout) > 0 ? Number(options.timeout) : 20000
+      );
     }
     const fetchOptions = {
       method: endpointDef.method,
@@ -62,16 +68,23 @@ export async function apiRequest(endpointDef, options = {}) {
 
     const response = await fetch(url, fetchOptions);
     if (!response.ok) {
-      throw new ApiError(`Lỗi kết nối máy chủ: ${response.statusText}`, response.status);
+      // Đọc body lỗi để giữ thông báo nghiệp vụ của server (vd "Phiên EDUX đã hết hạn").
+      let body = null;
+      try { body = await response.json(); } catch { body = null; }
+      const message = (body && (body.message || body.error)) || response.statusText;
+      throw new ApiError(message, response.status, "API_ERROR", body);
     }
     const data = await response.json();
     return { success: true, unavailable: false, data };
   } catch (err) {
-    logger.error("API Request Error:", err.message);
+    // silent: lỗi đã được bên gọi coi là bình thường (vd 401 khi chưa đồng bộ
+    // EDUX lần nào) — không ghi ERROR làm nhiễu console.
+    if (!options.silent) logger.error("API Request Error:", err.message);
     return {
       success: false,
       unavailable: false,
       error: err.message,
+      status: err.status || 0,
       data: null
     };
   } finally {

@@ -6,7 +6,8 @@ import { resetWorkspaceTabs } from "../../app/workspace.js";
 import { syncState, resetSyncState } from "../../app/sync-state.js";
 import { attachSourceSelectorEvents } from "../../shared/components/source-selector.js";
 import { openSchoolPortals } from "../sync/sync.auth-window.js";
-import { getIuBridge, syncIuAuto } from "../sync/sync.service.js";
+import { getIuBridge, syncIuAuto, logoutIu, logoutEdux } from "../sync/sync.service.js";
+import { changeCurrentTabRoute } from "../../app/workspace.js";
 import { renderProfileEditModal } from "./profile.view.js";
 import { attachModalEvents } from "../../shared/components/modal.js";
 import { saveStudentProfileApi } from "./profile.service.js";
@@ -18,7 +19,17 @@ export function attachProfileEvents(containerEl) {
   const syncNowBtn = containerEl.querySelector("#profileSyncNowBtn");
   if (syncNowBtn) {
     syncNowBtn.addEventListener("click", async () => {
-      if (getIuBridge() && syncState.selectedSources.includes("iu")) {
+      const canIuAuto = getIuBridge() && syncState.selectedSources.includes("iu");
+
+      // EduX cần email + mật khẩu nên không thể chạy tự động từ trang Hồ sơ:
+      // chuyển sang trang Đồng bộ nơi có form đăng nhập EduX.
+      if (syncState.selectedSources.includes("edux") && !canIuAuto) {
+        changeCurrentTabRoute("sync");
+        notifyStateChange();
+        return;
+      }
+
+      if (canIuAuto) {
         syncNowBtn.disabled = true;
         try {
           await syncIuAuto();
@@ -63,6 +74,7 @@ export function attachProfileEvents(containerEl) {
           close();
           notifyStateChange();
 
+          // Ghi lên server để lần mở sau (và các tab khác) đọc lại được.
           saveStudentProfileApi(newProfile).catch((err) =>
             console.warn("[Profile] Lỗi lưu hồ sơ lên server:", err)
           );
@@ -77,6 +89,9 @@ export function attachProfileEvents(containerEl) {
     logoutBtn.addEventListener("click", () => {
       const ok = window.confirm("Bạn có chắc chắn muốn thoát phiên làm việc? Toàn bộ bản nháp và dữ liệu cục bộ trong phiên này sẽ được dọn sạch.");
       if (ok) {
+        // Xoá cả phiên phía server để người dùng sau không dùng lại cookie IU/EduX.
+        logoutIu().catch(() => { /* chưa có phiên / backend tắt */ });
+        logoutEdux().catch(() => { /* chưa có phiên / backend tắt */ });
         resetSessionState();
         resetWorkspaceTabs();
         resetSyncState();

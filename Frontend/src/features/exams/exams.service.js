@@ -110,3 +110,34 @@ export async function deleteExamApi(examId) {
   return false;
 }
 
+
+/**
+ * Cập nhật kỳ thi đã có trên Backend API.
+ * Chỉ gọi được với kỳ thi đã lưu ở server (có examId số); kỳ thi nháp cục bộ
+ * vẫn chỉ sửa trong state.
+ */
+export async function updateExamApi(examData) {
+  const numericId = String(examData.examId ?? examData.id ?? "").replace(/^exam-/, "");
+  if (!numericId || isNaN(Number(numericId))) return false;
+
+  const payload = {};
+  if (examData.subject !== undefined) payload.subjectId = examData.subjectId;
+  if (examData.date !== undefined) payload.examDate = examData.date;
+  if (examData.start !== undefined) payload.examTime = examData.start;
+  if (examData.room !== undefined) payload.room = examData.room;
+  if (examData.duration !== undefined) payload.durationMinutes = Number(examData.duration) || 90;
+  if (examData.scope !== undefined) payload.examFormat = examData.scope;
+
+  // subjectId rỗng sẽ làm backend bỏ qua (COALESCE) — không gửi null.
+  if (!payload.subjectId) delete payload.subjectId;
+
+  const res = await apiRequest(ENDPOINTS.exams.update, {
+    params: { id: numericId },
+    body: payload
+  });
+  if (!res.success) {
+    throw new Error(res.error || "Lỗi cập nhật kỳ thi trên máy chủ.");
+  }
+  await fetchExamsFromApi();
+  return true;
+}

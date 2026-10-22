@@ -219,3 +219,12 @@
 .checklist-interactive-row:hover {
   border-color: var(--violet-300) !important;
 }
+
+/* Nhãn nguồn bài tập EduX trong bảng công việc */
+.task-source-tag {
+  font-style: normal;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--violet-700);
+  margin-left: 4px;
+}

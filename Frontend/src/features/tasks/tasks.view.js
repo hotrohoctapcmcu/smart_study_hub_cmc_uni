@@ -102,7 +102,10 @@ export function renderTasksView() {
             <tbody>
               ${filteredTasks
                 .map((task) => {
-                  const remain = calculateRemainingTime(task.due);
+                  // Bài tập EduX không có hạn nộp -> không tính "quá hạn" theo mốc epoch.
+                  const remain = task.due
+                    ? calculateRemainingTime(task.due)
+                    : { isOverdue: false, hoursLeft: 0, text: "Chưa đặt hạn" };
                   const isCompleted = task.status === "Hoàn thành";
                   const checklistTotal = task.checklist ? task.checklist.length : 0;
                   const checklistDone = task.checklist ? task.checklist.filter((i) => i.done).length : 0;
@@ -132,7 +135,10 @@ export function renderTasksView() {
                       </td>
                       <td class="task-title-cell task-clickable-cell" data-open-task-detail="${task.id}" style="cursor:pointer;" title="Nhấn xem chi tiết công việc">
                         <strong>${task.title}</strong>
-                        <span>${task.subject || "Học tập cá nhân"}</span>
+                        <span>
+                          ${task.subject || "Học tập cá nhân"}
+                          ${task.source === "EDUX" ? `<em class="task-source-tag" title="Bài tập AI lấy từ EduX">· EduX</em>` : ""}
+                        </span>
                       </td>
                       <td class="task-clickable-cell" data-open-task-detail="${task.id}" style="cursor:pointer;" title="Nhấn xem chi tiết công việc">
                         <div style="font-weight:600;font-size:0.86rem;">
@@ -141,6 +147,9 @@ export function renderTasksView() {
                         <div style="font-size:0.75rem;margin-top:2px;color:${isCompleted ? "var(--emerald-600)" : remain.isOverdue ? "var(--red-600)" : "var(--ink-600)"};font-weight:${remain.isOverdue && !isCompleted ? "700" : "500"};">
                           ${isCompleted ? "✓ Đã hoàn thành" : remain.text}
                         </div>
+                        ${task.source === "EDUX" && task.progress && task.progress.tongSo
+                          ? `<div class="tiny muted" style="margin-top:2px;">Tiến độ tài liệu: ${task.progress.daHoc}/${task.progress.tongSo}</div>`
+                          : ""}
                       </td>
                       <td class="task-clickable-cell" data-open-task-detail="${task.id}" style="cursor:pointer;">
                         <span class="status-tag ${statusClass}">
@@ -376,6 +385,11 @@ export function renderTaskDetailModal(task) {
           <span style="font-size:0.9rem;font-weight:700;color:${task.due ? "var(--violet-700)" : "var(--ink-800)"};">
             ${task.due ? formatDateTimeVN(task.due) : "Chưa đặt hạn"}
           </span>
+          ${task.source === "EDUX"
+            ? `<span class="tiny muted" style="display:block;margin-top:4px;">
+                 Nguồn: EduX${task.chapter ? ` · ${task.chapter}` : ""}${task.highestScore !== null && task.highestScore !== undefined ? ` · Điểm cao nhất: ${task.highestScore}` : ""}
+               </span>`
+            : ""}
         </div>
       </div>
 

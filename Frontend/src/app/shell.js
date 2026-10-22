@@ -21,6 +21,7 @@ import { mountProfile } from "../features/profile/profile.js?v=5";
 import { mountPomodoro } from "../features/pomodoro/pomodoro.js?v=4";
 import { mountDocuments } from "../features/documents/documents.js";
 import { mountProgress } from "../features/progress/progress.js";
+import { mountAiTutor } from "../features/ai-tutor/ai-tutor.js";
 import { renderEmptyState } from "../shared/components/empty-state.js";
 
 export function renderShell(appEl) {
@@ -82,42 +83,71 @@ export function renderShell(appEl) {
 }
 
 function mountCurrentFeature(routeId, contentPane) {
+  // Bọc mọi mount để một feature lỗi không làm trắng cả pane:
+  // lỗi sync thì hiện khung fallback, lỗi async (promise) cũng bắt được.
+  const fallback = (err) => {
+    console.error(`[Shell] Lỗi mount "${routeId}":`, err);
+    if (!contentPane.isConnected) return;
+    contentPane.innerHTML = `
+      <div style="max-width:800px;margin:40px auto;background:white;padding:48px 32px;border-radius:var(--radius-xl);border:1px solid var(--ink-200);text-align:center;">
+        <h3 style="margin:0 0 8px;">Không tải được nội dung</h3>
+        <p class="muted" style="margin:0 0 16px;">${String(err?.message || err || "Lỗi không xác định")}</p>
+        <button type="button" class="button primary" id="shellFallbackSyncBtn">Đi tới Đồng bộ dữ liệu</button>
+      </div>
+    `;
+    contentPane.querySelector("#shellFallbackSyncBtn")?.addEventListener("click", () => {
+      import("./workspace.js").then(({ changeCurrentTabRoute }) => {
+        changeCurrentTabRoute("sync");
+      });
+    });
+  };
+  const safe = (fn) => {
+    try {
+      const r = fn(contentPane);
+      if (r && typeof r.catch === "function") r.catch(fallback);
+    } catch (err) {
+      fallback(err);
+    }
+  };
   switch (routeId) {
     case "dashboard":
-      mountDashboard(contentPane);
+      safe(mountDashboard);
       break;
     case "schedule":
-      mountSchedule(contentPane);
+      safe(mountSchedule);
       break;
     case "tasks":
-      mountTasks(contentPane);
+      safe(mountTasks);
       break;
     case "study-planner":
-      mountStudyPlanner(contentPane);
+      safe(mountStudyPlanner);
       break;
     case "exams":
-      mountExams(contentPane);
+      safe(mountExams);
       break;
     case "notifications":
-      mountNotifications(contentPane);
+      safe(mountNotifications);
       break;
     case "sync":
-      mountSync(contentPane);
+      safe(mountSync);
       break;
     case "profile":
-      mountProfile(contentPane);
+      safe(mountProfile);
       break;
     case "pomodoro":
-      mountPomodoro(contentPane);
+      safe(mountPomodoro);
       break;
     case "documents":
-      mountDocuments(contentPane);
+      safe(mountDocuments);
       break;
     case "progress":
-      mountProgress(contentPane);
+      safe(mountProgress);
+      break;
+    case "ai-tutor":
+      safe(mountAiTutor);
       break;
     case "school-email":
-      mountNotifications(contentPane);
+      safe(mountNotifications);
       break;
     default: {
       const routeDef = getRouteById(routeId);

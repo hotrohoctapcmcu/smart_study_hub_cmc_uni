@@ -9,3 +9,6 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 Thumbs.db
+
+# Cookie phien EDUX (chua token that, khong duoc commit)
+CRWEB/EDUX/login/cookie.txt

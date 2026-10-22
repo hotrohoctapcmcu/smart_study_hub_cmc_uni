@@ -22,7 +22,12 @@ export function renderDashboardView() {
   // Deadline sắp tới từ tasks (chưa hoàn thành)
   const upcomingTasks = state.tasks
     .filter((t) => t.status !== "Hoàn thành")
-    .sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime())
+    // Bài EduX không có hạn nộp -> đẩy xuống cuối thay vì NaN.
+    .sort((a, b) => {
+      const ta = a.due ? new Date(a.due).getTime() : Infinity;
+      const tb = b.due ? new Date(b.due).getTime() : Infinity;
+      return ta - tb;
+    })
     .slice(0, 3);
 
   // Kỳ thi sắp tới
@@ -177,7 +182,9 @@ export function renderDashboardView() {
               upcomingTasks.length > 0
                 ? upcomingTasks
                     .map((t) => {
-                      const remain = calculateRemainingTime(t.due);
+                      const remain = t.due
+                        ? calculateRemainingTime(t.due)
+                        : { isOverdue: false, hoursLeft: 0, text: "Chưa đặt hạn" };
                       return `
                     <div class="dash-item-row">
                       <div>

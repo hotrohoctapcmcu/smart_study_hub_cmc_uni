@@ -1,0 +1,199 @@
+{
+    "EDUX": {
+        "diem_so_cac_mon": {
+            "lop_hoc_phan": [
+                {
+                    "ten_mon": "Công nghệ phần mềm",
+                    "thanh_vien_trong_lop": "Full student",
+                    "nhom_du_an": {
+                        "ten_nhom": "Jolibee",
+                        "thanh_vien": [
+                            "Tuan",
+                            "Vu Tuan",
+                            "Trang",
+                            "Nhat",
+                            "Tham"
+                        ],
+                        "diem_so": {
+                            "tuan_1": {},
+                            "tuan_2": {},
+                            "tuan_3": {},
+                            "tuan_4": {},
+                            "tuan_5": {},
+                            "tuan_6": {},
+                            "tuan_7": {}
+                        }
+                    }
+                },
+                {
+                    "ten_mon": "Phát triển ứng dụng web",
+                    "thanh_vien_trong_lop": "Full student",
+                    "nhom_du_an": {
+                        "ten_nhom": "Jolibee",
+                        "thanh_vien": [
+                            "Tuan",
+                            "Vu Tuan",
+                            "Trang",
+                            "Nhat",
+                            "Tham"
+                        ],
+                        "diem_so": {
+                            "tuan_1": {},
+                            "tuan_2": {},
+                            "tuan_3": {},
+                            "tuan_4": {},
+                            "tuan_5": {},
+                            "tuan_6": {},
+                            "tuan_7": {}
+                        }
+                    }
+                },
+                {
+                    "ten_mon": "Pháp lý đạo đức và nghề nghiệp",
+                    "thanh_vien_trong_lop": "Full student",
+                    "nhom_du_an": {
+                        "ten_nhom": "Jolibee",
+                        "thanh_vien": [
+                            "Tuan",
+                            "Vu Tuan",
+                            "Trang",
+                            "Nhat",
+                            "Tham"
+                        ],
+                        "diem_so": {
+                            "tuan_1": {},
+                            "tuan_2": {},
+                            "tuan_3": {},
+                            "tuan_4": {},
+                            "tuan_5": {},
+                            "tuan_6": {},
+                            "tuan_7": {}
+                        }
+                    }
+                },
+                {
+                    "ten_mon": "Cấu trúc dữ liệu và giải thuật",
+                    "thanh_vien_trong_lop": "Full student",
+                    "nhom_du_an": {
+                        "ten_nhom": "Jolibee",
+                        "thanh_vien": [
+                            "Tuan",
+                            "Vu Tuan",
+                            "Trang",
+                            "Nhat",
+                            "Tham"
+                        ],
+                        "diem_so": {
+                            "tuan_1": {},
+                            "tuan_2": {},
+                            "tuan_3": {},
+                            "tuan_4": {},
+                            "tuan_5": {},
+                            "tuan_6": {},
+                            "tuan_7": {}
+                        }
+                    }
+                }
+            ]
+        },
+        "cac_hoc_phan": [
+            {
+                "ten_mon": "Cấu trúc dữ liệu và giải thuật",
+                "bai_giang_AI": {
+                    "slide": [],
+                    "so_chuong": 0
+                },
+                "bai_tap_AI": [],
+                "han_nop": []
+            },
+            {
+                "ten_mon": "Công nghệ phần mềm",
+                "bai_giang_AI": {
+                    "slide": [],
+                    "so_chuong": 0
+                },
+                "bai_tap_AI": [],
+                "han_nop": []
+            },
+            {
+                "ten_mon": "Phát triển ứng dụng web",
+                "bai_giang_AI": {
+                    "slide": [],
+                    "so_chuong": 0
+                },
+                "bai_tap_AI": [],
+                "han_nop": []
+            },
+            {
+                "ten_mon": "Pháp lý đạo đức và nghề nghiệp",
+                "bai_giang_AI": {
+                    "slide": [],
+                    "so_chuong": 0
+                },
+                "bai_tap_AI": [],
+                "han_nop": []
+            }
+        ],
+        "phan_hoi": {
+            "thong_bao_giang_vien": [
+                {
+                    "hoc_phan": "",
+                    "tieu_de": "",
+                    "noi_dung": "",
+                    "thoi_gian": ""
+                }
+            ],
+            "phan_hoi_chat_AI": [
+                {
+                    "hoc_phan": "",
+                    "cau_hoi": "",
+                    "cau_tra_loi": "",
+                    "thoi_gian": ""
+                }
+            ],
+            "phan_hoi_tro_giang": [
+                {
+                    "hoc_phan": "",
+                    "van_de": "",
+                    "phan_hoi": "",
+                    "thoi_gian": ""
+                }
+            ],
+            "bao_loi_cau_hoi": [
+                {
+                    "hoc_phan": "",
+                    "cau_hoi": "",
+                    "noi_dung_loi": "",
+                    "trang_thai": ""
+                }
+            ]
+        },
+        "thong_ke": {
+            "danh_sach_bai_da_hoc": [
+                {
+                    "hoc_phan": "",
+                    "chuong": "",
+                    "bai": "",
+                    "trang_thai": ""
+                }
+            ],
+            "tien_do_hoc_tap": [
+                {
+                    "hoc_phan": "",
+                    "tong_so_bai": 0,
+                    "da_hoan_thanh": 0,
+                    "phan_tram": 0
+                }
+            ],
+            "diem_tong_ket": [
+                {
+                    "hoc_ky": "",
+                    "hoc_phan": "",
+                    "diem_he_10": 0,
+                    "diem_he_4": 0,
+                    "diem_chu": ""
+                }
+            ]
+        }
+    }
+}

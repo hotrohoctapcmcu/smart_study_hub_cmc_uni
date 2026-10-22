@@ -107,6 +107,11 @@ assert(docsViewHtml.includes('id="docSearchInput"'), "Có ô tìm kiếm tài li
 
 // 5. SỔ TAY GHI CHÚ
 console.log("\n[5] SỔ TAY GHI CHÚ - ĐẢO BỐ CỤC (TRANG GIẤY BÊN TRÁI, DANH SÁCH BÊN PHẢI)");
+// Không còn dữ liệu ghi chú seed sẵn (đã bỏ mock) — tạo 1 trang để kiểm tra
+// thanh công cụ của trình soạn thảo.
+if (getNotes().length === 0) {
+  createNote({ title: "Trang kiểm thử", subject: "Kiểm thử", content: "Nội dung" });
+}
 const notesViewHtml = renderDocumentsView({ docTab: "notes" });
 const paperEditorPos = notesViewHtml.indexOf('class="notes-paper-editor"');
 const pagesSidebarPos = notesViewHtml.indexOf('class="notes-sidebar-pages"');

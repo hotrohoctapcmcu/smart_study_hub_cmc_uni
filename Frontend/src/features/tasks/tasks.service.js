@@ -38,6 +38,10 @@ export function mapTaskFromBackend(row, allChecklists = []) {
   if (row.status === "COMPLETED") uiStatus = "Hoàn thành";
   else if (row.status === "IN_PROGRESS") uiStatus = "Đang làm";
 
+  // DB lưu enum LOW/MEDIUM/HIGH/URGENT, UI dùng nhãn tiếng Việt.
+  const NHAN_UU_TIEN = { LOW: "Thấp", MEDIUM: "Trung bình", HIGH: "Cao", URGENT: "Khẩn cấp" };
+  const uiPriority = NHAN_UU_TIEN[row.priority] || "Trung bình";
+
   const rawDeadline = row.deadline || "";
   const due = rawDeadline ? String(rawDeadline).replace(" ", "T").slice(0, 16) : "";
 
@@ -48,7 +52,7 @@ export function mapTaskFromBackend(row, allChecklists = []) {
     subject: row.subject_name || row.subject_code || "Chưa phân loại",
     subjectId: row.subject_id,
     due,
-    priority: "Trung bình",
+    priority: uiPriority,
     status: uiStatus,
     checklist: taskChecklist,
     note: row.description || "",
@@ -59,12 +63,42 @@ export function mapTaskFromBackend(row, allChecklists = []) {
 }
 
 /**
+ * Chuẩn hoá 1 bài tập EDUX (đọc từ DB) thành task object cho UI.
+ * Giữ nguyên các trường đặc thù EDUX để view hiển thị tiến độ/điểm/chương.
+ */
+export function mapEduxTaskFromBackend(item, idx = 0) {
+  return {
+    id: item?.id || `edux-${idx}`,
+    title: item?.title || "Bài tập EDUX",
+    subject: item?.subject || "Học phần EDUX",
+    due: null, // EDUX không công bố hạn nộp
+    priority: item?.priority || "Trung bình",
+    status: item?.status || "Chưa làm",
+    checklist: [],
+    note: item?.description || "",
+    description: item?.description || "",
+    completedAt: null,
+    source: "EDUX",
+    externalId: item?.id || null,
+    subjectId: item?.subjectId || null,
+    modelId: item?.modelId || null,
+    chapter: item?.chapter || null,
+    highestScore: item?.highestScore ?? null,
+    progress: item?.progress || null,
+    isLocalDraft: false
+  };
+}
+
+/**
  * Tải danh sách bài tập & checklist từ backend và nạp vào state.tasks
  */
 export async function fetchTasksFromApi() {
-  const [tasksRes, checklistRes] = await Promise.all([
+  const [tasksRes, checklistRes, eduxRes] = await Promise.all([
     apiRequest(ENDPOINTS.tasks.list),
-    apiRequest(ENDPOINTS.tasks.getAllChecklist)
+    apiRequest(ENDPOINTS.tasks.getAllChecklist),
+    // Bài tập EDUX đã lưu trong DB. 401 = chưa từng đồng bộ EDUX (bình thường),
+    // không phải lỗi nên chỉ bỏ qua.
+    apiRequest(ENDPOINTS.tasks.eduxList, { silent: true }).catch(() => ({ success: false }))
   ]);
 
   if (!tasksRes.success) {
@@ -78,9 +112,24 @@ export async function fetchTasksFromApi() {
   if (!Array.isArray(rawTasks)) return state.tasks;
 
   const mapped = rawTasks.map((t) => mapTaskFromBackend(t, rawChecklists));
-  state.tasks = mapped;
+
+  // Bài tập EDUX đọc thẳng từ DB — trước đây chỉ nằm trong state sau khi bấm
+  // "Đồng bộ EduX", nên mở lại app là mất sạch dù DB vẫn còn dữ liệu.
+  const eduxRows = eduxRes.success
+    ? (eduxRes.data?.assignments ?? eduxRes.data?.data?.assignments ?? [])
+    : [];
+  const eduxTasks = Array.isArray(eduxRows)
+    ? eduxRows.map((item, idx) => mapEduxTaskFromBackend(item, idx))
+    : [];
+
+  // Giữ lại task nháp người dùng vừa tạo khi server chưa kịp trả về.
+  const giuLai = (state.tasks || []).filter(
+    (t) => t.isLocalDraft && !eduxTasks.some((e) => e.id === t.id)
+  );
+
+  state.tasks = [...mapped, ...eduxTasks, ...giuLai];
   notifyStateChange();
-  return mapped;
+  return state.tasks;
 }
 
 /**
@@ -110,7 +159,8 @@ export async function createTaskApi(taskData) {
     subjectId: Number(subjectId) || 1,
     title: taskData.title,
     deadline: taskData.due,
-    description: taskData.note || taskData.description || ""
+    description: taskData.note || taskData.description || "",
+    ...(taskData.priority ? { priority: taskData.priority } : {})
   };
 
   const res = await apiRequest(ENDPOINTS.tasks.create, { body: backendBody });
@@ -153,6 +203,7 @@ export async function updateTaskApi(taskId, updates) {
   if (updates.note !== undefined || updates.description !== undefined) {
     updateBody.description = updates.note || updates.description || "";
   }
+  if (updates.priority !== undefined) updateBody.priority = updates.priority;
 
   if (Object.keys(updateBody).length > 0) {
     await apiRequest(ENDPOINTS.tasks.update, {

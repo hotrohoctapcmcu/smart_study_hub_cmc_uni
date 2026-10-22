@@ -80,7 +80,7 @@ router.post('/', async (req, res, next) => {
 
 router.delete('/:id', xuLy(async req => {
     if (!req.params.id) throw loi('timetableId là bắt buộc.');
-    await db.xoaTietHoc(req.params.id);
+    await db.xoaTietHoc(req.params.id, NGUOI_DUNG_ID);
     return { message: 'Đã xóa tiết học.' };
 }));
 
@@ -118,12 +118,28 @@ router.patch('/study/:id/status', xuLy(async req => {
         throw loi(`status phải là một trong: ${validStatuses.join(', ')}`);
     }
 
-    await db.capNhatTrangThaiLichTuHoc(req.params.id, status);
+    await db.capNhatTrangThaiLichTuHoc(req.params.id, status, NGUOI_DUNG_ID);
     return { message: 'Đã cập nhật trạng thái lịch tự học.' };
 }));
 
+/**
+ * Sửa nội dung một buổi tự học (giờ/ngày/tiêu đề/ghi chú).
+ * PATCH /study/:id/status chỉ đổi trạng thái; sửa giờ phải qua route này.
+ */
+router.put('/study/:id', xuLy(async req => {
+    let data;
+    try {
+        data = await db.capNhatLichTuHoc(NGUOI_DUNG_ID, req.params.id, req.body || {});
+    } catch (err) {
+        // Lỗi nghiệp vụ từ service (giờ sai, trùng lịch) là 400, không phải 500.
+        throw loi(err.message);
+    }
+    if (!data) throw loi('Không tìm thấy lịch tự học.', 404);
+    return { message: 'Đã cập nhật lịch tự học.', data };
+}));
+
 router.delete('/study/:id', xuLy(async req => {
-    await db.xoaLichTuHoc(req.params.id);
+    await db.xoaLichTuHoc(req.params.id, NGUOI_DUNG_ID);
     return { message: 'Đã xóa lịch tự học.' };
 }));
 

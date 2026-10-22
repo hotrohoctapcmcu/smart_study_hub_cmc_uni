@@ -62,14 +62,19 @@ assert(NAVIGATION_SECTIONS[2].title === "CÔNG CỤ" && NAVIGATION_SECTIONS[2].r
 assert(NAVIGATION_SECTIONS[3].routeIds.includes("progress") && NAVIGATION_SECTIONS[3].routeIds.includes("notifications"), "G0-Nav: Phía cuối danh sách là Tiến độ & Thông báo");
 assert(NAVIGATION_SECTIONS[4].routeIds.includes("sync") && NAVIGATION_SECTIONS[4].routeIds.includes("profile"), "G0-Nav: Footer cố định là Đồng bộ dữ liệu & Hồ sơ cá nhân");
 
-// Đồng bộ nguồn (hiện tại chỉ IU - EduX bổ sung sau)
+// Đồng bộ nguồn (IU + EduX, mỗi nguồn có trạng thái riêng)
 console.log("\n[G0] KIỂM TRA NGUỒN ĐỒNG BỘ");
-assert(syncState.selectedSources.length === 1, "G0-10: Mặc định 1 nguồn IU được chọn");
-assert(syncState.selectedSources.includes("iu"), "G0-10: Nguồn mặc định là IU");
+assert(syncState.selectedSources.length === 2, "G0-10: Mặc định chọn 2 nguồn IU + EduX");
+assert(syncState.selectedSources.includes("iu"), "G0-10: Nguồn mặc định có IU");
+assert(syncState.selectedSources.includes("edux"), "G0-10: Nguồn mặc định có EduX");
+assert(syncState.sourceStatuses.iu === "unconnected" && syncState.sourceStatuses.edux === "unconnected",
+  "G0-10: Hai nguồn có trạng thái riêng, cùng bắt đầu ở unconnected");
 toggleSourceSelection("iu");
-assert(syncState.selectedSources.length === 0, "G0-11: Bỏ chọn IU còn 0");
+assert(syncState.selectedSources.length === 1, "G0-11: Bỏ chọn IU còn 1");
+toggleSourceSelection("edux");
+assert(syncState.selectedSources.length === 0, "G0-11: Bỏ chọn cả 2 còn 0");
 selectAllSources();
-assert(syncState.selectedSources.length === 1, "G0-11: Chọn lại tất cả (IU)");
+assert(syncState.selectedSources.length === 2, "G0-11: Chọn lại tất cả (IU + EduX)");
 deselectAllSources();
 assert(syncState.selectedSources.length === 0, "G0-11: Bỏ chọn tất cả");
 const blockedResult = openSchoolPortals([]);

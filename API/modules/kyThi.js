@@ -55,6 +55,18 @@ router.post('/study-plans', xuLy(async req => {
     };
 }, 201));
 
+/** Sửa nội dung một kỳ thi đã có (ngày, giờ, phòng, hình thức...). */
+router.put('/:id', xuLy(async req => {
+    let data;
+    try {
+        data = await db.capNhatLichThi(NGUOI_DUNG_ID, req.params.id, req.body || {});
+    } catch (err) {
+        throw loi(err.message);
+    }
+    if (!data) throw loi('Không tìm thấy kỳ thi.', 404);
+    return { message: 'Đã cập nhật kỳ thi.', data };
+}));
+
 router.patch('/study-plans/:id/status', xuLy(async req => {
     const { status } = req.body;
 
@@ -62,12 +74,12 @@ router.patch('/study-plans/:id/status', xuLy(async req => {
         throw loi(`status phải là: ${trangThaiHopLe.join(', ')}`);
     }
 
-    await db.capNhatTrangThaiKeHoachOnThi(req.params.id, status);
+    await db.capNhatTrangThaiKeHoachOnThi(req.params.id, status, NGUOI_DUNG_ID);
     return { message: 'Đã cập nhật trạng thái kế hoạch ôn thi.' };
 }));
 
 router.delete('/study-plans/:id', xuLy(async req => {
-    await db.xoaKeHoachOnThi(req.params.id);
+    await db.xoaKeHoachOnThi(req.params.id, NGUOI_DUNG_ID);
     return { message: 'Đã xóa giai đoạn kế hoạch ôn thi.' };
 }));
 
@@ -77,7 +89,7 @@ router.get('/:examId/study-plans', xuLy(async req => ({
 })));
 
 router.delete('/:id', xuLy(async req => {
-    await db.xoaLichThi(req.params.id);
+    await db.xoaLichThi(req.params.id, NGUOI_DUNG_ID);
     return { message: 'Đã xóa kỳ thi và dữ liệu liên quan.' };
 }));
 

@@ -6,7 +6,7 @@ import { changeCurrentTabRoute, updateActiveTabLocalState } from "../../app/work
 import { validateExamInput } from "../../shared/utils/validation.js";
 import { renderExamModal } from "./exams.view.js";
 import { attachModalEvents } from "../../shared/components/modal.js";
-import { createExamApi, deleteExamApi } from "./exams.service.js";
+import { createExamApi, updateExamApi, deleteExamApi } from "./exams.service.js";
 
 export function attachExamsEvents(containerEl) {
   // Nút Đồng bộ lịch thi
@@ -55,6 +55,9 @@ export function attachExamsEvents(containerEl) {
 
         if (initialData?.id) {
           updateLocalExam(initialData.id, data);
+          updateExamApi(initialData).catch((err) =>
+            console.warn("[Exams] Lỗi cập nhật kỳ thi trên máy chủ:", err)
+          );
         } else {
           // Tạo mốc lộ trình tự động ban đầu từ phạm vi
           const milestones = [

@@ -8,7 +8,12 @@ import { apiRequest } from "../../shared/services/api-client.js";
 import { formatDateISO } from "../../shared/utils/date.js";
 import { SYNC_SOURCES } from "../../shared/config/sync-sources.js";
 import { state, notifyStateChange } from "../../app/state.js";
-import { syncState, setSourceStatus } from "../../app/sync-state.js";
+import {
+  syncState,
+  setSourceStatus,
+  setSourceMessage,
+  markSourceSynced
+} from "../../app/sync-state.js";
 
 // Khoảng thời gian mặc định để kéo TKB + lịch thi từ cổng IU khi người dùng
 // không chỉ định (bao quát học kỳ hiện tại: từ đầu học kỳ đến cuối năm).
@@ -288,38 +293,201 @@ export async function refreshFromServer() {
 export async function syncIuAuto(opts = {}) {
   syncState.isSyncing = true;
   setSourceStatus("iu", "syncing");
-  syncState.statusMessage = "Đang mở cửa sổ đăng nhập IU...";
+  setSourceMessage("iu", "Đang mở cửa sổ đăng nhập IU...");
   notifyStateChange();
   try {
     await loginIuViaBridge(opts);
     setSourceStatus("iu", "portal_opened");
-    syncState.statusMessage = "Đã đăng nhập IU. Đang kéo thời khóa biểu, lịch thi, bảng điểm...";
+    setSourceMessage("iu", "Đã đăng nhập IU. Đang kéo thời khóa biểu, lịch thi, bảng điểm...");
     notifyStateChange();
 
-    console.log(opts)
     const pulled = await pullIuData(opts);
     const loaded = await refreshFromServer();
-    console.log(loaded)
-    syncState.lastSyncTimestamp = new Date().toISOString();
-    setSourceStatus("iu", "synced");
+    markSourceSynced("iu");
     const soTkb = loaded.schedules || pulled.timetableCount || 0;
     const soThi = loaded.exams || pulled.examsCount || 0;
-    syncState.statusMessage =
+    let message =
       `Đồng bộ IU xong: ${soTkb} tiết TKB, ${soThi} kỳ thi` +
       (pulled.gradesCount ? `, ${pulled.gradesCount} đầu điểm` : "") + ".";
     // Hiển thị nguyên nhân khi IU không trả dữ liệu (trước đây lỗi bị nuốt).
     if ((!soTkb || !soThi) && Array.isArray(pulled.thatBai) && pulled.thatBai.length) {
-      syncState.statusMessage += ` Lỗi từ cổng IU: ${pulled.thatBai.join("; ")}`;
+      message += ` Lỗi từ cổng IU: ${pulled.thatBai.join("; ")}`;
     }
+    setSourceMessage("iu", message);
     notifyStateChange();
     return { pulled, loaded };
   } catch (err) {
     setSourceStatus("iu", "error");
-    syncState.statusMessage = `Đồng bộ IU thất bại: ${err.message}`;
+    setSourceMessage("iu", `Đồng bộ IU thất bại: ${err.message}`);
     notifyStateChange();
     throw err;
   } finally {
     syncState.isSyncing = false;
     notifyStateChange();
+  }
+}
+
+
+// ─── Nhánh EDUX (đăng nhập bằng tài khoản EDUX -> API -> bài tập) ────────
+
+/**
+ * Chuẩn hoá 1 bài tập EDUX (API trả về) thành task trong state.
+ * EDUX không công bố hạn nộp nên `due` giữ null — không bịa deadline.
+ */
+export function mapEduxAssignment(item, idx = 0) {
+  const id = String(item?.id || `edux-${idx}`);
+  return {
+    id,
+    title: item?.title || "Bài tập EDUX",
+    subject: item?.subject || "Học phần EDUX",
+    due: item?.due || null,
+    priority: item?.priority || "Trung bình",
+    status: item?.status || "Chưa làm",
+    checklist: [],
+    note: item?.description || "",
+    description: item?.description || "",
+    completedAt: null,
+    source: "EDUX",
+    externalId: id,
+    subjectId: item?.subjectId || null,
+    modelId: item?.modelId || null,
+    chapter: item?.chapter || null,
+    highestScore: item?.highestScore ?? null,
+    progress: item?.progress || null,
+    isLocalDraft: false
+  };
+}
+
+/**
+ * Gộp bài tập EDUX vào state.tasks, giữ nguyên task người dùng tự nhập.
+ * Bài EDUX cũ bị thay thế toàn bộ để phản ánh đúng dữ liệu mới nhất.
+ * @returns {number} số bài EDUX sau khi gộp
+ */
+export function mergeEduxTasks(assignments) {
+  const eduxTasks = (Array.isArray(assignments) ? assignments : []).map(mapEduxAssignment);
+  const localTasks = (state.tasks || []).filter((t) => t.source !== "EDUX");
+  state.tasks = [...eduxTasks, ...localTasks];
+  return eduxTasks.length;
+}
+
+/**
+ * Trạng thái phiên EDUX trên server (không lộ cookie).
+ * @returns {Promise<{ok: boolean, connected: boolean, email?: string|null}>}
+ */
+export async function fetchEduxStatus() {
+  const res = await apiRequest(ENDPOINTS.sync.eduxStatus);
+  if (!res.success) return { ok: false, connected: false, email: null };
+  const data = res.data || {};
+  return {
+    ok: true,
+    connected: Boolean(data.connected),
+    email: data.email || null,
+    expiresAt: data.expiresAt || null
+  };
+}
+
+/**
+ * Đăng nhập EDUX bằng email + mật khẩu người dùng nhập.
+ * Mật khẩu chỉ gửi một lần tới API, KHÔNG lưu vào state/localStorage.
+ * @throws {Error} khi thông tin đăng nhập sai hoặc EDUX không phản hồi
+ */
+export async function loginEdux(email, password) {
+  const res = await apiRequest(ENDPOINTS.sync.eduxSaveSession, {
+    body: { email, password }
+  });
+  if (res.unavailable) {
+    throw new Error("Hệ thống backend chưa được kết nối nên không đăng nhập được EDUX.");
+  }
+  if (!res.success) {
+    throw new Error((res.data && res.data.message) || res.error || "Đăng nhập EduX thất bại.");
+  }
+  const data = res.data || {};
+  syncState.eduxEmail = data.email || email;
+  setSourceStatus("edux", "portal_opened");
+  setSourceMessage("edux", `Đã đăng nhập EduX${data.email ? ` (${data.email})` : ""}.`);
+  return data;
+}
+
+/**
+ * Kéo bài tập AI từ EDUX bằng phiên đã lưu trên server.
+ * @param {{subjectId?: string, questions?: boolean}} [opts]
+ * @returns {Promise<{assignments: Array<object>, thatBai: string[]}>}
+ */
+export async function pullEduxData(opts = {}) {
+  const res = await apiRequest(ENDPOINTS.sync.eduxPull, {
+    body: {
+      ...(opts.subjectId ? { subjectId: opts.subjectId } : {}),
+      questions: opts.questions === true
+    }
+  });
+  if (res.unavailable) {
+    throw new Error("Hệ thống backend chưa được kết nối nên không kéo được dữ liệu EDUX.");
+  }
+  if (!res.success) {
+    if (res.status === 401) {
+      setSourceStatus("edux", "unconnected");
+      syncState.eduxEmail = null;
+    }
+    throw new Error((res.data && res.data.message) || res.error || "Kéo dữ liệu EduX thất bại.");
+  }
+  // /sync/edux/pull trả phẳng; /tasks/edux bọc trong `data` — chấp nhận cả hai.
+  const data = (res.data && res.data.data) || res.data || {};
+  return {
+    assignments: Array.isArray(data.assignments) ? data.assignments : [],
+    thatBai: Array.isArray(data.thatBai) ? data.thatBai : [],
+    message: data.message || ""
+  };
+}
+
+/**
+ * Xoá phiên EDUX trên server và dữ liệu bài tập EDUX trong state.
+ */
+export async function logoutEdux() {
+  await apiRequest(ENDPOINTS.sync.eduxDeleteSession);
+  state.tasks = (state.tasks || []).filter((t) => t.source !== "EDUX");
+  syncState.eduxEmail = null;
+  setSourceStatus("edux", "unconnected");
+  setSourceMessage("edux", "");
+  notifyStateChange();
+}
+
+/**
+ * Luồng EDUX trọn vòng: đăng nhập -> kéo bài tập -> gộp vào state hiển thị.
+ * Ném lỗi để caller hiển thị message; không đụng tới trạng thái IU.
+ *
+ * @param {{email: string, password: string, subjectId?: string, questions?: boolean}} opts
+ */
+export async function syncEduxAuto(opts = {}) {
+  setSourceStatus("edux", "syncing");
+  setSourceMessage("edux", "Đang đăng nhập EDUX...");
+  notifyStateChange();
+
+  try {
+    await loginEdux(opts.email, opts.password);
+
+    setSourceMessage("edux", "Đã đăng nhập EduX. Đang kéo bài tập theo học phần...");
+    notifyStateChange();
+
+    const pulled = await pullEduxData(opts);
+    const soBai = mergeEduxTasks(pulled.assignments);
+
+    markSourceSynced("edux");
+    let message = `Đồng bộ EduX xong: ${soBai} bài tập AI.`;
+    if (!soBai) {
+      message += " Tài khoản chưa có chương nào kèm bài tập AI.";
+    }
+    if (pulled.thatBai.length) {
+      message += ` Một số chương lỗi: ${pulled.thatBai.join("; ")}`;
+    }
+    setSourceMessage("edux", message);
+    syncState.lastSyncTimestamp = syncState.lastSyncTimestamps.edux || new Date().toISOString();
+    notifyStateChange();
+
+    return { pulled, count: soBai };
+  } catch (err) {
+    setSourceStatus("edux", "error");
+    setSourceMessage("edux", `Đồng bộ EduX thất bại: ${err.message}`);
+    notifyStateChange();
+    throw err;
   }
 }

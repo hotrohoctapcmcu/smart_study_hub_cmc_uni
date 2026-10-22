@@ -2,6 +2,8 @@ const express = require('express');
 const { NGUOI_DUNG_ID } = require('../shared/nguoiDung');
 const iuKho = require('../shared/iu-session');
 const { keoDuLieuIU, keoNhomIU, mapSangDataIU } = require('../shared/iu-client');
+const eduxKho = require('../shared/edux-session');
+const { dangNhapEDUX, keoBaiTapEDUX, laHetPhien } = require('../shared/edux-client');
 
 const router = express.Router();
 let db;
@@ -30,7 +32,7 @@ function layCacNguonDongBo() {
             id: 'EDUX',
             name: 'EduX CMC',
             url: 'https://edux.cmcu.edu.vn/',
-            description: 'Tài liệu môn học, bài giảng theo chương',
+            description: 'Bài giảng theo chương và bài tập AI của từng học phần',
             icon: 'book',
             isRequired: false
         }
@@ -156,6 +158,94 @@ router.post('/iu/group', xuLy(async req => {
     const data = await keoNhomIU(saved.session, saved.cookie, nhom, opts);
 
     return { nhom, data };
+}));
+
+// ─── Nhánh EDUX (đăng nhập bằng tài khoản EDUX -> phiên RAM -> kéo bài tập) ───
+
+/**
+ * Đăng nhập EDUX bằng email + mật khẩu người dùng nhập.
+ * Mật khẩu chỉ dùng cho đúng lời gọi loginEdux() rồi bị bỏ; không lưu, không log.
+ */
+router.post('/edux/session', xuLy(async req => {
+    const { email, password } = req.body || {};
+    if (!email || !password) throw loi('email và password là bắt buộc.');
+
+    let phien;
+    try {
+        phien = await dangNhapEDUX({ email, password });
+    } catch (err) {
+        // Sai thông tin đăng nhập: không giữ lại phiên cũ (nếu có) để tránh dùng nhầm.
+        if (err.statusCode === 401) eduxKho.clearSession(NGUOI_DUNG_ID);
+        throw err;
+    }
+
+    const status = eduxKho.saveSession(NGUOI_DUNG_ID, {
+        cookie: phien.cookie,
+        email: phien.email
+    });
+
+    return { message: 'Đã đăng nhập EDUX.', ...status };
+}, 201));
+
+router.get('/edux/status', xuLy(() => eduxKho.getStatus(NGUOI_DUNG_ID)));
+
+router.delete('/edux/session', xuLy(async () => {
+    eduxKho.clearSession(NGUOI_DUNG_ID);
+    // Xoá cả bài tập EDUX đã lưu trong DB: ngắt kết nối nghĩa là không còn
+    // dùng dữ liệu của cổng trường đó nữa.
+    const daXoa = await db.xoaBaiTapEDUX(NGUOI_DUNG_ID);
+    return { message: `Đã xoá phiên EDUX và ${daXoa} bài tập đã lưu.`, removed: daXoa };
+}));
+
+/**
+ * Kéo bài tập AI từ EDUX bằng phiên đã lưu.
+ * Trả về đúng shape task frontend đang dùng (id/title/subject/due/status/...).
+ */
+router.post('/edux/pull', xuLy(async req => {
+    const saved = eduxKho.getSession(NGUOI_DUNG_ID);
+    if (!saved) throw loi('Chưa có phiên EDUX. Hãy đăng nhập EDUX trước.', 401);
+
+    const { subjectId, questions = false } = req.body || {};
+
+    let ketQua;
+    try {
+        ketQua = await keoBaiTapEDUX(saved.cookie, { subjectId, questions: questions === true });
+    } catch (err) {
+        // 401 = cookie EDUX hết hạn/không hợp lệ -> xoá phiên để FE yêu cầu đăng nhập lại.
+        if (laHetPhien(err)) {
+            eduxKho.clearSession(NGUOI_DUNG_ID);
+            throw loi('Phiên EDUX đã hết hạn. Hãy đăng nhập EDUX lại.', 401);
+        }
+        throw err;
+    }
+
+    // Ghi đè dữ liệu đã kéo để lần sau chỉ cần đọc lại trong RAM.
+    eduxKho.saveSession(NGUOI_DUNG_ID, {
+        cookie: saved.cookie,
+        email: saved.email,
+        data: ketQua.assignments,
+        subjectIds: ketQua.subjectIds
+    });
+
+    // Lưu hẳn xuống SQLite — trước đây chỉ có trong RAM nên tắt app là mất,
+    // mở lại không thấy bài tập nào trong DB.
+    const daLuu = await db.luuBaiTapEDUX(NGUOI_DUNG_ID, ketQua.assignments);
+
+    const soBai = ketQua.assignments.length;
+    let message = `Đã kéo ${soBai} bài tập EDUX từ ${ketQua.subjects} học phần.`;
+    if (daLuu.saved) message += ` Đã lưu ${daLuu.saved} bài vào cơ sở dữ liệu.`;
+    if (daLuu.removed) message += ` Đã xoá ${daLuu.removed} bài không còn trên EDUX.`;
+    if (ketQua.thatBai.length) {
+        message += ` Một số chương lỗi: ${ketQua.thatBai.join('; ')}`;
+    }
+
+    return {
+        message,
+        assignments: ketQua.assignments,
+        thatBai: ketQua.thatBai,
+        saved: daLuu.saved,
+        removed: daLuu.removed
+    };
 }));
 
 module.exports = router;

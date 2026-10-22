@@ -14,6 +14,10 @@ let schedulesLoadPromise = null;
  * Mount Schedule tab: nạp lịch học thật và lịch tự học từ backend (SQLite) trước khi render.
  */
 export async function mountSchedule(containerEl) {
+  // Render trước bằng state cache để pane không bao giờ trắng
+  // trong lúc chờ fetch.
+  containerEl.innerHTML = renderScheduleView();
+  attachScheduleEvents(containerEl);
   if (!schedulesLoadPromise) {
     schedulesLoadPromise = (async () => {
       try {
@@ -35,6 +39,9 @@ export async function mountSchedule(containerEl) {
   }
   await schedulesLoadPromise;
 
+  // containerEl có thể đã detach sau một renderShell khác — bỏ qua
+  // để tránh ghi vào DOM chết (ghi vào DOM chết = vẫn trắng).
+  if (!containerEl.isConnected) return;
   containerEl.innerHTML = renderScheduleView();
   attachScheduleEvents(containerEl);
 }
