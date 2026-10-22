@@ -178,10 +178,13 @@ function mapExamRow(e, idx) {
   const rawDate = e.exam_date || e.examDate || e.date || "";
   const date = rawDate instanceof Date ? rawDate.toISOString().slice(0, 10) : String(rawDate).slice(0, 10);
   const time = String(e.exam_time || e.examTime || e.start || "08:00").slice(0, 5);
+  // Mã môn tự sinh ("SUB_123") không phải mã thật của trường -> bỏ để UI không hiện mã giả.
+  const rawCode = String(e.subject_code || e.subjectCode || "");
+  const code = /^(SUB|MON)_\d+$/i.test(rawCode) ? "" : rawCode;
   return {
     id: `exam-school-${e.exam_id ?? e.id ?? idx}`,
     subject: e.subject_name || e.subjectName || e.subject || "",
-    code: e.subject_code || e.subjectCode || "",
+    code,
     date,
     start: time,
     duration: Number(e.duration_minutes ?? e.durationMinutes ?? e.duration) || 90,

@@ -30,9 +30,17 @@ export function renderDashboardView() {
     })
     .slice(0, 3);
 
-  // Kỳ thi sắp tới
+  // Kỳ thi sắp tới: chỉ lấy kỳ thi chưa diễn ra, sắp xếp tăng dần theo ngày giờ.
+  const nowMs = Date.now();
   const upcomingExams = state.exams
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .filter((ex) => {
+      const ms = new Date(`${ex.date}T${ex.start || "00:00"}`).getTime();
+      return Number.isFinite(ms) && ms >= nowMs;
+    })
+    .sort((a, b) =>
+      new Date(`${a.date}T${a.start || "00:00"}`).getTime() -
+      new Date(`${b.date}T${b.start || "00:00"}`).getTime()
+    )
     .slice(0, 2);
 
   // Thống kê Pomodoro & Tiến độ dùng chung
@@ -221,7 +229,7 @@ export function renderDashboardView() {
                       (ex) => `
                   <div class="dash-item-row">
                     <div>
-                      <div class="dash-item-title">${ex.subject} (${ex.code || "Môn thi"})</div>
+                      <div class="dash-item-title">${ex.subject}${ex.code ? ` (${ex.code})` : ""}</div>
                       <div class="dash-item-subtitle">Ngày ${ex.date} · ${ex.start} (${ex.duration} phút)</div>
                     </div>
                     <span class="eyebrow" style="font-size:0.72rem;">${ex.room}</span>

@@ -8,18 +8,27 @@ import { state, notifyStateChange } from "../../app/state.js";
 import { getStudentSubjects } from "../tasks/tasks.service.js";
 
 /**
+ * Mã môn do hệ thống tự sinh (không phải mã thật của trường) — vd "SUB_123",
+ * "MON_456". Hiển thị mã này chỉ gây khó hiểu nên UI bỏ qua.
+ */
+export function isGeneratedSubjectCode(code) {
+  return /^(SUB|MON)_\d+$/i.test(String(code || "").trim());
+}
+
+/**
  * Chuẩn hóa 1 bản ghi kỳ thi từ backend thành đối tượng UI
  */
 export function mapExamFromBackend(e) {
   const examId = Number(e.exam_id ?? e.id);
   const rawDate = e.exam_date ? String(e.exam_date).slice(0, 10) : "";
   const rawTime = e.exam_time ? String(e.exam_time).slice(0, 5) : "08:00";
+  const code = isGeneratedSubjectCode(e.subject_code) ? "" : (e.subject_code || "");
 
   return {
     id: `exam-${examId}`,
     examId,
-    subject: e.subject_name || e.subject_code || "Kỳ thi",
-    code: e.subject_code || "",
+    subject: e.subject_name || code || "Kỳ thi",
+    code,
     subjectId: e.subject_id,
     date: rawDate,
     start: rawTime,

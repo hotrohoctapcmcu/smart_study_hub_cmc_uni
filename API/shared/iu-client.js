@@ -77,6 +77,21 @@ function thuTuNgay(ngay) {
 }
 
 /**
+ * Thời lượng kỳ thi (phút) từ cặp "HH:mm" bắt đầu/kết thúc.
+ * Trả 0 khi thiếu giờ để saveIUData() dùng mặc định của nó.
+ */
+function tinhThoiLuong(batDau, ketThuc) {
+    const doc = (v) => {
+        const m = /^(\d{1,2}):(\d{2})$/.exec(s(v).trim());
+        return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+    };
+    const a = doc(batDau);
+    const b = doc(ketThuc);
+    if (a === null || b === null || b <= a) return 0;
+    return b - a;
+}
+
+/**
  * Map schema { IU: {...} } của IU -> dataIU phẳng cho saveIUData().
  */
 function mapSangDataIU(schema) {
@@ -96,6 +111,9 @@ function mapSangDataIU(schema) {
         const key = s(mon.ten_hoc_phan || mon.ma_mon).replace(/\s+/g, '_') || 'Mon_hoc';
         bang_diem[ky][key] = {
             so_tin_chi: Number(mon.so_tin_chi) || 3,
+            // Giữ mã môn thật của IU: trước đây chỉ lưu tên nên saveIUData()
+            // phải tự bịa mã "SUB_<hash>" và UI hiển thị mã giả đó.
+            ma_mon: s(mon.ma_mon),
             diem_tong_ket: Number(mon.diem_he_10) || 0,
             diem_chu: s(mon.diem_chu) || 'B',
             trang_thai: (Number(mon.diem_he_10) || 0) >= 4 ? 'dat' : 'rot'
@@ -118,13 +136,18 @@ function mapSangDataIU(schema) {
     }));
 
     const lich_thi = ((iu.lich_thi && iu.lich_thi.chi_tiet_lich_thi) || []).map((t) => {
-        const gio = s(t.gio_thi).split('-')[0].trim();
+        // Portal trả "13:30 - 15:00"; tách giờ bắt đầu và tự tính thời lượng thay
+        // vì hardcode 90 phút cho mọi kỳ thi.
+        const [batDau, ketThuc] = s(t.gio_thi).split('-').map((x) => x.trim());
         return {
             ma_mon: s(t.ma_mon),
             ten_mon: s(t.ten_mon).replace(/\s+/g, '_'),
             ngay_thi: toDMY(t.ngay_thi),
-            gio_thi: gio || '08:00',
+            gio_thi: batDau || '',
+            gio_ket_thuc: ketThuc || '',
+            thoi_luong: tinhThoiLuong(batDau, ketThuc),
             phong_thi: s(t.phong_thi),
+            hinh_thuc_thi: s(t.hinh_thuc_thi),
             co_so: 'Cơ sở chính'
         };
     });

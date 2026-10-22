@@ -109,7 +109,6 @@ async function saveIUData(studentCode, dataIU) {
 
                     const cleanName = tenMon.replace(/_/g, " ").trim();
                     if (!cleanName) continue;
-
                     const credits    = Number(chiTiet.so_tin_chi) || 3;
                     const rawScore   = chiTiet.diem_tong_ket;
                     const finalScore =
@@ -138,8 +137,9 @@ async function saveIUData(studentCode, dataIU) {
 
                     if (finalScore !== null && !Number.isFinite(finalScore)) continue;
 
-                    // Upsert Subjects theo subject_name
-                    const subjectId = await upsertSubjectByName(cleanName, credits, null);
+                    // Upsert Subjects theo subject_name, giữ mã môn thật của IU
+                    // nếu có (trước đây luôn truyền null -> sinh mã giả "SUB_<hash>").
+                    const subjectId = await upsertSubjectByName(cleanName, credits, chiTiet.ma_mon || null);
                     if (!subjectId) continue;
 
                     if (subjectId > 0 && !(await subjectExisted(cleanName))) {
@@ -244,22 +244,61 @@ async function saveIUData(studentCode, dataIU) {
                 const subjectId = await upsertSubjectByCodeOrName(subjectCode, subjectName);
                 if (!subjectId) continue;
 
+                // Không bịa ngày/phòng: dữ liệu sai ngày thi còn tệ hơn thiếu.
+                // Portal có thể trả dòng chưa xếp lịch -> bỏ qua để lần đồng bộ
+                // sau (đã có lịch chính thức) ghi vào.
+                const ngayThi = convertDate(lt.ngay_thi);
+                if (!ngayThi || !/^\d{4}-\d{2}-\d{2}$/.test(ngayThi)) {
+                    console.warn(
+                        `[SYNC] Bỏ qua lịch thi môn "${subjectName}": thiếu ngày thi hợp lệ ` +
+                        `(${JSON.stringify(lt.ngay_thi)})`
+                    );
+                    continue;
+                }
+
+                // Portal trả giờ dạng "13:30" hoặc "13:30 - 15:00"; DB chỉ giữ giờ bắt đầu.
+                const gioThi = String(lt.gio_thi || "").split("-")[0].trim();
+                if (!/^\d{1,2}:\d{2}$/.test(gioThi)) {
+                    console.warn(
+                        `[SYNC] Bỏ qua lịch thi môn "${subjectName}": giờ thi không hợp lệ ` +
+                        `(${JSON.stringify(lt.gio_thi)})`
+                    );
+                    continue;
+                }
+
+                // Thời lượng: dùng giờ kết thúc do IU trả, không hardcode 90 phút.
+                const phut = Number(lt.thoi_luong) > 0
+                    ? Number(lt.thoi_luong)
+                    : (() => {
+                        const ketThuc = String(lt.gio_ket_thuc || "").trim();
+                        if (!/^\d{1,2}:\d{2}$/.test(ketThuc)) return 90;
+                        const [h1, m1] = gioThi.split(":").map(Number);
+                        const [h2, m2] = ketThuc.split(":").map(Number);
+                        const chenh = (h2 * 60 + m2) - (h1 * 60 + m1);
+                        return chenh > 0 ? chenh : 90;
+                    })();
+
+                // OR IGNORE: UNIQUE (student_id, subject_id, exam_date, exam_time) —
+                // IU có thể trả trùng dòng (nhiều đợt thi cùng giờ), không được làm
+                // hỏng cả transaction.
                 await executeQuery(
-                    `INSERT INTO Exams (
+                    `INSERT OR IGNORE INTO Exams (
                          student_id, subject_id, exam_name, exam_date, exam_time,
                          duration_minutes, room, campus, exam_format, source
                      ) VALUES (
                          @sid, @subId, @name, @ed, @et,
-                         90, @rm, @cp, 'Tự luận', 'IU'
+                         @dur, @rm, @cp, @ef, 'IU'
                      )`,
                     {
                         sid:   studentId,
                         subId: subjectId,
                         name:  "Thi kết thúc học phần",
-                        ed:    convertDate(lt.ngay_thi) || "2026-12-15",
-                        et:    lt.gio_thi    || "08:00",
-                        rm:    lt.phong_thi  || "A201",
-                        cp:    lt.co_so      || "Cơ sở chính"
+                        ed:    ngayThi,
+                        et:    gioThi,
+                        dur:   phut,
+                        rm:    lt.phong_thi  || "Chưa xếp phòng",
+                        cp:    lt.co_so      || "Cơ sở chính",
+                        ef:    lt.hinh_thuc_thi || "Tự luận"
                     }
                 );
 
@@ -281,6 +320,41 @@ async function saveIUData(studentCode, dataIU) {
 // ─── Helpers nội bộ ──────────────────────────────────────────────────────────
 
 /**
+ * Mã môn do hệ thống tự sinh khi IU không trả mã thật ("SUB_123", "MON_456").
+ * Dùng để nhận biết khi nào có mã thật thì nâng cấp lại.
+ */
+function laMaTuSinh(code) {
+    return /^(SUB|MON)_\d+$/.test(String(code || "").trim());
+}
+
+/**
+ * Ghi mã môn thật vào một Subjects vừa tìm được theo tên, thay cho mã tự sinh.
+ * Bỏ qua nếu mã thật đã thuộc về bản ghi khác (tránh vi phạm UNIQUE).
+ */
+async function nangCapMaMon(subjectId, maThat) {
+    const code = String(maThat || "").trim();
+    if (!subjectId || !code) return;
+
+    const hienTai = await executeQuery(
+        "SELECT subject_code FROM Subjects WHERE subject_id = @id LIMIT 1",
+        { id: subjectId }
+    );
+    if (!hienTai.length) return;
+    if (!laMaTuSinh(hienTai[0].subject_code)) return; // đã có mã thật
+
+    const trung = await executeQuery(
+        "SELECT 1 FROM Subjects WHERE subject_code = @code AND subject_id <> @id LIMIT 1",
+        { code, id: subjectId }
+    );
+    if (trung.length) return;
+
+    await executeQuery(
+        "UPDATE Subjects SET subject_code = @code WHERE subject_id = @id",
+        { code, id: subjectId }
+    );
+}
+
+/**
  * Kiểm tra nhanh môn học đã tồn tại theo tên (dùng để đếm subjectsCount).
  */
 async function subjectExisted(subjectName) {
@@ -300,7 +374,10 @@ async function upsertSubjectByName(subjectName, credits, subjectCode) {
         { name: subjectName }
     );
 
-    if (rows.length) return rows[0].subject_id;
+    if (rows.length) {
+        await nangCapMaMon(rows[0].subject_id, subjectCode);
+        return rows[0].subject_id;
+    }
 
     const code = subjectCode || ("SUB_" + Math.abs(hashCode(subjectName)));
     await executeQuery(
@@ -339,7 +416,10 @@ async function upsertSubjectByCodeOrName(subjectCode, subjectName) {
         );
     }
 
-    if (rows.length) return rows[0].subject_id;
+    if (rows.length) {
+        await nangCapMaMon(rows[0].subject_id, subjectCode);
+        return rows[0].subject_id;
+    }
 
     // Tạo mới nếu chưa có
     const code = subjectCode || ("MON_" + Math.abs(hashCode(subjectName)));

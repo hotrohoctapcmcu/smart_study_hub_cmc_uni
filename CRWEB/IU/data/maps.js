@@ -14,9 +14,11 @@ const n = (v, dflt = 0) => {
     return Number.isFinite(x) ? x : dflt;
 };
 const hhmm = (g, p) => {
-    if (g == null || p == null) return "";
+    if (g == null || g === "") return "";
+    // Portal hay tra PHUTBATDAU/PHUTKETTHUC rong hoac null cho lich thi.
+    // Truoc day tra "" lam mat gio that va roi ve mac dinh "08:00".
     const gg = String(g).padStart(2, "0");
-    const pp = String(p).padStart(2, "0");
+    const pp = String(p == null || p === "" ? 0 : p).padStart(2, "0");
     return `${gg}:${pp}`;
 };
 
@@ -173,13 +175,14 @@ function mapLichHoc(rows) {
 
 function mapLichThi(rows) {
     return (rows || []).map((e) => ({
-        ma_mon: s(e.MAHOCPHAN || e.DAOTAO_HOCPHAN_MA || ""),
-        ten_mon: s(e.TENHOCPHAN || e.DAOTAO_HOCPHAN_TEN || ""),
-        ngay_thi: s(e.NGAYHOC || e.NGAYTHI || ""),
+        ma_mon: s(e.MAHOCPHAN || e.DAOTAO_HOCPHAN_MA || e.MA_HOCPHAN || ""),
+        ten_mon: s(e.TENHOCPHAN || e.DAOTAO_HOCPHAN_TEN || e.TENMON || e.TEN_MON || ""),
+        ngay_thi: s(e.NGAYHOC || e.NGAYTHI || e.NGAY_THI || e.NGAYTHICU || ""),
         gio_thi: hhmm(e.GIOBATDAU, e.PHUTBATDAU) +
             (e.GIOKETTHUC != null ? ` - ${hhmm(e.GIOKETTHUC, e.PHUTKETTHUC)}` : ""),
-        phong_thi: s(e.PHONGHOC_TEN || e.PHONGTHI_TEN || e.PHONGHOC_MA || ""),
-        hinh_thuc_thi: s(e.HINHTHUCTHI_TEN || e.HINHTHUC || ""),
+        phong_thi: s(e.PHONGHOC_TEN || e.PHONGTHI_TEN || e.PHONGHOC_MA ||
+            e.PHONGTHI_MA || e.PHONGTHI || e.PHONG || ""),
+        hinh_thuc_thi: s(e.HINHTHUCTHI_TEN || e.HINHTHUC || e.HINHTHUCTHI || ""),
     }));
 }
 

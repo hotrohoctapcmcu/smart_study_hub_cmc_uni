@@ -152,22 +152,120 @@ async function layLichHoc(session, cookie, opts = {}) {
     return mapLichHoc(Array.isArray(lh) ? lh : []);
 }
 
+function layDanhSachHocPhanThi(hpThi) {
+    const arr = Array.isArray(hpThi)
+        ? hpThi
+        : (hpThi && (hpThi.rsDanhSach || hpThi.rsHocPhan || hpThi.rs || hpThi.data || [])) || [];
+    return Array.isArray(arr) ? arr : [];
+}
+
+function layIdHocPhanThi(hp) {
+    if (!hp || typeof hp !== "object") return "";
+    return hp.ID || hp.DAOTAO_HOCPHAN_ID || hp.DAOTAO_HOCPHANID ||
+        hp.HOCPHAN_ID || hp.strDaoTao_HocPhan_Id || "";
+}
+
+// Doi chuoi ngay (DD/MM/YYYY hoac YYYY-MM-DD) sang moc thoi gian de so sanh.
+function mocNgay(v) {
+    const str = String(v == null ? "" : v).trim();
+    if (!str) return NaN;
+    let m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(str);
+    if (m) return Date.UTC(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+    m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(str);
+    if (m) return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    return NaN;
+}
+
+/**
+ * Chon hoc ky HIEN TAI trong danh sach dropdown portal tra ve.
+ *
+ * Truoc day code luon lay phan tu [0], nen khi portal tra nhieu hoc ky thi
+ * se lay lich thi cua ky dau tien (thuong la ky cu nhat) -> "sai thoi khoa bieu thi".
+ * Uu tien: co co dang dien -> khoang ngay chua hom nay -> ngay bat dau moi nhat.
+ */
+function chonHocKyHienTai(danhSach) {
+    const ds = (Array.isArray(danhSach) ? danhSach : []).filter(
+        (x) => x && typeof x === "object" && x.ID
+    );
+    if (!ds.length) return null;
+    if (ds.length === 1) return ds[0];
+
+    const coDangDien = (x) => {
+        if (x.DANGDIEN === true || x.DANGDIEN === 1 || x.HIENTAI === true || x.HIENTAI === 1) return true;
+        if (x.IS_CURRENT === true || x.ISCURRENT === true) return true;
+        const tt = String(x.TRANGTHAI || x.TRANGTHAI_TEN || "").toLowerCase();
+        return /đang|hien hanh|hiện hành|current/.test(tt);
+    };
+    const dang = ds.filter(coDangDien);
+    if (dang.length) return dang[0];
+
+    const now = Date.now();
+    const dangTrongKy = ds.filter((x) => {
+        const bd = mocNgay(x.NGAYBATDAU || x.TUNGAY || x.NGAYBATDAU_HIENTHI);
+        const kt = mocNgay(x.NGAYKETTHUC || x.DENNGAY || x.NGAYKETTHUC_HIENTHI);
+        return Number.isFinite(bd) && Number.isFinite(kt) && bd <= now && now <= kt;
+    });
+    if (dangTrongKy.length) return dangTrongKy[0];
+
+    // Khong co co/khoang ngay -> lay hoc ky co ngay bat dau moi nhat.
+    let moiNhat = ds[0];
+    let mocMoiNhat = mocNgay(ds[0].NGAYBATDAU || ds[0].TUNGAY);
+    for (const x of ds.slice(1)) {
+        const moc = mocNgay(x.NGAYBATDAU || x.TUNGAY);
+        if (Number.isFinite(moc) && (!Number.isFinite(mocMoiNhat) || moc > mocMoiNhat)) {
+            mocMoiNhat = moc;
+            moiNhat = x;
+        }
+    }
+    return moiNhat;
+}
+
+function gopHangLichThi(rowsGop, thay, lt) {
+    if (!lt) return;
+    const rows = lt.rsLichThiCaNhan || lt.rsKeHoachThiChung || (Array.isArray(lt) ? lt : []);
+    for (const r of rows || []) {
+        if (!r || typeof r !== "object") continue;
+        const key = JSON.stringify([
+            r.MAHOCPHAN || r.DAOTAO_HOCPHAN_MA || "",
+            r.TENHOCPHAN || r.DAOTAO_HOCPHAN_TEN || "",
+            r.NGAYHOC || r.NGAYTHI || "",
+            r.GIOBATDAU, r.PHUTBATDAU, r.GIOKETTHUC, r.PHUTKETTHUC,
+            r.PHONGHOC_TEN || r.PHONGTHI_TEN || r.PHONGHOC_MA || "",
+        ]);
+        if (thay.has(key)) continue;
+        thay.add(key);
+        rowsGop.push(r);
+    }
+}
+
 async function layLichThi(session, cookie, opts = {}) {
     const hkThi = await goiThat(session, cookie, "LayDSThoiGianLichThi", {}, "LayDSThoiGianLichThi");
-    const hkId = (hkThi && hkThi[0] && hkThi[0].ID) || opts.thoiGianId || "";
+    const hk = chonHocKyHienTai(hkThi);
+    const hkId = (hk && hk.ID) || opts.thoiGianId || "";
     if (!hkId) return [];
     const hpThi = await goiThat(session, cookie, "LayDSHocPhanLichThi", {
         strDaoTao_ThoiGianDaoTao_Id: hkId,
         strTHI_DotThi_Id: "", strDiem_ThanhPhanDiem_Id: "",
     }, "LayDSHocPhanLichThi");
-    const hocPhanThiId = (hpThi && hpThi[0] && (hpThi[0].ID || hpThi[0].DAOTAO_HOCPHAN_ID)) || "";
-    const lt = await goiThat(session, cookie, "LayDSLichThi_KeHoachThi", {
-        strDaoTao_ThoiGianDaoTao_Id: hkId,
-        strDaoTao_HocPhan_Id: hocPhanThiId,
-    }, "LayDSLichThi_KeHoachThi");
-    if (lt) {
-        const rows = lt.rsLichThiCaNhan || lt.rsKeHoachThiChung || (Array.isArray(lt) ? lt : []);
-        const mapped = mapLichThi(rows);
+    // Portal lọc lịch thi theo từng học phần: phải query từng học phần rồi gộp,
+    // trước đây chỉ lấy học phần đầu tiên nên thiếu môn thi.
+    const dsHocPhan = layDanhSachHocPhanThi(hpThi);
+    const ids = dsHocPhan.map(layIdHocPhanThi).filter(Boolean);
+    const idCanQuery = ["", ...new Set(ids)];
+    const rowsGop = [];
+    const thay = new Set();
+    for (const hocPhanThiId of idCanQuery) {
+        let lt = null;
+        try {
+            lt = await goiThat(session, cookie, "LayDSLichThi_KeHoachThi", {
+                strDaoTao_ThoiGianDaoTao_Id: hkId,
+                strDaoTao_HocPhan_Id: hocPhanThiId,
+            }, "LayDSLichThi_KeHoachThi");
+        } catch { continue; }
+        gopHangLichThi(rowsGop, thay, lt);
+    }
+    if (rowsGop.length) {
+        const mapped = mapLichThi(rowsGop);
         if (mapped.length) return mapped;
     }
     // Du phong endpoint cu (neu portal cu van dung).
@@ -316,23 +414,32 @@ async function layTatCaIU(session, cookie, opts = {}) {
         if (lh) out.IU.lich_hoc.chi_tiet_thoi_khoa_bieu = mapLichHoc(Array.isArray(lh) ? lh : []);
     }
 
-    // 9. Lich thi: hoc ky -> hoc phan -> chi tiet -> du phong LayTTLichThi.
+    // 9. Lich thi: hoc ky -> TAT CA hoc phan -> chi tiet -> du phong LayTTLichThi.
     const hkThi = await goi("LayDSThoiGianLichThi", {});
-    const hkId = (hkThi && hkThi[0] && hkThi[0].ID) || opts.thoiGianId || "";
+    const hk = chonHocKyHienTai(hkThi);
+    const hkId = (hk && hk.ID) || opts.thoiGianId || "";
     if (hkId) {
         const hpThi = await goi("LayDSHocPhanLichThi", {
             strDaoTao_ThoiGianDaoTao_Id: hkId,
             strTHI_DotThi_Id: "", strDiem_ThanhPhanDiem_Id: "",
         });
-        const hocPhanThiId = (hpThi && hpThi[0] && (hpThi[0].ID || hpThi[0].DAOTAO_HOCPHAN_ID)) || "";
-        if (hocPhanThiId) log(`[API] hoc phan thi dau tien: ${hocPhanThiId}`);
-        const lt = await goi("LayDSLichThi_KeHoachThi", {
-            strDaoTao_ThoiGianDaoTao_Id: hkId,
-            strDaoTao_HocPhan_Id: hocPhanThiId,
-        });
-        if (lt) {
-            const rows = lt.rsLichThiCaNhan || lt.rsKeHoachThiChung || (Array.isArray(lt) ? lt : []);
-            out.IU.lich_thi.chi_tiet_lich_thi = mapLichThi(rows);
+        // Portal loc lich thi theo tung hoc phan: phai query tung hoc phan roi gop,
+        // chi lay hoc phan dau tien se thieu mon thi.
+        const dsHocPhan = layDanhSachHocPhanThi(hpThi);
+        const ids = dsHocPhan.map(layIdHocPhanThi).filter(Boolean);
+        const idCanQuery = ["", ...new Set(ids)];
+        const rowsGop = [];
+        const thay = new Set();
+        for (const hocPhanThiId of idCanQuery) {
+            const lt = await goi("LayDSLichThi_KeHoachThi", {
+                strDaoTao_ThoiGianDaoTao_Id: hkId,
+                strDaoTao_HocPhan_Id: hocPhanThiId,
+            });
+            gopHangLichThi(rowsGop, thay, lt);
+        }
+        if (rowsGop.length) {
+            out.IU.lich_thi.chi_tiet_lich_thi = mapLichThi(rowsGop);
+            if (ids.length) log(`[API] lich thi: ${ids.length} hoc phan, ${rowsGop.length} dong`);
         }
     }
     // Du phong endpoint cu: chay ca khi khong co hoc ky thi (portal co the chi
