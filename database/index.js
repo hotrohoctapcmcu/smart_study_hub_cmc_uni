@@ -103,6 +103,7 @@ async function ketNoiDatabase() {
         // ─── ĐỒNG BỘ EDUX (BÀI TẬP AI LƯU XUỐNG SQLITE) ────────────────
         luuBaiTapEDUX: sprint1Service.luuBaiTapEDUX,
         layBaiTapEDUX: sprint1Service.layBaiTapEDUX,
+        anBaiTapEDUX: sprint1Service.anBaiTapEDUX,
         capNhatTrangThaiBaiTapEDUX: sprint1Service.capNhatTrangThaiBaiTapEDUX,
         xoaBaiTapEDUX: sprint1Service.xoaBaiTapEDUX
 

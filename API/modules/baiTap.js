@@ -48,9 +48,13 @@ router.get('/edux', xuLy(async req => {
 
     // Đường đọc thường: lấy từ DB (không cần phiên EDUX còn sống).
     if (!muonKeoLai && !questions) {
-        const trongDb = await db.layBaiTapEDUX(NGUOI_DUNG_ID, { subjectId });
+        const cachedAssignments = await db.layBaiTapEDUX(NGUOI_DUNG_ID, {
+            subjectId,
+            includeHidden: true
+        });
+        const trongDb = cachedAssignments.filter(item => !item.isHidden);
 
-        if (trongDb.length > 0) {
+        if (cachedAssignments.length > 0) {
             return { source: 'EDUX', cached: true, assignments: trongDb, total: trongDb.length };
         }
 
@@ -62,14 +66,11 @@ router.get('/edux', xuLy(async req => {
             if (subjectId && subjectIds.length && !subjectIds.includes(String(subjectId))) {
                 throw loi(`Không tìm thấy học phần ${subjectId} trên EDUX.`, 404);
             }
-            const assignments = subjectId
-                ? saved.data.filter(item => String(item.subjectId) === String(subjectId))
-                : saved.data;
-
             // Phiên RAM có dữ liệu nhưng DB trống (vd vừa nâng cấp) -> ghi bù.
             await db.luuBaiTapEDUX(NGUOI_DUNG_ID, saved.data);
+            const daLuu = await db.layBaiTapEDUX(NGUOI_DUNG_ID, { subjectId });
 
-            return { source: 'EDUX', cached: true, assignments, total: assignments.length };
+            return { source: 'EDUX', cached: true, assignments: daLuu, total: daLuu.length };
         }
     }
 
@@ -95,12 +96,13 @@ router.get('/edux', xuLy(async req => {
 
     // Lưu xuống DB để lần sau đọc được mà không cần gọi lại EDUX.
     await db.luuBaiTapEDUX(NGUOI_DUNG_ID, ketQua.assignments);
+    const daLuu = await db.layBaiTapEDUX(NGUOI_DUNG_ID, { subjectId });
 
     return {
         source: 'EDUX',
         cached: false,
-        assignments: ketQua.assignments,
-        total: ketQua.assignments.length,
+        assignments: daLuu,
+        total: daLuu.length,
         thatBai: ketQua.thatBai
     };
 }));
@@ -152,7 +154,30 @@ router.patch('/:id/status', xuLy(req => {
     return db.capNhatTrangThaiBaiTap(req.params.id, status, NGUOI_DUNG_ID);
 }, 200, 'Đã cập nhật trạng thái bài tập.'));
 
-router.delete('/:id', xuLy(req => db.xoaBaiTap(req.params.id, NGUOI_DUNG_ID), 200, 'Đã xóa bài tập và nhắc nhở liên quan.'));
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const assignmentId = String(req.params.id || '').trim();
+    if (!assignmentId) throw loi('assignmentId là bắt buộc.');
+
+    if (/^edux-/i.test(assignmentId)) {
+        const daAn = await db.anBaiTapEDUX(NGUOI_DUNG_ID, assignmentId);
+        if (!daAn) throw loi(`Không tìm thấy bài tập EDUX: ${assignmentId}`, 404);
+        return res.json({
+            success: true,
+            message: 'Đã ẩn bài tập EDUX. Bài tập sẽ không xuất hiện lại sau khi đồng bộ.'
+        });
+    }
+
+    if (!/^\d+$/.test(assignmentId) || Number(assignmentId) <= 0) {
+        throw loi('ID bài tập phải là số hợp lệ hoặc có tiền tố edux-.');
+    }
+
+    await db.xoaBaiTap(Number(assignmentId), NGUOI_DUNG_ID);
+    return res.json({ success: true, message: 'Đã xóa bài tập và nhắc nhở liên quan.' });
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.get('/checklist', xuLy(req => db.layChecklist(NGUOI_DUNG_ID)));
 
@@ -180,7 +205,16 @@ router.patch('/checklist/:id/done', xuLy(req => {
     return db.hoanThanhChecklist(req.params.id, req.body.isCompleted !== false, NGUOI_DUNG_ID);
 }, 200, 'Đã cập nhật trạng thái checklist.'));
 
-router.delete('/checklist/:id', xuLy(req => db.xoaChecklist(req.params.id, NGUOI_DUNG_ID), 200, 'Đã xóa task.'));
+router.delete('/checklist/:id', xuLy(async req => {
+    const checklistId = String(req.params.id || '').trim();
+    if (!/^\d+$/.test(checklistId) || Number(checklistId) <= 0) {
+        throw loi('checklistId phải là số nguyên dương.');
+    }
+
+    const daXoa = await db.xoaChecklist(Number(checklistId), NGUOI_DUNG_ID);
+    if (!daXoa) throw loi('Không tìm thấy checklist thuộc người dùng hiện tại.', 404);
+    return { checklistId: Number(checklistId) };
+}, 200, 'Đã xóa task.'));
 
 module.exports = router;
 module.exports.setDb = instance => {
