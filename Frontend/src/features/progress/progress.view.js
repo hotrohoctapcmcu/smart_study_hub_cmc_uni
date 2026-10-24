@@ -165,9 +165,55 @@ export function renderProgressView(uiState = {}) {
         </div>
       </div>
 
-      <!-- 4 Thẻ chỉ số tổng quan (Metric Cards) -->
+      <!-- 5 Thẻ chỉ số phân tích tiến độ thực tế -->
       <div class="progress-metrics-grid">
-        <!-- Card 1: Tổng thời gian học trong chu kỳ -->
+        <!-- Card 1: Tỷ lệ hoàn thành bài tập -->
+        <div class="progress-metric-card">
+          <div class="metric-top">
+            <span class="metric-icon-wrap" style="color:var(--emerald-600);background:var(--emerald-50);">
+              <svg><use href="#i-tasks"></use></svg>
+            </span>
+            <span class="status-pill ${data.hasTaskData ? "violet" : "neutral"}">
+              ${data.hasTaskData ? `${data.taskCompletionRate}%` : "Chưa có"}
+            </span>
+          </div>
+          <div class="metric-value-text">
+            ${data.hasTaskData ? `${data.completedTasks}/${data.totalTasks}` : "0"} <small style="font-size:1rem;font-weight:600;">task</small>
+          </div>
+          <div class="metric-label-text">Tỷ lệ bài tập hoàn thành</div>
+          <div class="metric-sub-note">
+            ${
+              data.hasTaskData
+                ? `Đạt ${data.taskCompletionRate}% · Còn ${data.inProgressTasks} việc cần làm`
+                : "Chưa có bài tập nào được giao"
+            }
+          </div>
+        </div>
+
+        <!-- Card 2: Bài tập quá hạn -->
+        <div class="progress-metric-card ${data.overdueTasks > 0 ? "metric-card-warning" : ""}">
+          <div class="metric-top">
+            <span class="metric-icon-wrap" style="color:${data.overdueTasks > 0 ? "var(--rose-600)" : "var(--ink-500)"};background:${data.overdueTasks > 0 ? "var(--rose-50)" : "var(--ink-50)"};">
+              <svg><use href="#i-clock"></use></svg>
+            </span>
+            <span class="status-pill ${data.overdueTasks > 0 ? "red" : "neutral"}">
+              ${data.overdueTasks > 0 ? "Cần chú ý" : "Kịp hạn"}
+            </span>
+          </div>
+          <div class="metric-value-text" style="${data.overdueTasks > 0 ? "color:var(--rose-600);" : ""}">
+            ${data.overdueTasks} <small style="font-size:1rem;font-weight:600;">bài</small>
+          </div>
+          <div class="metric-label-text">Bài tập quá hạn</div>
+          <div class="metric-sub-note">
+            ${
+              data.overdueTasks > 0
+                ? `Cần ưu tiên hoàn thành ${data.overdueTasks} bài quá hạn`
+                : "Không có bài tập nào bị quá hạn"
+            }
+          </div>
+        </div>
+
+        <!-- Card 3: Giờ học tích lũy -->
         <div class="progress-metric-card">
           <div class="metric-top">
             <span class="metric-icon-wrap" style="color:var(--violet-600);background:var(--violet-50);">
@@ -179,77 +225,83 @@ export function renderProgressView(uiState = {}) {
             ${currentPeriod === "day" ? data.totalStudyMinutes : data.totalStudyHours} 
             <small style="font-size:1rem;font-weight:600;">${currentPeriod === "day" ? "phút" : "giờ"}</small>
           </div>
-          <div class="metric-label-text">Thời lượng học trong ${currentPeriod === "day" ? "ngày" : currentPeriod === "week" ? "tuần" : "tháng"}</div>
+          <div class="metric-label-text">Giờ học trong ${currentPeriod === "day" ? "ngày" : currentPeriod === "week" ? "tuần" : "tháng"}</div>
           <div class="metric-sub-note">
             ${
               data.hasStudyData
-                ? `Thời gian thực tế: ${data.totalStudyMinutes} phút`
-                : data.hasZeroDurationSession
-                ? "Đã có phiên nhưng chưa tích lũy thời gian thực tế"
-                : "Chưa có dữ liệu học tập trong khoảng này"
+                ? `Thời gian thực tế: ${data.totalStudyMinutes} phút (${data.pomodoroSessions} phiên)`
+                : "Chưa ghi nhận giờ học trong kỳ"
             }
           </div>
         </div>
 
-        <!-- Card 2: Phiên Pomodoro hoàn thành trong chu kỳ -->
-        <div class="progress-metric-card">
-          <div class="metric-top">
-            <span class="metric-icon-wrap" style="color:var(--orange-600);background:var(--orange-50);">
-              <svg><use href="#i-spark"></use></svg>
-            </span>
-            <span class="badge-draft">Tích lũy: ${data.cumulative.completedSessions} phiên</span>
-          </div>
-          <div class="metric-value-text">${data.pomodoroSessions} <small style="font-size:1rem;font-weight:600;">phiên</small></div>
-          <div class="metric-label-text">Phiên hoàn thành trong kỳ</div>
-          <div class="metric-sub-note">
-            ${
-              data.pomodoroSessions > 0
-                ? `Tính theo mốc kết thúc trong ${escapeHtml(data.periodTitle)}`
-                : "Chưa có phiên Pomodoro hoàn thành trong kỳ"
-            }
-          </div>
-        </div>
-
-        <!-- Card 3: Tiến độ Task & Deadline -->
-        <div class="progress-metric-card">
-          <div class="metric-top">
-            <span class="metric-icon-wrap" style="color:var(--emerald-600);background:var(--emerald-50);">
-              <svg><use href="#i-tasks"></use></svg>
-            </span>
-            <span class="status-pill ${data.hasTaskData ? "violet" : "neutral"}">
-              ${data.hasTaskData ? `${data.taskCompletionRate}%` : "Chưa có dữ liệu"}
-            </span>
-          </div>
-          <div class="metric-value-text">
-            ${data.completedTasks}/${data.totalTasks} <small style="font-size:1rem;font-weight:600;">task</small>
-          </div>
-          <div class="metric-label-text">Bài tập & Deadline</div>
-          <div class="metric-sub-note">
-            ${
-              data.hasTaskData
-                ? `Còn ${data.inProgressTasks} công việc đang thực hiện`
-                : "Chưa có công việc để tính tiến độ"
-            }
-          </div>
-        </div>
-
-        <!-- Card 4: Chuỗi duy trì mục tiêu -->
+        <!-- Card 4: Điểm GPA -->
         <div class="progress-metric-card">
           <div class="metric-top">
             <span class="metric-icon-wrap" style="color:var(--blue-600);background:var(--blue-50);">
-              <svg><use href="#i-check"></use></svg>
+              <svg><use href="#i-cap"></use></svg>
             </span>
-            <span class="status-pill ${data.hasStudyData ? "violet" : "neutral"}">
-              ${data.hasStudyData ? "Đang duy trì" : "Bắt đầu"}
+            <span class="status-pill ${data.gpa >= 3.2 ? "violet" : data.gpa > 0 ? "neutral" : "neutral"}">
+              ${data.gpa >= 3.6 ? "Xuất sắc" : data.gpa >= 3.2 ? "Giỏi" : data.gpa >= 2.5 ? "Khá" : data.gpa > 0 ? "Trung bình" : "Chưa có"}
             </span>
           </div>
-          <div class="metric-value-text">${data.habits.streakDays} <small style="font-size:1rem;font-weight:600;">ngày</small></div>
-          <div class="metric-label-text">Chuỗi duy trì mục tiêu</div>
+          <div class="metric-value-text">
+            ${data.gpa > 0 ? data.gpa.toFixed(2) : "0.00"} <small style="font-size:1rem;font-weight:600;">/ 4.0</small>
+          </div>
+          <div class="metric-label-text">Điểm trung bình (GPA)</div>
           <div class="metric-sub-note">
-            ${data.hasStudyData ? "Có ghi nhận phiên học trong chu kỳ" : "Chưa có dữ liệu học tập"}
+            ${data.gpa10 > 0 ? `Thang 10: ${data.gpa10.toFixed(2)}/10` : "Dữ liệu từ cổng đào tạo trường"}
+          </div>
+        </div>
+
+        <!-- Card 5: Kỳ thi sắp tới -->
+        <div class="progress-metric-card">
+          <div class="metric-top">
+            <span class="metric-icon-wrap" style="color:var(--amber-600);background:var(--amber-50);">
+              <svg><use href="#i-exam"></use></svg>
+            </span>
+            <span class="status-pill ${data.upcomingExamsCount > 0 ? "orange" : "neutral"}">
+              ${data.upcomingExamsCount > 0 ? `${data.upcomingExamsCount} môn` : "Trống"}
+            </span>
+          </div>
+          <div class="metric-value-text">
+            ${data.upcomingExamsCount} <small style="font-size:1rem;font-weight:600;">kỳ thi</small>
+          </div>
+          <div class="metric-label-text">Kỳ thi sắp tới</div>
+          <div class="metric-sub-note">
+            ${
+              data.nextExam
+                ? `Gần nhất: ${escapeHtml(data.nextExam.subject_name || data.nextExam.subjectName || "Kỳ thi")}`
+                : "Không có kỳ thi nào sắp tới"
+            }
           </div>
         </div>
       </div>
+
+      <!-- Thẻ nhận xét thông minh từ Trợ lý AI khi có kết quả -->
+      ${
+        data.aiFeedback
+          ? `
+        <div class="progress-ai-card">
+          <div class="progress-ai-head">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="progress-ai-icon">
+                <svg><use href="#i-spark"></use></svg>
+              </span>
+              <div>
+                <h3 style="margin:0;font-size:1.05rem;color:var(--ink-950);font-weight:700;">Nhận xét từ Trợ lý AI</h3>
+                <span class="muted tiny">Đánh giá tiến độ học tập và đề xuất định hướng cá nhân</span>
+              </div>
+            </div>
+            <span class="status-pill violet">AI Smart Feedback</span>
+          </div>
+          <div class="progress-ai-body">
+            <p class="progress-ai-text">${escapeHtml(data.aiFeedback)}</p>
+          </div>
+        </div>
+      `
+          : ""
+      }
 
       <!-- Biểu đồ phân bổ thời lượng học (Chiếm toàn bộ diện tích) -->
       <div class="progress-charts-grid single-chart">

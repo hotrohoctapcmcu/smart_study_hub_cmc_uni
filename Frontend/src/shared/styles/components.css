@@ -276,6 +276,12 @@
   z-index: 90; /* Nằm dưới lớp backdrop của modal (z-index: 1000) và sidebar mobile (z-index: 150) */
 }
 
+/* Khi đang ở màn hình Trợ lý AI toàn màn hình, ẩn nút floating dock để không đè lên thanh chat và nút gửi */
+.app-shell.route-ai-tutor .floating-actions-dock,
+.workspace-pane-ai-tutor ~ .floating-actions-dock {
+  display: none !important;
+}
+
 .floating-action-btn {
   width: 48px;
   height: 48px;
@@ -684,64 +690,6 @@
 
 /* ============================================================
    TRANG TRỢ LÝ AI (workspace page)
-   Dùng lại toàn bộ style của panel nổi, chỉ bỏ vị trí absolute
-   và giới hạn chiều cao để panel chiếm trọn trang.
+   Toàn bộ style giao diện Trợ lý AI (Toàn màn hình & Khung nhỏ)
+   được định nghĩa chuyên biệt trong src/features/ai-tutor/ai-tutor.css.
 ============================================================ */
-.ai-tutor-page {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 24px 0 40px;
-}
-
-.ai-tutor-intro {
-  margin-bottom: 20px;
-}
-
-.ai-tutor-intro h1 {
-  margin: 6px 0 8px;
-  font-size: 1.8rem;
-  color: var(--ink-950);
-}
-
-.ai-tutor-intro p {
-  margin: 0;
-  max-width: 70ch;
-  color: var(--ink-600);
-  line-height: 1.6;
-  font-size: 0.92rem;
-}
-
-.ai-tutor-panel-host {
-  position: relative;
-}
-
-.ai-tutor-page-panel {
-  position: static;
-  width: 100%;
-  max-width: none;
-  height: min(70vh, 640px);
-  max-height: none;
-  box-shadow: var(--shadow-lg);
-}
-
-.ai-tutor-page-panel .mini-chat-body {
-  max-height: none;
-}
-
-@media (max-width: 768px) {
-  .ai-tutor-page {
-    padding: 12px 0 24px;
-  }
-
-  /* Ghi đè cả rule .mini-chat-panel ở breakpoint mobile (position: fixed). */
-  .ai-tutor-page .ai-tutor-page-panel {
-    position: static;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    width: 100%;
-    height: min(72vh, 560px);
-    max-height: none;
-    z-index: auto;
-  }
-}

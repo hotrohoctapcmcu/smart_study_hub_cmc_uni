@@ -90,5 +90,9 @@ export const ENDPOINTS = {
   // Dashboard
   dashboard: {
     get: { method: "GET", path: "/api/v1/dashboard" }
+  },
+  // Phân tích tiến độ học tập
+  progress: {
+    get: { method: "GET", path: "/api/v1/progress" }
   }
 };

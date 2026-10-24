@@ -1,11 +1,17 @@
-/**
- * UniStudy CMC - Progress Events (Sprint 2 & Refactored)
- */
 import { getActiveTab, updateActiveTabLocalState } from "../../app/workspace.js";
 import { shiftDateByDays, shiftDateByMonths, formatDateISO } from "../../shared/utils/date.js";
+import { fetchProgressApi } from "./progress.service.js";
 
 export function attachProgressEvents(containerEl, uiState, reRenderCallback) {
   const activeTab = getActiveTab();
+
+  const syncApiAndRefresh = () => {
+    fetchProgressApi({ period: uiState.period, date: uiState.selectedDate }).then((apiData) => {
+      if (containerEl && containerEl.isConnected && apiData) {
+        reRenderCallback();
+      }
+    });
+  };
 
   // 1. Chuyển chu kỳ Ngày / Tuần / Tháng
   const periodBtns = containerEl.querySelectorAll("[data-period]");
@@ -16,6 +22,7 @@ export function attachProgressEvents(containerEl, uiState, reRenderCallback) {
       uiState.period = p;
       if (activeTab?.tabState) activeTab.tabState.progressPeriod = p;
       reRenderCallback();
+      syncApiAndRefresh();
     });
   });
 
@@ -27,6 +34,7 @@ export function attachProgressEvents(containerEl, uiState, reRenderCallback) {
         uiState.selectedDate = e.target.value;
         if (activeTab?.tabState) activeTab.tabState.progressDate = e.target.value;
         reRenderCallback();
+        syncApiAndRefresh();
       }
     });
   }
@@ -47,6 +55,7 @@ export function attachProgressEvents(containerEl, uiState, reRenderCallback) {
       uiState.selectedDate = nextDate;
       if (activeTab?.tabState) activeTab.tabState.progressDate = nextDate;
       reRenderCallback();
+      syncApiAndRefresh();
     });
   }
 
@@ -66,6 +75,7 @@ export function attachProgressEvents(containerEl, uiState, reRenderCallback) {
       uiState.selectedDate = nextDate;
       if (activeTab?.tabState) activeTab.tabState.progressDate = nextDate;
       reRenderCallback();
+      syncApiAndRefresh();
     });
   }
 

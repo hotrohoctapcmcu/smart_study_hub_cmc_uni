@@ -4,6 +4,7 @@
  */
 import { APP_CONFIG } from "../../shared/config/app.config.js";
 import { state, addLocalStudyPlan, updateLocalStudyPlan, deleteLocalStudyPlan } from "../../app/state.js";
+import { askAssistant } from "../ai-tutor/ai-tutor.service.js";
 
 export const FREE_SLOT_OPTIONS = {
   evening: {
@@ -118,14 +119,27 @@ export async function generateAIStudySchedule(preferences = {}) {
   const targetHours = Number(preferences.targetHours) || 10;
   const sessions = generateMockSessions(subject, freeSlotKey, targetHours);
 
+  // Kết nối thử API Trợ lý AI Backend để lấy nhận xét học tập thực tế
+  let aiAdvice = "";
+  try {
+    const aiPrompt = `Gợi ý ngắn gọn phương pháp ôn tập môn "${subject}" với mục tiêu ${targetHours}h/tuần vào ${slotDef.label}.`;
+    const aiRes = await askAssistant(aiPrompt);
+    if (aiRes && aiRes.success && aiRes.answer) {
+      aiAdvice = aiRes.answer.slice(0, 300);
+    }
+  } catch {
+    // Không gián đoạn nếu API AI chưa cấu hình trên backend
+  }
+
+  const defaultNote = `Kế hoạch tự học phân bổ ${targetHours}h/tuần vào ${slotDef.label}.`;
   const planData = {
     title: `Lộ trình ôn tập: ${subject}`,
     subject,
     freeSlot: freeSlotKey,
     freeSlotLabel: slotDef.label,
     targetHours,
-    note: preferences.note ? preferences.note.trim() : `Kế hoạch tự học phân bổ ${targetHours}h/tuần vào ${slotDef.label}.`,
-    statusLabel: "Kế hoạch học tập đề xuất",
+    note: aiAdvice ? `${aiAdvice}\n\n(${preferences.note ? preferences.note.trim() : defaultNote})` : (preferences.note ? preferences.note.trim() : defaultNote),
+    statusLabel: aiAdvice ? "Kế hoạch đề xuất từ AI Trợ lý" : "Kế hoạch học tập đề xuất",
     sessions
   };
 

@@ -20,6 +20,22 @@ export const ROUTES = {
     inSidebar: true,
     description: "Thời khóa biểu thông minh, lịch tự học và cảnh báo trùng"
   },
+  timemap: {
+    id: "timemap",
+    title: "Bản đồ thời gian",
+    icon: "i-calendar",
+    isImplemented: true,
+    inSidebar: true,
+    description: "Timeline 7 ngày, phân biệt màu sắc và heatmap mật độ theo giờ"
+  },
+  timeMap: {
+    id: "timemap",
+    title: "Bản đồ thời gian",
+    icon: "i-calendar",
+    isImplemented: true,
+    inSidebar: true,
+    description: "Timeline 7 ngày, phân biệt màu sắc và heatmap mật độ theo giờ"
+  },
   tasks: {
     id: "tasks",
     title: "Công việc",

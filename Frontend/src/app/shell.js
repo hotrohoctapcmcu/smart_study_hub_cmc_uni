@@ -21,6 +21,7 @@ import { mountProfile } from "../features/profile/profile.js";
 import { mountPomodoro } from "../features/pomodoro/pomodoro.js?v=4";
 import { mountDocuments } from "../features/documents/documents.js";
 import { mountProgress } from "../features/progress/progress.js";
+import { mountTimemap } from "../features/timemap/timemap.js";
 import { mountAiTutor } from "../features/ai-tutor/ai-tutor.js";
 import { renderEmptyState } from "../shared/components/empty-state.js";
 
@@ -36,7 +37,7 @@ export function renderShell(appEl) {
   }
 
   appEl.innerHTML = `
-    <div class="app-shell ${state.sidebarCollapsed ? "sidebar-collapsed" : ""}">
+    <div class="app-shell ${state.sidebarCollapsed ? "sidebar-collapsed" : ""} ${currentRouteId === "ai-tutor" ? "route-ai-tutor" : ""}">
       <!-- Sidebar -->
       ${renderSidebar()}
 
@@ -109,12 +110,18 @@ function mountCurrentFeature(routeId, contentPane) {
       fallback(err);
     }
   };
+  if (contentPane?.classList && typeof contentPane.classList.toggle === "function") {
+    contentPane.classList.toggle("workspace-pane-ai-tutor", routeId === "ai-tutor");
+  }
   switch (routeId) {
     case "dashboard":
       safe(mountDashboard);
       break;
     case "schedule":
       safe(mountSchedule);
+      break;
+    case "timemap":
+      safe(mountTimemap);
       break;
     case "tasks":
       safe(mountTasks);

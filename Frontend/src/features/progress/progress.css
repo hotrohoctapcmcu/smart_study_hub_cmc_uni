@@ -143,6 +143,76 @@
   box-shadow: var(--shadow-md);
 }
 
+.progress-metric-card.metric-card-warning {
+  border-color: #fecdd3;
+  background: linear-gradient(180deg, #fff 0%, #fff1f2 100%);
+}
+
+/* AI Smart Feedback Card */
+.progress-ai-card {
+  background: linear-gradient(135deg, rgba(245, 243, 255, 0.95) 0%, rgba(238, 242, 255, 0.9) 100%);
+  border: 1px solid var(--violet-200);
+  border-radius: var(--radius-xl);
+  padding: 20px 24px;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+  animation: progressFadeIn 0.3s ease;
+}
+
+.progress-ai-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--violet-600), #a855f7);
+}
+
+.progress-ai-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.progress-ai-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--violet-600);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(124, 58, 237, 0.3);
+}
+
+.progress-ai-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.progress-ai-body {
+  background: white;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.progress-ai-text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--ink-850);
+}
+
 .metric-top {
   display: flex;
   align-items: center;

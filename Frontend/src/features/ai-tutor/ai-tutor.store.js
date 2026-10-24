@@ -1,9 +1,32 @@
 /**
  * UniStudy CMC - AI Assistant Store
- * Giữ hội thoại của panel trợ lý AI giữa các lần shell re-render
- * (shell dựng lại toàn bộ DOM mỗi khi state đổi).
+ * ===================================================================================
+ * Quản lý trạng thái hội thoại và lịch sử trò chuyện của Trợ lý AI:
+ * - Lưu trữ danh sách các đoạn chat cũ (localStorage)
+ * - Tạo đoạn chat mới, chuyển đổi giữa các cuộc hội thoại
+ * - Giữ trạng thái kết nối, tin nhắn, loading và lỗi
+ * ===================================================================================
  */
 import { getAssistantStatus, askAssistant } from "./ai-tutor.service.js";
+
+const STORAGE_KEY = "unistudy_ai_chat_conversations";
+
+function loadSavedConversations() {
+  if (typeof localStorage === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveConversationsToStorage(list) {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(0, 30))); // Giữ tối đa 30 cuộc hội thoại
+  } catch {}
+}
 
 export const aiChatState = {
   // "idle" | "loading" | "ready" | "unavailable"
@@ -13,7 +36,9 @@ export const aiChatState = {
   pending: false,
   error: "",
   draft: "",
-  conversationId: `ai-${Date.now()}`
+  conversationId: `ai-${Date.now()}`,
+  sidebarOpen: true,
+  conversations: loadSavedConversations()
 };
 
 export function resetAiChat() {
@@ -27,11 +52,81 @@ export function resetAiChat() {
 }
 
 /**
+ * Tạo một cuộc trò chuyện mới
+ */
+export function createNewConversation() {
+  aiChatState.conversationId = `ai-${Date.now()}`;
+  aiChatState.messages = [];
+  aiChatState.error = "";
+  aiChatState.draft = "";
+  aiChatState.pending = false;
+  return aiChatState.conversationId;
+}
+
+/**
+ * Chọn và mở một cuộc trò chuyện cũ từ lịch sử
+ */
+export function selectConversation(convId) {
+  const conv = aiChatState.conversations.find((c) => c.id === convId);
+  if (conv) {
+    aiChatState.conversationId = conv.id;
+    aiChatState.messages = Array.isArray(conv.messages) ? [...conv.messages] : [];
+    aiChatState.error = "";
+    aiChatState.draft = "";
+    aiChatState.pending = false;
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Xóa một cuộc trò chuyện khỏi lịch sử
+ */
+export function deleteConversation(convId) {
+  aiChatState.conversations = aiChatState.conversations.filter((c) => c.id !== convId);
+  saveConversationsToStorage(aiChatState.conversations);
+
+  if (aiChatState.conversationId === convId) {
+    createNewConversation();
+  }
+}
+
+/**
+ * Cập nhật lưu hội thoại hiện tại vào danh sách lịch sử
+ */
+export function syncCurrentConversationToHistory() {
+  if (aiChatState.messages.length === 0) return;
+
+  const firstUserMsg = aiChatState.messages.find((m) => m.role === "user");
+  const title = firstUserMsg ? firstUserMsg.text.slice(0, 42).trim() : "Đoạn chat mới";
+
+  const existingIdx = aiChatState.conversations.findIndex((c) => c.id === aiChatState.conversationId);
+  const convRecord = {
+    id: aiChatState.conversationId,
+    title,
+    updatedAt: new Date().toISOString(),
+    messages: [...aiChatState.messages]
+  };
+
+  if (existingIdx !== -1) {
+    aiChatState.conversations[existingIdx] = convRecord;
+  } else {
+    aiChatState.conversations.unshift(convRecord);
+  }
+
+  saveConversationsToStorage(aiChatState.conversations);
+}
+
+/**
+ * Toggle ẩn / hiện sidebar lịch sử
+ */
+export function toggleChatSidebar() {
+  aiChatState.sidebarOpen = !aiChatState.sidebarOpen;
+  return aiChatState.sidebarOpen;
+}
+
+/**
  * Kiểm tra dịch vụ AI. Chỉ gọi mạng ở lần đầu hoặc khi force = true.
- *
- * Chỉ khoá khung chat khi máy chủ trả lời DỨT KHOÁT là chưa sẵn sàng. Nếu lần
- * kiểm tra đầu không gọi được máy chủ (mạng chập chờn lúc mở app), vẫn mở ô
- * nhập để người dùng chat luôn — lỗi thật sẽ hiện khi gửi câu hỏi.
  */
 export async function loadAssistantStatus(force = false) {
   if (!force && aiChatState.status !== "idle") return aiChatState;
@@ -49,8 +144,6 @@ export async function loadAssistantStatus(force = false) {
 
 /**
  * Ghi nhận câu hỏi của người dùng và bật trạng thái đang xử lý (loading).
- * Tách khỏi askCurrentQuestion để view kịp hiển thị loading trước khi chờ API.
- * @returns {string|null} câu hỏi đã chuẩn hoá, null nếu không hợp lệ
  */
 export function beginQuestion(text) {
   const question = String(text || "").trim();
@@ -60,12 +153,12 @@ export function beginQuestion(text) {
   aiChatState.pending = true;
   aiChatState.error = "";
   aiChatState.draft = "";
+  syncCurrentConversationToHistory();
   return question;
 }
 
 /**
  * Gọi API cho câu hỏi vừa ghi nhận ở beginQuestion().
- * @returns {Promise<{success: boolean}>}
  */
 export async function askCurrentQuestion(question) {
   const res = await askAssistant(question, aiChatState.conversationId);
@@ -73,7 +166,7 @@ export async function askCurrentQuestion(question) {
 
   if (!res.success) {
     aiChatState.error = res.error;
-    return { success: false };
+    return { success: false, error: res.error };
   }
 
   aiChatState.messages.push({ role: "assistant", text: res.answer });
@@ -81,5 +174,6 @@ export async function askCurrentQuestion(question) {
     aiChatState.status = "ready";
     aiChatState.statusMessage = "";
   }
-  return { success: true };
+  syncCurrentConversationToHistory();
+  return { success: true, answer: res.answer };
 }

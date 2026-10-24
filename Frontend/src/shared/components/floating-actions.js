@@ -6,11 +6,18 @@
  * Tự động đảm bảo nằm dưới modal backdrop và không đè lên nhau.
  */
 import { state, getUnreadNotificationCount, notifyStateChange } from "../../app/state.js";
-import { changeCurrentTabRoute } from "../../app/workspace.js";
+import { changeCurrentTabRoute, getActiveTab } from "../../app/workspace.js";
 import { renderAiChatPanel } from "../../features/ai-tutor/ai-tutor.view.js";
 import { attachAiChatEvents, openAiChat } from "../../features/ai-tutor/ai-tutor.events.js";
 
 export function renderFloatingActions() {
+  const activeTab = getActiveTab();
+  const currentRouteId = activeTab?.routeId || "";
+  // Khi đang ở trang Trợ lý AI toàn màn hình, không hiển thị cụm nút nổi để thanh chat hiển thị trọn vẹn, không bị đè nút gửi
+  if (currentRouteId === "ai-tutor") {
+    return "";
+  }
+
   const unreadCount = getUnreadNotificationCount();
   const isChatOpen = state.miniChatOpen;
 
@@ -44,7 +51,7 @@ export function renderFloatingActions() {
       </button>
 
       <!-- Khung Trợ lý AI khi mở (Đặt cạnh bên, không bị nút chuông hay nút chat đè lên) -->
-      ${isChatOpen ? renderAiChatPanel() : ""}
+      ${isChatOpen ? renderAiChatPanel({ fullScreen: false }) : ""}
     </div>
   `;
 }
@@ -69,6 +76,15 @@ export function attachFloatingActionsEvents(containerEl) {
     });
   }
 
-  // 3. Sự kiện trong panel trợ lý AI (đóng, gửi, gợi ý, thử lại)
+  // 3. Nút phóng to toàn màn hình từ khung chat nhỏ
+  const expandBtn = containerEl.querySelector("#expandMiniChatBtn");
+  if (expandBtn) {
+    expandBtn.addEventListener("click", () => {
+      state.miniChatOpen = false;
+      changeCurrentTabRoute("ai-tutor");
+    });
+  }
+
+  // 4. Sự kiện trong panel trợ lý AI (đóng, gửi, gợi ý, thử lại)
   attachAiChatEvents(containerEl.querySelector("#miniChatPanel"));
 }

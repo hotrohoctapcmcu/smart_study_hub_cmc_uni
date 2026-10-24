@@ -4,6 +4,8 @@
  * Toàn bộ số liệu lấy từ dữ liệu thực tế (Pomodoro history & user tasks), không dùng số liệu mẫu/seed
  */
 import { state } from "../../app/state.js";
+import { ENDPOINTS } from "../../shared/config/endpoints.js";
+import { apiRequest } from "../../shared/services/api-client.js";
 import { getPomodoroStats } from "../pomodoro/pomodoro.storage.js";
 import { 
   formatDateISO, 
@@ -12,6 +14,28 @@ import {
   getWeeksOfMonth, 
   getMonthDays 
 } from "../../shared/utils/date.js";
+
+let cachedApiProgress = null;
+
+/**
+ * Gọi API GET /api/v1/progress để lấy tiến độ học tập thực tế từ Backend SQLite
+ */
+export async function fetchProgressApi(params = {}) {
+  try {
+    const res = await apiRequest(ENDPOINTS.progress.get, { params });
+    if (res?.success && res.data) {
+      cachedApiProgress = res.data?.data || res.data;
+      return cachedApiProgress;
+    }
+  } catch (err) {
+    console.warn("[ProgressService] Không thể kết nối API /api/v1/progress:", err);
+  }
+  return cachedApiProgress;
+}
+
+export function getCachedProgressApi() {
+  return cachedApiProgress;
+}
 
 /**
  * Phân bổ thời gian thực tế của một phiên học vào các khung giờ trong ngày
@@ -418,44 +442,71 @@ export function getProgressAnalytics(period = "week", selectedDateStr = null) {
     });
   }
 
-  // 7. Thống kê Tasks & Deadline thực tế
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter((t) => t.status === "Hoàn thành").length;
-  const inProgressTasks = tasks.filter((t) => t.status === "Đang làm").length;
+  // 7. Thống kê Tasks & Deadline thực tế (đồng bộ với API nếu có)
+  const todayISO = formatDateISO(new Date());
+  const totalTasks = cachedApiProgress?.totalTasks !== undefined ? cachedApiProgress.totalTasks : tasks.length;
+  const completedTasks = cachedApiProgress?.completedTasks !== undefined ? cachedApiProgress.completedTasks : tasks.filter((t) => t.status === "Hoàn thành").length;
+  const inProgressTasks = cachedApiProgress?.inProgressTasks !== undefined ? cachedApiProgress.inProgressTasks : tasks.filter((t) => t.status === "Đang làm" || t.status === "PENDING" || t.status === "IN_PROGRESS").length;
+  const overdueTasks = cachedApiProgress?.overdueTasks !== undefined
+    ? cachedApiProgress.overdueTasks
+    : tasks.filter((t) => t.status === "OVERDUE" || (t.status !== "Hoàn thành" && t.dueDate && t.dueDate < todayISO)).length;
   const hasTaskData = totalTasks > 0;
-  const taskCompletionRate = hasTaskData ? Math.round((completedTasks / totalTasks) * 100) : null;
+  const taskCompletionRate = hasTaskData
+    ? (cachedApiProgress?.completionRate !== undefined ? cachedApiProgress.completionRate : Math.round((completedTasks / totalTasks) * 100))
+    : null;
 
-  // 8. Tiến độ theo môn học
-  const defaultSubjects = ["Lập trình Web", "Cơ sở dữ liệu", "Cấu trúc dữ liệu", "Tiếng Anh"];
-  const dynamicSubjects = Array.from(
-    new Set([
-      ...tasks.map((t) => t.subject).filter(Boolean),
-      ...(state.schoolEvents || []).map((e) => e.subject).filter(Boolean)
-    ])
-  );
-  const targetSubjects = dynamicSubjects.length > 0 ? dynamicSubjects : defaultSubjects;
+  // 8. Tiến độ theo môn học (hoàn toàn lấy từ dữ liệu thật, không dùng mảng mẫu/fake)
+  let subjectProgress = [];
+  if (Array.isArray(cachedApiProgress?.subjects) && cachedApiProgress.subjects.length > 0) {
+    subjectProgress = cachedApiProgress.subjects;
+  } else {
+    const dynamicSubjects = Array.from(
+      new Set([
+        ...tasks.map((t) => t.subject).filter(Boolean),
+        ...(state.schoolEvents || []).map((e) => e.subject).filter(Boolean)
+      ])
+    );
 
-  const subjectProgress = targetSubjects.map((subjectName) => {
-    const subjectTasks = tasks.filter((t) => t.subject === subjectName);
-    const subTotal = subjectTasks.length;
-    const subCompleted = subjectTasks.filter((t) => t.status === "Hoàn thành").length;
-    const subRate = subTotal > 0 ? Math.round((subCompleted / subTotal) * 100) : null;
+    subjectProgress = dynamicSubjects.map((subjectName) => {
+      const subjectTasks = tasks.filter((t) => t.subject === subjectName);
+      const subTotal = subjectTasks.length;
+      const subCompleted = subjectTasks.filter((t) => t.status === "Hoàn thành").length;
+      const subRate = subTotal > 0 ? Math.round((subCompleted / subTotal) * 100) : null;
 
-    let statusLabel = "Chưa có công việc để tính tiến độ";
-    if (subRate !== null) {
-      statusLabel = subRate >= 80 ? "Tiến độ xuất sắc" : subRate >= 50 ? "Đang tiến triển" : "Cần tập trung thêm";
-    }
+      let statusLabel = "Chưa có công việc để tính tiến độ";
+      if (subRate !== null) {
+        statusLabel = subRate >= 80 ? "Tiến độ xuất sắc" : subRate >= 50 ? "Đang tiến triển" : "Cần tập trung thêm";
+      }
 
-    return {
-      name: subjectName,
-      totalTasks: subTotal,
-      completedTasks: subCompleted,
-      completionRate: subRate,
-      statusLabel
-    };
-  });
+      return {
+        name: subjectName,
+        totalTasks: subTotal,
+        completedTasks: subCompleted,
+        completionRate: subRate,
+        statusLabel
+      };
+    });
+  }
 
-  // 9. Dữ liệu tương thích ngược cho test runner Sprint 2
+  // 9. Dữ liệu GPA, Kỳ thi sắp tới & Nhận xét AI
+  const gpa = cachedApiProgress?.gpa !== undefined
+    ? Number(cachedApiProgress.gpa)
+    : Number(state.profile?.gpa_4_scale || 0.0);
+  const gpa10 = cachedApiProgress?.gpa10 !== undefined
+    ? Number(cachedApiProgress.gpa10)
+    : Number(state.profile?.gpa_10_scale || 0.0);
+
+  const upcomingExams = cachedApiProgress?.upcomingExams !== undefined
+    ? cachedApiProgress.upcomingExams
+    : (state.exams || []).filter((e) => (e.examDate || e.date) >= todayISO);
+  const upcomingExamsCount = cachedApiProgress?.upcomingExamsCount !== undefined
+    ? cachedApiProgress.upcomingExamsCount
+    : upcomingExams.length;
+  const nextExam = cachedApiProgress?.nextExam || upcomingExams[0] || null;
+
+  const aiFeedback = cachedApiProgress?.aiFeedback || "";
+
+  // 10. Dữ liệu tương thích ngược cho test runner Sprint 2
   // Cung cấp weekChart chuẩn 7 ngày T2 - CN
   const weekDaysLabels = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"];
   const dailyHoursMap = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
@@ -502,9 +553,16 @@ export function getProgressAnalytics(period = "week", selectedDateStr = null) {
     hasZeroDurationSession,
     completedTasks,
     totalTasks,
+    overdueTasks,
     hasTaskData,
     taskCompletionRate,
     inProgressTasks,
+    gpa,
+    gpa10,
+    upcomingExams,
+    upcomingExamsCount,
+    nextExam,
+    aiFeedback,
     chart: chartData,
     weekChart: {
       labels: activePeriod === "week" ? chartData.labels : weekDaysLabels,

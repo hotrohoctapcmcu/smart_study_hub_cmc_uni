@@ -198,8 +198,8 @@ export function addLocalStudyPlan(planData) {
     freeSlotLabel: planData.freeSlotLabel || "Buổi tối (19:00 – 22:00)",
     targetHours: Number(planData.targetHours) || 10,
     note: planData.note?.trim() || "",
-    isMock: true,
-    statusLabel: "Kế hoạch học tập đề xuất",
+    isMock: false,
+    statusLabel: planData.statusLabel || "Kế hoạch học tập đề xuất",
     sessions: Array.isArray(planData.sessions) ? planData.sessions : [],
     createdAt: new Date().toISOString()
   };

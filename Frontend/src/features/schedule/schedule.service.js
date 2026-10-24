@@ -78,7 +78,12 @@ export async function createSelfStudy(sessionData) {
   try {
     const res = await apiRequest(ENDPOINTS.schedules.createStudy, { body: payload });
     if (res.success) {
-      await fetchStudySchedules();
+      const createdId = res.data?.data?.schedule_id ?? res.data?.schedule_id ?? res.data?.id;
+      if (createdId) {
+        localEvent.id = `study-${createdId}`;
+        localEvent.scheduleId = Number(createdId);
+        localEvent.isLocalDraft = false;
+      }
     }
   } catch (err) {
     console.warn("[Schedule] Lỗi lưu lịch tự học lên server:", err);
@@ -105,16 +110,10 @@ export async function updateSelfStudy(id, changes) {
 
     if (Object.keys(payload).length > 0) {
       try {
-        const res = await apiRequest(ENDPOINTS.schedules.updateStudy, {
+        await apiRequest(ENDPOINTS.schedules.updateStudy, {
           params: { id: numericId },
           body: payload
         });
-        // Server từ chối thật sự (vd trùng lịch) -> tải lại để UI không hiển
-        // thị thay đổi chưa được lưu. Bỏ qua khi chỉ là "chưa kết nối backend",
-        // nếu không sẽ xoá mất bản ghi người dùng vừa sửa ở chế độ cục bộ.
-        if (!res.success && !res.unavailable) {
-          await fetchStudySchedules();
-        }
       } catch (err) {
         console.warn("[Schedule] Lỗi cập nhật lịch tự học trên server:", err);
       }
@@ -136,7 +135,6 @@ export async function deleteSelfStudy(id) {
       await apiRequest(ENDPOINTS.schedules.deleteStudy, {
         params: { id: numericId }
       });
-      await fetchStudySchedules();
     } catch (err) {
       console.warn("[Schedule] Lỗi xóa lịch tự học trên server:", err);
     }

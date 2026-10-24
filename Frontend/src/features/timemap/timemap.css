@@ -1,0 +1,543 @@
+/**
+ * UniStudy CMC - Timemap Feature Styles
+ * Bản đồ thời gian học tập & Heatmap mật độ theo giờ
+ */
+
+.timemap-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: timemapFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes timemapFadeIn {
+  from {
+    opacity: 0.35;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header & Navigation */
+.timemap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.timemap-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.timemap-date-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: white;
+  padding: 4px 8px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--ink-200);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.timemap-today-btn {
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--ink-200);
+  background: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-800);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.timemap-today-btn:hover {
+  background: var(--ink-50);
+  border-color: var(--ink-300);
+}
+
+.timemap-range-badge {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--violet-700);
+  background: var(--violet-50);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--violet-200);
+}
+
+/* Legend Bar */
+.timemap-legend-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: white;
+  padding: 14px 20px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--ink-200);
+  box-shadow: var(--shadow-sm);
+}
+
+.timemap-legend-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-900);
+  margin-right: 4px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  transition: all 0.15s ease;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.legend-item.schedule {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+.legend-item.schedule .legend-dot {
+  background: #2563eb;
+}
+
+.legend-item.exam {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+.legend-item.exam .legend-dot {
+  background: #dc2626;
+}
+
+.legend-item.selfstudy {
+  color: #047857;
+  background: #ecfdf5;
+}
+.legend-item.selfstudy .legend-dot {
+  background: #059669;
+}
+
+.legend-item.freetime {
+  color: var(--ink-700);
+  background: var(--ink-50);
+  border: 1px dashed var(--ink-300);
+}
+.legend-item.freetime .legend-dot {
+  background: white;
+  border: 1.5px dashed var(--ink-400);
+}
+
+/* 7-Day Timeline Card */
+.timemap-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--ink-200);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.timemap-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Timeline Layout */
+.timemap-timeline-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--ink-200);
+  background: white;
+}
+
+.timemap-grid-table {
+  min-width: 900px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 70px repeat(7, 1fr);
+  position: relative;
+}
+
+.timemap-grid-header {
+  display: contents;
+}
+
+.timemap-time-corner {
+  background: var(--ink-50);
+  border-bottom: 2px solid var(--ink-200);
+  border-right: 1px solid var(--ink-200);
+  padding: 12px 6px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-500);
+}
+
+.timemap-day-header-col {
+  background: var(--ink-50);
+  border-bottom: 2px solid var(--ink-200);
+  border-right: 1px solid var(--ink-200);
+  padding: 12px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timemap-day-header-col.is-today {
+  background: #fdf4ff;
+  border-bottom-color: var(--violet-500);
+}
+
+.timemap-day-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-800);
+}
+
+.timemap-day-date {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-500);
+}
+
+.is-today .timemap-day-name {
+  color: var(--violet-700);
+}
+
+.is-today .timemap-day-date {
+  color: var(--violet-600);
+}
+
+/* Timeline Body */
+.timemap-time-col {
+  border-right: 1px solid var(--ink-200);
+  background: var(--ink-50);
+  display: flex;
+  flex-direction: column;
+}
+
+.timemap-hour-mark {
+  height: 56px;
+  border-bottom: 1px solid var(--ink-100);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-500);
+}
+
+.timemap-day-track {
+  border-right: 1px solid var(--ink-200);
+  position: relative;
+  height: calc(15 * 56px); /* 07:00 - 22:00 = 15 hours */
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 55px,
+      var(--ink-100) 55px,
+      var(--ink-100) 56px
+    );
+}
+
+.timemap-day-track:last-child {
+  border-right: none;
+}
+
+.timemap-day-track.is-today {
+  background-color: rgba(245, 243, 255, 0.35);
+}
+
+/* Timeline Item Blocks */
+.timemap-block {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  border-radius: var(--radius-md);
+  padding: 6px 8px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 2;
+  cursor: default;
+}
+
+.timemap-block:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 5;
+}
+
+/* Block types */
+.timemap-block.schedule {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 3.5px solid #2563eb;
+  color: #1e3a8a;
+}
+
+.timemap-block.exam {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 3.5px solid #dc2626;
+  color: #7f1d1d;
+}
+
+.timemap-block.self_study {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-left: 3.5px solid #059669;
+  color: #064e3b;
+}
+
+/* Free time slot (Interactive) */
+.timemap-block.free_time {
+  background: rgba(248, 250, 252, 0.85);
+  border: 1.5px dashed var(--ink-300);
+  color: var(--ink-600);
+  cursor: pointer;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.timemap-block.free_time:hover {
+  background: #f5f3ff;
+  border-color: var(--violet-500);
+  border-style: solid;
+  color: var(--violet-700);
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.15);
+}
+
+.free-slot-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.free-slot-add-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+.block-time-range {
+  font-size: 0.68rem;
+  font-weight: 700;
+  opacity: 0.9;
+  margin-bottom: 2px;
+}
+
+.block-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.block-sub {
+  font-size: 0.68rem;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+/* Heatmap Section */
+.timemap-heatmap-grid {
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.timemap-heatmap-table {
+  min-width: 860px;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 4px;
+}
+
+.heatmap-day-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-800);
+  padding-right: 8px;
+  white-space: nowrap;
+  text-align: right;
+  width: 85px;
+}
+
+.heatmap-cell {
+  height: 28px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.18);
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+/* Density levels */
+.heatmap-cell.level-0 {
+  background: var(--ink-100);
+}
+
+.heatmap-cell.level-1 {
+  background: #ddd6fe;
+}
+
+.heatmap-cell.level-2 {
+  background: #a78bfa;
+}
+
+.heatmap-cell.level-3 {
+  background: #6d28d9;
+}
+
+.timemap-heatmap-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--ink-600);
+  margin-top: 8px;
+}
+
+.heatmap-legend-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+/* Modal Form Thêm Tự Học */
+.timemap-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  animation: modalFadeIn 0.2s ease;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.timemap-modal-content {
+  background: white;
+  border-radius: var(--radius-2xl);
+  max-width: 480px;
+  width: 100%;
+  padding: 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.timemap-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.timemap-modal-head h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--ink-950);
+}
+
+.timemap-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.timemap-form-row label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink-800);
+}
+
+.timemap-form-row input,
+.timemap-form-row select,
+.timemap-form-row textarea {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--ink-200);
+  font-size: 0.9rem;
+  color: var(--ink-950);
+  background: white;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.timemap-form-row input:focus,
+.timemap-form-row select:focus,
+.timemap-form-row textarea:focus {
+  outline: none;
+  border-color: var(--violet-600);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.timemap-form-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.timemap-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
