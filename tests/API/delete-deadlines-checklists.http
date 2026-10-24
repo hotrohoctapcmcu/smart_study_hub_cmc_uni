@@ -1,0 +1,49 @@
+﻿@baseUrl = http://localhost:3001/api/v1
+@subjectId = 1
+@deadline = 2030-12-31T23:59:00.000Z
+@taskTitle = REST Client - deadline thử nghiệm
+@eduxTaskId = edux-<subjectId>-<modelId>
+@foreignTaskId = <assignment_id thuộc hồ sơ thứ hai>
+@checklistTitle = REST Client - checklist thử nghiệm
+
+### 1. Tạo task thuộc hồ sơ hiện tại để lấy ID số cho ca xóa
+# Thay @subjectId bằng subject_id tồn tại trong database đang chạy.
+# Gửi request này trước, sau đó dùng biến tham chiếu ở request 2.
+# @name createTask
+POST {{baseUrl}}/tasks
+Content-Type: application/json
+
+{
+  "subjectId": {{subjectId}},
+  "title": "{{taskTitle}}",
+  "deadline": "{{deadline}}"
+}
+
+### 2. Xóa task nội bộ có ID số (mong đợi 200, success=true)
+# @name deleteNumericTask
+DELETE {{baseUrl}}/tasks/{{createTask.response.body.$.data.assignment_id}}
+
+### 3. Xóa task EDUX (mong đợi 200, success=true, thông báo đã ẩn)
+# Trước đó cần đồng bộ EDUX và thay @eduxTaskId bằng ID thực, ví dụ edux-123.
+DELETE {{baseUrl}}/tasks/{{eduxTaskId}}
+
+### 4. Xóa task của hồ sơ khác (mong đợi 403)
+# Dự án hiện dùng APP_USER_ID cấu hình khi khởi động, chưa xác thực theo token.
+# Tạo task cho hồ sơ A, ghi lại assignment_id, sau đó khởi động lại API với
+# APP_USER_ID trỏ tới hồ sơ B (đảm bảo cả hai hồ sơ tồn tại), rồi gửi request này.
+DELETE {{baseUrl}}/tasks/{{foreignTaskId}}
+
+### 5. Tạo checklist thuộc hồ sơ hiện tại để lấy ID cho ca xóa
+# @name createChecklist
+POST {{baseUrl}}/tasks/checklist
+Content-Type: application/json
+
+{
+  "title": "{{checklistTitle}}"
+}
+
+### 6. Xóa checklist thuộc hồ sơ hiện tại (mong đợi 200, success=true)
+DELETE {{baseUrl}}/tasks/checklist/{{createChecklist.response.body.$.data.checklist_id}}
+
+### 7. Xóa checklist không tồn tại/không thuộc hồ sơ hiện tại (mong đợi 404)
+DELETE {{baseUrl}}/tasks/checklist/2147483647

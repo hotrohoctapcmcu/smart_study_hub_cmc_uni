@@ -1,0 +1,256 @@
+QUY TẮC PHÁT TRIỂN PHẦN MỀM TOÀN DỰ ÁN
+
+Dự án: Smart Study Hub CMC / UniStudy CMC
+Phạm vi: Ứng dụng hỗ trợ học tập trên Electron, giao diện JavaScript, API Node.js/Express và cơ sở dữ liệu SQLite.
+
+Tài liệu này dựa trên cấu trúc và luồng có thể đối chiếu trong mã nguồn hiện tại. Các quy tắc bên dưới dùng để phát triển và bảo trì dự án; chúng không khẳng định mọi yêu cầu đã được triển khai. Khi tài liệu kế hoạch khác với mã đang chạy, phải kiểm tra mã, hợp đồng API và dữ liệu thực tế trước khi kết luận một chức năng đã hoạt động.
+
+1. NGUYÊN TẮC CHUNG
+
+1. Mỗi thay đổi phải phục vụ yêu cầu cụ thể, có phạm vi rõ ràng và phù hợp với kiến trúc hiện có.
+2. Mã nguồn phải dễ đọc, dễ sửa, có thể kiểm tra và không tạo thêm phụ thuộc không cần thiết.
+3. Mỗi module, tệp và hàm cần có trách nhiệm rõ ràng; ưu tiên tái sử dụng phần dùng chung thay vì sao chép logic.
+4. Giữ tương thích với giao diện người dùng, API, cơ sở dữ liệu và các tích hợp IU/EduX đang sử dụng.
+5. Không tự ý đổi hợp đồng API, cấu trúc dữ liệu, cổng chạy, cách khởi động hoặc quy trình đồng bộ ngoài phạm vi yêu cầu.
+6. Không thêm thư viện, tệp, thư mục, trạng thái, route hoặc chức năng giả nếu chưa có nhu cầu sử dụng thực tế.
+7. Không đưa dữ liệu mẫu vào ứng dụng như thể đó là dữ liệu thật. Phải thể hiện rõ trạng thái trống, chưa kết nối, đang tải và lỗi.
+8. Không ghi nhận kiểm thử, đồng bộ hoặc tính năng là thành công nếu chưa xác minh bằng kết quả thực tế.
+9. Khi một thay đổi ảnh hưởng nhiều tầng, phải lần theo toàn bộ luồng từ giao diện qua API đến nơi lưu dữ liệu và cập nhật các bên liên quan.
+
+2. KIẾN TRÚC VÀ NGUỒN THAM CHIẾU
+
+1. Ứng dụng desktop được khởi chạy bằng Electron. `electron-main.js` tạo cửa sổ chính; `index.js` khởi động API và máy chủ tĩnh phục vụ `Frontend/`.
+2. Giao diện là JavaScript ES modules, HTML và CSS thuần; không tự đưa React, bundler hoặc framework khác vào nếu chưa có yêu cầu kiến trúc.
+3. API dùng Node.js và Express; các route hiện được gắn dưới tiền tố `/api/v1`. Cổng API mặc định là `3001` và có thể cấu hình bằng `API_PORT`.
+4. Máy chủ tĩnh frontend hiện chạy ở cổng `8080`. Các thay đổi cách chạy phải được đối chiếu với Electron, API client, preload và hướng dẫn vận hành.
+5. Database dùng `sql.js`/SQLite. Tệp dữ liệu mặc định là `data/unistudy.db`, có thể thay bằng `DB_PATH`.
+6. Các module API dùng CommonJS (`require`, `module.exports`); frontend dùng ES modules (`import`, `export`). Giữ đúng hệ module của vùng mã đang sửa.
+7. `API/modules/index.js` đăng ký các router; `API/shared/` chứa tiện ích và client tích hợp; `database/index.js` là điểm nối dịch vụ database; `Frontend/src/app/` khởi tạo shell, route và state.
+8. Cấu trúc `database/database/` hiện có bản sao cũ. Entry point hiện tại sử dụng các tệp cấp `database/`; không thêm chức năng mới vào bản sao cũ nếu chưa chủ động chuyển entry point.
+9. Khi tài liệu, backlog hoặc tên route gợi ý một chức năng nhưng mã chưa thực hiện, phải xem đó là kế hoạch/chưa xác minh. Không đánh dấu hoàn thành chỉ vì có tệp hoặc mục trong menu.
+10. Trước khi đổi một quy ước đang có, tìm tất cả nơi sử dụng bằng công cụ tìm kiếm mã nguồn và xác định ảnh hưởng đến giao diện, API, dữ liệu cũ và đóng gói.
+
+3. CẤU TRÚC THƯ MỤC THỰC TẾ
+
+```text
+smart_study_hub_cmc_uni-main/
+├── electron-main.js             # Cửa sổ Electron chính
+├── index.js                     # Khởi chạy API và máy chủ Frontend
+├── electron/
+│   ├── preload.js               # API giới hạn đưa vào renderer
+│   └── iu-bridge.js             # IPC IU ở main process
+├── API/
+│   ├── config/                  # Cấu hình API
+│   ├── modules/                 # Router theo nhóm chức năng
+│   ├── shared/                  # Xử lý lỗi, người dùng, client IU/EduX/AI
+│   └── index.js                 # Express app và vòng đời API
+├── database/
+│   ├── connection/              # Kết nối và thực thi SQLite
+│   ├── functions/               # Các hàm database, đồng bộ dữ liệu
+│   ├── schema/                  # Khởi tạo schema
+│   ├── index.js                 # Điểm nối dịch vụ database
+│   └── sprint1Service.js        # Các thao tác học tập lưu bền
+├── CRWEB/                       # Đăng nhập, mã hóa và giao tiếp cổng IU/EduX
+├── Frontend/
+│   └── src/
+│       ├── app/                 # Bootstrap, route, shell và state
+│       ├── features/            # Các tính năng theo nhóm
+│       └── shared/              # API client, cấu hình, component, tiện ích
+├── tests/                       # Kiểm thử API và luồng tích hợp
+├── Frontend/tests/              # Kiểm thử và kiểm tra frontend
+├── docs/                        # Tài liệu hệ thống và báo cáo
+├── data/                        # Database và dữ liệu chạy cục bộ
+├── .env.example
+└── package.json
+```
+
+Đây là cấu trúc mô tả các vùng mã chính, không phải danh sách cần tạo đầy đủ. Chỉ bổ sung tệp/thư mục khi có trách nhiệm sử dụng cụ thể; đặt mã mới gần module cùng chức năng.
+
+4. QUY TẮC ĐẶT TÊN
+
+| Đối tượng | Quy tắc hiện dùng | Ví dụ |
+|---|---|---|
+| Tên biến/hàm API | camelCase, ưu tiên tiếng Việt không dấu | `layThoiKhoaBieu`, `userId` |
+| Tên module API | camelCase tiếng Việt hoặc tên tích hợp | `thoiKhoaBieu.js`, `iu-client.js` |
+| Thư mục tính năng Frontend | kebab-case tiếng Anh | `study-planner/`, `ai-tutor/` |
+| Tệp tính năng Frontend | `<feature>.<vaiTro>.js` | `tasks.service.js`, `tasks.events.js` |
+| Biến/hàm Frontend | camelCase, theo từ vựng của feature hiện có | `apiRequest`, `mapTaskFromBackend` |
+| Hằng số | UPPER_SNAKE_CASE hoặc quy ước của module hiện tại | `API_PREFIX`, `NGUOI_DUNG_ID` |
+| Bảng SQLite | Tên hiện có thường PascalCase | `Students`, `Assignments` |
+| Cột SQLite | snake_case | `student_code`, `updated_at` |
+| Route API | Tiền tố `/api/v1`, nhóm tài nguyên và quy ước của router hiện có | `/api/v1/tasks`, `/api/v1/schedules/study` |
+| Route Frontend | ID/slug theo registry | `study-planner`, `ai-tutor` |
+
+Quy định bổ sung:
+- Không đổi hàng loạt quy ước tên giữa API và Frontend để tạo sự đồng nhất hình thức; chúng đang dùng các hệ quy ước khác nhau.
+- Tên mới phải rõ nghĩa và nhất quán trong cùng module. Tránh tên mơ hồ như `data1`, `temp`, `doStuff`.
+- Tên mã nguồn dùng ký tự ASCII; nội dung hiển thị cho sinh viên dùng tiếng Việt có dấu, dễ hiểu.
+- Dùng đúng hậu tố vai trò của frontend (`.view`, `.events`, `.service`, `.storage`, `.validation`, `.store`) khi phù hợp với cấu trúc feature hiện tại.
+- Tuân theo quy ước bắt buộc của nền tảng khi có xung đột với quy ước trong bảng.
+
+5. TỔ CHỨC MÃ NGUỒN BACKEND
+
+1. `API/modules/` chứa router Express theo nhóm nghiệp vụ như sinh viên, thời khóa biểu, bài tập, nhắc nhở, kỳ thi, đồng bộ và trợ lý AI.
+2. Router tiếp nhận HTTP, kiểm tra tham số cần thiết, gọi hàm database hoặc client phù hợp và chuyển lỗi sang middleware chung bằng `next(err)`.
+3. Thao tác lưu/truy vấn dữ liệu bền vững thuộc `database/`; giao tiếp với IU, EduX hoặc Gemini thuộc các client/tiện ích tương ứng trong `API/shared/` và `CRWEB/`.
+4. Dùng cơ chế `setDb`/đăng ký module hiện có để truyền database instance. Không mở một kết nối database độc lập trong mỗi route.
+5. Không để route thực hiện toàn bộ luồng đồng bộ, phân tích payload lớn hoặc chứa truy vấn dài nếu có thể đặt ở module database/client phù hợp.
+6. Không tạo lớp controller/service/model chỉ để theo một mẫu chung nếu kiến trúc module hiện tại không cần đến chúng. Giữ phân lớp vừa đủ và có ích.
+7. Mỗi module chỉ xuất các hàm cần cho module khác; tránh import ngược tạo vòng phụ thuộc.
+8. API trả lỗi qua `API/shared/errorHandler.js`. Route phải dùng `next(err)` hoặc wrapper hiện có; không tự trả stack trace hay nuốt lỗi.
+9. Khi tạo route hoặc module mới, cập nhật đăng ký trong `API/modules/index.js`, cấu hình endpoint phía frontend khi cần và tài liệu API liên quan.
+
+6. QUY TẮC VIẾT HÀM VÀ XỬ LÝ BẤT ĐỒNG BỘ
+
+1. Tên hàm phải mô tả hành động; mỗi hàm tập trung vào một nhiệm vụ chính.
+2. Tham số, kiểu dữ liệu, giá trị có thể thiếu và kết quả trả về phải rõ ràng.
+3. Kiểm tra dữ liệu từ HTTP, IPC, storage và cổng ngoài trước khi sử dụng. Không tin dữ liệu chỉ vì giao diện đã kiểm tra.
+4. Với Promise, dùng `async/await` hoặc cơ chế tương đương nhất quán với module. Không để Promise bị bỏ quên khi lỗi có thể ảnh hưởng nghiệp vụ.
+5. Không dùng giá trị mặc định để che dữ liệu sai định dạng hoặc biến lỗi thành thành công giả.
+6. Không bắt lỗi rồi tiếp tục như thể thao tác đã hoàn tất. Nếu lỗi được xử lý tại chỗ, phải trả trạng thái rõ ràng hoặc ghi log phù hợp.
+7. Không trả về trường không cần thiết, cookie, token, mật khẩu hoặc thông tin nhạy cảm.
+8. Hàm dùng chung cần có tên, chữ ký và mô tả đủ để người gọi hiểu cách xử lý lỗi và giá trị rỗng.
+9. Không thêm biến toàn cục để truyền trạng thái nghiệp vụ nếu state/module hiện tại đã có điểm quản lý phù hợp.
+
+7. CƠ SỞ DỮ LIỆU VÀ TÍNH TOÀN VẸN
+
+1. Mọi câu SQL có dữ liệu đầu vào phải dùng tham số liên kết; không nối chuỗi giá trị người dùng trực tiếp vào câu truy vấn.
+2. Dùng kiểu dữ liệu và điều kiện phù hợp; xác định khóa chính, khóa ngoại, UNIQUE, NOT NULL hoặc CHECK khi nghiệp vụ cần.
+3. Các thao tác gồm nhiều lần ghi liên quan phải dùng transaction qua cơ chế database hiện tại để tránh lưu trạng thái dở dang.
+4. Khi đồng bộ dữ liệu bên ngoài, dùng mã định danh nguồn và thao tác upsert/điều kiện duy nhất phù hợp để hạn chế bản ghi trùng.
+5. Không giả định dữ liệu từ IU/EduX luôn đủ trường, đúng định dạng hoặc không thay đổi. Chuẩn hóa trước khi lưu và xử lý bản ghi lỗi có kiểm soát.
+6. Chỉ đọc và trả về các cột cần thiết. Không đưa thông tin đăng nhập hoặc phiên bên ngoài vào bảng học tập thông thường.
+7. Thay đổi schema phải cập nhật tệp khởi tạo/schema hoặc cơ chế migration đang dùng; phải đánh giá tác động với database đã tồn tại.
+8. Không xóa bảng, cột hoặc dữ liệu người dùng chỉ để làm cho code mới đơn giản hơn. Có phương án tương thích/migration và sao lưu phù hợp.
+9. Không sửa trực tiếp `data/unistudy.db` như cách thay đổi schema chính thức; giữ dữ liệu cá nhân cục bộ ngoài Git.
+10. Nếu thay đổi cách ghi/đọc dữ liệu, kiểm tra rõ nguồn dữ liệu là SQLite, `localStorage` hay trạng thái chỉ lưu trong RAM.
+
+8. HỢP ĐỒNG API
+
+1. API công khai nằm dưới `/api/v1`. Không âm thầm đổi method, path, tên trường, kiểu dữ liệu hoặc ý nghĩa trạng thái mà frontend đang dùng.
+2. Route mới cần mô tả method, path, query/body, phản hồi, lỗi và nguồn lưu dữ liệu.
+3. Kiểm tra `req.params`, `req.query` và `req.body`; chỉ cập nhật những trường được phép.
+4. Giữ cấu trúc phản hồi hiện có của từng nhóm. Phần lớn route thành công trả `{ success: true, ... }`; middleware lỗi trả `{ success: false, message }`. Một số route có trường `data`, `date`, `message` hoặc danh sách riêng, nên không tự ý áp một envelope mới cho toàn API.
+5. Dùng mã HTTP thích hợp với hợp đồng hiện có: 200 cho đọc/cập nhật thành công, 201 cho tạo mới, 400 cho đầu vào sai, 404 khi không có tài nguyên, 503 khi dịch vụ cần thiết chưa sẵn sàng và 500 cho lỗi máy chủ không dự kiến.
+6. `401` từ route phiên cổng trường không đồng nghĩa với đăng nhập tài khoản người dùng của ứng dụng; cần diễn giải đúng ngữ cảnh.
+7. Danh sách có thể tăng lớn cần có phương án giới hạn/phân trang trước khi trở thành nút thắt.
+8. Khi đổi API, cập nhật `Frontend/src/shared/config/endpoints.js`, các service đang gọi API, tài liệu và kiểm thử liên quan trong cùng phạm vi công việc.
+9. Không coi việc ẩn nút hoặc route trong frontend là kiểm soát truy cập phía server.
+
+9. TÀI KHOẢN VÀ PHẠM VI NGƯỜI DÙNG HIỆN TẠI
+
+1. Hiện API dùng một hồ sơ mặc định: `NGUOI_DUNG_ID` lấy từ `APP_USER_ID`, mặc định là `1`. Dự án hiện chưa có luồng đăng ký/đăng nhập nhiều người dùng trong API.
+2. Không mô tả ứng dụng là hệ thống đa tài khoản hoặc tuyên bố đã có xác thực người dùng nếu chưa triển khai và kiểm tra luồng đó.
+3. Không lấy `userId` tùy ý từ request để quyết định dữ liệu được đọc/ghi. Tiếp tục dùng cơ chế hồ sơ hiện có cho tới khi có yêu cầu thay đổi phạm vi.
+4. Nếu bổ sung đa người dùng, phải thiết kế danh tính, quyền sở hữu bản ghi, xác thực backend và di trú dữ liệu trước khi cho phép nhiều hồ sơ cùng dùng database.
+5. Quyền kiểm soát phía client không thay thế xác thực/phân quyền backend khi tính năng nhiều người dùng được triển khai.
+
+10. BẢO MẬT ỨNG DỤNG VÀ CẤU HÌNH
+
+1. Đặt bí mật, khóa API, thông tin phiên và cấu hình riêng trong biến môi trường hoặc nơi lưu bí mật phù hợp; chỉ đưa tên biến và giá trị giả an toàn vào `.env.example`.
+2. Không commit `.env`, database cá nhân, cookie IU/EduX, token, mật khẩu, dữ liệu cá nhân thật hoặc log chứa bí mật. Kiểm tra `.gitignore` trước khi thêm dữ liệu chạy mới.
+3. Đặt cấu hình API tập trung tại `API/config/` hoặc module cấu hình đã có; tránh rải cổng, URL và timeout thành nhiều giá trị mâu thuẫn.
+4. Frontend không được chứa khóa bí mật hoặc xử lý thông tin xác thực như thể môi trường renderer là vùng tin cậy.
+5. Giới hạn nội dung nhận từ HTTP theo cấu hình; kiểm tra kích thước và định dạng trước khi phân tích/lưu.
+6. CORS phải phục vụ đúng giao diện cục bộ và nguồn được yêu cầu. Cấu hình hiện tại trong `API/config/index.js` dùng `origin: true` cùng `credentials: true`; trước khi mở API cho mạng ngoài, phải giới hạn nguồn được phép. CORS không thay thế xác thực.
+7. Không ghi mật khẩu, cookie, token, toàn bộ payload nhạy cảm hoặc dữ liệu sinh viên không cần thiết vào console/log.
+8. Trong production, không trả stack trace, câu SQL, đường dẫn máy hoặc chi tiết nội bộ cho giao diện. Middleware hiện chỉ kèm stack trong môi trường không production; không mở rộng hành vi này.
+9. Kiểm tra URL, đường dẫn tệp và dữ liệu từ nguồn ngoài trước khi sử dụng; không cho dữ liệu người dùng vượt khỏi thư mục tài nguyên dự kiến.
+10. Khi thêm tải tệp, phải xác minh loại, kích thước và nơi lưu; không cho phép thực thi nội dung tải lên.
+
+11. QUY TẮC ELECTRON VÀ IPC
+
+1. Giữ `contextIsolation: true`, `nodeIntegration: false` và sandbox ở renderer như cấu hình cửa sổ chính hiện tại.
+2. `electron/preload.js` chỉ được expose các hàm IPC cụ thể, tối thiểu cần cho giao diện; không expose `ipcRenderer`, `require`, filesystem hoặc API Node tổng quát.
+3. Xác thực tham số trong handler IPC tại main process. Không tin renderer chỉ vì đó là giao diện nội bộ.
+4. Cookie và session IU chỉ được xử lý ở main process/API. Không trả cookie về renderer, không lưu cookie trong `localStorage` và không đưa cookie vào thông báo lỗi.
+5. IPC nên trả kết quả gọn, đủ cho giao diện hiển thị trạng thái; dữ liệu nhạy cảm không được truyền xuyên qua bridge nếu không cần thiết.
+6. Khi mở liên kết ngoài, chỉ cho phép URL nội bộ đã định trước trong cửa sổ ứng dụng; URL bên ngoài cần được chuyển qua cơ chế hệ điều hành phù hợp.
+7. Thay đổi lifecycle, cổng, preload hoặc cách tải trang phải kiểm tra cả `npm start` và chế độ chạy API/headless khi phù hợp.
+
+12. ĐỒNG BỘ IU, EDUX VÀ DỊCH VỤ BÊN NGOÀI
+
+1. Trình duyệt/renderer không gọi trực tiếp luồng cần cookie phiên IU/EduX. Giao tiếp phải theo bridge/client backend đang có.
+2. Luồng IU: Electron main process thực hiện đăng nhập, giữ cookie/session và chuyển phiên cho API; backend gọi IU, chuẩn hóa payload và ghi dữ liệu vào SQLite.
+3. Luồng EduX: thông tin đăng nhập chỉ dùng cho yêu cầu xác thực; backend giữ phiên trong RAM, gọi cổng EduX và lưu bài tập đã đồng bộ vào SQLite.
+4. Phiên IU/EduX hiện nằm trong bộ nhớ API và có thể mất khi backend khởi động lại. Không hứa phiên tồn tại qua lần chạy mới nếu chưa thay đổi cách lưu.
+5. Khi thay đổi endpoint, tham số hoặc payload cổng trường, cập nhật client, mapper, `CRWEB/IU/payload/endpoint_map.txt` nếu liên quan, xử lý dữ liệu thiếu và kiểm tra luồng tương ứng.
+6. Xác định rõ dữ liệu nào được ghi vào SQLite, dữ liệu nào chỉ ở RAM và dữ liệu nào chỉ được chuyển tiếp. Không báo “đồng bộ thành công” nếu chỉ đăng nhập thành công hoặc mới nhận được một phần dữ liệu.
+7. Xử lý timeout, phiên hết hạn, phản hồi sai định dạng và lỗi từng nhóm dữ liệu bằng thông báo có thể hành động; không làm mất dữ liệu cũ khi lần đồng bộ mới thất bại giữa chừng.
+8. Không âm thầm đổi trạng thái hoặc xóa dữ liệu cục bộ chỉ vì nguồn ngoài tạm thời không trả dữ liệu. Phải xác định rõ phản hồi rỗng hợp lệ khác với lỗi kết nối.
+9. Dịch vụ Gemini chỉ được gọi từ phía backend qua client phù hợp. Không đặt khóa nhà cung cấp trong JavaScript frontend.
+
+13. QUY TẮC FRONTEND VÀ LƯU TRẠNG THÁI
+
+1. Tính năng trong `Frontend/src/features/<feature>/` nên chia vai trò theo cấu trúc hiện có: view tạo nội dung, events gắn tương tác, service xử lý dữ liệu/gọi API, entry module mount/unmount; chỉ thêm tệp cần thiết.
+2. Thành phần dùng chung đặt trong `Frontend/src/shared/`; không sao chép modal, API client, kiểm tra dữ liệu hoặc định dạng ngày giờ giữa nhiều feature.
+3. `Frontend/src/app/state.js` là nguồn state chung hiện có. Cập nhật state theo cơ chế listener/render đang dùng, tránh tạo một bản sao state thứ hai khó đồng bộ.
+4. Tách dữ liệu từ API, bản nháp cục bộ và dữ liệu chỉ lưu trên thiết bị. Giữ/đặt cờ nguồn như `isLocalDraft` hoặc `source` khi cần để phân biệt chúng.
+5. Dữ liệu bền và cần dùng chung giữa các lần chạy nên đi qua API/SQLite. Dữ liệu tùy chọn chỉ thuộc thiết bị như một số cấu hình Pomodoro/tài liệu có thể ở `localStorage` theo thiết kế hiện tại.
+6. Không tuyên bố dữ liệu `localStorage` được đồng bộ giữa thiết bị hoặc đã lưu trên máy chủ. Nếu API chưa kết nối, giao diện phải thông báo chế độ cục bộ/chưa kết nối rõ ràng.
+7. Mỗi thao tác bất đồng bộ phải xử lý trạng thái tải, thành công, lỗi và dữ liệu trống phù hợp. Khi lỗi lưu từ server, không để giao diện khẳng định dữ liệu đã được lưu bền.
+8. Kiểm tra đầu vào ở giao diện để hỗ trợ người dùng; backend vẫn phải xác minh dữ liệu trước khi ghi.
+9. Dùng nội dung HTML an toàn; tránh chèn chuỗi người dùng vào `innerHTML` nếu chưa được escape/làm sạch phù hợp.
+10. Duy trì hành vi bàn phím, focus, modal, khả năng đọc và bố cục trên các kích thước cửa sổ được hỗ trợ.
+11. Chỉ đánh dấu route là `isImplemented: true` khi luồng thực tế đã hoạt động trong shell và có xử lý dữ liệu/trạng thái cần thiết; không dùng menu hoặc khung giao diện làm bằng chứng hoàn thành.
+12. Không tự ý thay đổi trải nghiệm, nội dung giao diện hoặc quy tắc nghiệp vụ nằm ngoài phạm vi thay đổi.
+
+14. QUY TẮC AI VÀ DỮ LIỆU HỌC TẬP
+
+1. Giữ giới hạn đầu vào của API AI và xử lý lỗi nhà cung cấp, timeout, phản hồi rỗng hoặc không hợp lệ.
+2. Không gửi thêm dữ liệu hồ sơ, bài tập hoặc thông tin nhận dạng vào nhà cung cấp AI nếu tác vụ không cần.
+3. Không trình bày kết quả AI như dữ liệu chính thức từ trường hoặc kết quả đã được xác minh.
+4. Chỉ thông báo lịch sử hội thoại được lưu bền nếu đã có nơi lưu và đã kiểm tra việc tải lại. Hiện trạng hội thoại AI không được lưu trong SQLite.
+5. Không gọi kế hoạch tự học là “AI xếp lịch” nếu luồng đang dùng thuật toán/mốc giờ giả lập. Mô tả đúng nguồn dữ liệu và mức tự động hóa thực tế.
+6. Tránh dùng dữ liệu giả để thay thế kết quả thật của IU, EduX, database hoặc dịch vụ AI trong bản nghiệm thu.
+
+15. KIỂM THỬ VÀ XÁC MINH
+
+1. Chọn kiểm tra phù hợp với vùng thay đổi: frontend, API, database, Electron hoặc đồng bộ cổng trường.
+2. Bao gồm trường hợp thành công, đầu vào thiếu/sai, dữ liệu rỗng, lỗi mạng/timeout và nguồn phiên hết hạn khi áp dụng.
+3. Thay đổi ghi dữ liệu phải kiểm tra bản ghi tạo/sửa/xóa, quan hệ liên quan và hành vi khi lỗi giữa transaction.
+4. Thay đổi API phải xác minh method/path, mã HTTP, body phản hồi và cách frontend diễn giải lỗi.
+5. Thay đổi Electron/IPC phải xác minh cả renderer và main process; không chỉ gọi trực tiếp hàm frontend giả lập.
+6. Khi kiểm thử đồng bộ, phân biệt đăng nhập thành công, kéo dữ liệu thành công, lưu database thành công và tải lại dữ liệu đã lưu.
+7. Không dùng dữ liệu tài khoản thật trong kiểm thử tự động, log hoặc tệp được commit.
+8. Trước khi dùng lệnh từ `package.json`, xác nhận script và tệp đích tồn tại trong checkout hiện tại; tên script không chứng minh kiểm thử đã chạy.
+9. Báo cáo chính xác lệnh đã chạy và kết quả. Nếu không chạy được, nêu nguyên nhân thay vì suy đoán.
+10. Sau sửa lỗi, kiểm tra lại luồng liên quan và phần có nguy cơ hồi quy.
+
+16. GIT VÀ LÀM VIỆC NHÓM
+
+1. Giữ thay đổi trong phạm vi công việc; không ghi đè chỉnh sửa sẵn có của người khác.
+2. Commit (nếu có) phải ngắn gọn, mô tả thay đổi thực tế.
+3. Không đưa `node_modules/`, `.env`, `data/`, cookie, token, log hoặc dữ liệu sinh viên thật lên Git.
+4. Trước khi thêm tệp sinh ra khi chạy/build, xác định có cần lưu trong repository không và cập nhật `.gitignore` nếu phù hợp.
+5. Thay đổi schema, API, IPC, endpoint IU/EduX, cấu hình hoặc state chung cần cập nhật các nơi phụ thuộc và thông báo cho người liên quan.
+6. Không đưa mã chưa xác minh vào nhánh phát hành. Xem lại `git diff` để phát hiện tệp ngoài phạm vi, dữ liệu nhạy cảm hoặc thay đổi bất ngờ.
+
+17. TÀI LIỆU VÀ TRẠNG THÁI TÍNH NĂNG
+
+1. Tài liệu kỹ thuật dùng tiếng Việt rõ ràng, giữ tên route, biến và tệp đúng như mã nguồn.
+2. Cập nhật `docs/luong-xu-ly-he-thong.md`, backlog, hướng dẫn hoặc tài liệu API khi thay đổi làm chúng không còn mô tả đúng luồng.
+3. Tài liệu kiến trúc cần phân biệt mã đang chạy, tính năng đang thử nghiệm, dữ liệu cục bộ, phụ thuộc ngoài và hạng mục chưa triển khai.
+4. Không đồng bộ trạng thái tài liệu một cách máy móc nếu tài liệu cũ đang mâu thuẫn; trước hết đối chiếu code, entrypoint và kiểm thử có thể chạy.
+5. Báo cáo phải phân biệt rõ “đã có mã”, “đã chạy kiểm thử”, “đã xác minh với dữ liệu thật” và “đã nghiệm thu”.
+6. Tên tệp tài liệu ngắn, dễ tìm và nhất quán với khu vực chứa tài liệu.
+
+18. ĐIỀU KIỆN HOÀN THÀNH THAY ĐỔI
+
+Một thay đổi chỉ được xem là hoàn tất khi:
+- Đáp ứng yêu cầu và không mở rộng ngoài phạm vi đã thống nhất.
+- Luồng liên quan hoạt động xuyên suốt đúng các tầng bị ảnh hưởng.
+- Dữ liệu được đọc/ghi đúng nơi và lỗi không bị che giấu.
+- Hợp đồng API, IPC và giao diện tương thích hoặc đã được cập nhật đồng bộ.
+- Không làm lộ bí mật, cookie, token hoặc dữ liệu cá nhân.
+- Kiểm tra phù hợp đã được thực hiện và kết quả được báo cáo trung thực.
+- Tài liệu liên quan phản ánh đúng trạng thái sau thay đổi.
+
+19. NGOẠI LỆ VÀ NGUYÊN TẮC CUỐI
+
+1. Nếu cần khác quy tắc này vì yêu cầu nền tảng hoặc hợp đồng với cổng trường, ghi rõ lý do, phạm vi ảnh hưởng và cách kiểm soát rủi ro.
+2. Không bỏ kiểm tra đầu vào, bảo vệ bí mật, transaction cần thiết hoặc trạng thái lỗi chỉ để giảm thời gian triển khai.
+3. Thay đổi ảnh hưởng nhiều module hoặc làm đổi cách lưu dữ liệu cần được thống nhất trước khi triển khai.
+4. Ưu tiên mô tả chính xác hệ thống đang chạy. Không biến kế hoạch, giao diện mẫu hoặc phản hồi giả lập thành cam kết tính năng.
+
+Mục tiêu cuối cùng là giữ UniStudy CMC dễ phát triển, an toàn với dữ liệu học tập, nhất quán giữa Electron, frontend, API và SQLite, đồng thời phản ánh trung thực những gì ứng dụng thực sự làm được.

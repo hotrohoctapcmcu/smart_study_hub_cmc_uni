@@ -177,6 +177,9 @@ CREATE TABLE IF NOT EXISTS Reminders (
     FOREIGN KEY (student_id) REFERENCES Students(student_id) ON DELETE CASCADE
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS UX_Reminders_Student_Target_Tier
+    ON Reminders (student_id, target_type, target_id, tier);
+
 -- Bài tập AI lấy từ EDUX (đồng bộ qua API, lưu xuống DB để mở lại app vẫn còn).
 -- Dùng khóa tự nhiên external_id (id ổn định `edux-<subjectId>-<modelId>`) để
 -- upsert không tạo bản ghi trùng sau mỗi lần đồng bộ.
@@ -198,6 +201,7 @@ CREATE TABLE IF NOT EXISTS EduxAssignments (
     highest_score  INTEGER,
     doc_done       INTEGER NOT NULL DEFAULT 0,
     doc_total      INTEGER NOT NULL DEFAULT 0,
+    is_hidden      INTEGER NOT NULL DEFAULT 0,
     synced_at      TEXT    NOT NULL DEFAULT (datetime('now')),
     created_at     TEXT    NOT NULL DEFAULT (datetime('now')),
     updated_at     TEXT    NOT NULL DEFAULT (datetime('now')),

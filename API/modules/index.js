@@ -5,6 +5,8 @@ const nhacNho = require('./nhacNho');
 const kyThi = require('./kyThi');
 const dongBo = require('./dongBo');
 const troLyAI = require('./troLyAI');
+const timemap = require('./timemap');
+const progress = require('./progress');
 
 const MODULES = [
     { name: 'student', paths: ['/student'], router: sinhVien },
@@ -13,7 +15,9 @@ const MODULES = [
     { name: 'notifications', paths: ['/notifications'], router: nhacNho },
     { name: 'exams', paths: ['/exams'], router: kyThi },
     { name: 'sync', paths: ['/sync'], router: dongBo },
-    { name: 'ai', paths: ['/ai'], router: troLyAI }
+    { name: 'ai', paths: ['/ai'], router: troLyAI },
+    { name: 'timemap', paths: ['/timemap'], router: timemap },
+    { name: 'progress', paths: ['/progress'], router: progress }
 ];
 
 function setDbForAll(db) { 

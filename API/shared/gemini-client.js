@@ -143,7 +143,12 @@ function headers() {
 /**
  * Gọi HTTP thô, trả body dạng text (Gemini trả nhiều dòng JSON, không phải JSON hợp lệ).
  */
-function request(method, url, { headers: extraHeaders = {}, body = null } = {}) {
+function request(method, url, {
+    headers: extraHeaders = {},
+    body = null,
+    timeoutMs = TIMEOUT_MS,
+    signal
+} = {}) {
     return new Promise((resolve, reject) => {
         const target = new URL(url);
         const transport = target.protocol === "http:" ? http : https;
@@ -155,7 +160,8 @@ function request(method, url, { headers: extraHeaders = {}, body = null } = {}) 
             path: `${target.pathname}${target.search}`,
             method,
             headers: extraHeaders,
-            maxHeaderSize: MAX_HEADER_SIZE
+            maxHeaderSize: MAX_HEADER_SIZE,
+            signal
         }, res => {
             const chunks = [];
             res.on("data", chunk => chunks.push(chunk));
@@ -166,7 +172,7 @@ function request(method, url, { headers: extraHeaders = {}, body = null } = {}) 
             }));
         });
 
-        req.setTimeout(TIMEOUT_MS, () => req.destroy(new Error("Gemini không phản hồi kịp.")));
+        req.setTimeout(timeoutMs, () => req.destroy(new Error("Gemini không phản hồi kịp.")));
         req.on("error", reject);
         if (body) req.write(body);
         req.end();
@@ -182,12 +188,12 @@ function absorbCookies(values) {
     saveCookies();
 }
 
-async function ensureSession() {
+async function ensureSession(timeoutMs = TIMEOUT_MS, signal) {
     if (token && Date.now() - token.time < TOKEN_TTL_MS) return token;
 
     let res;
     try {
-        res = await request("GET", `${ORIGIN}/app`, { headers: headers() });
+        res = await request("GET", `${ORIGIN}/app`, { headers: headers(), timeoutMs, signal });
     } catch (err) {
         throw new GeminiError(err.message, "GEMINI_NETWORK");
     }
@@ -234,8 +240,8 @@ function parseResponse(raw) {
     return { text: text.trim(), ...ids };
 }
 
-async function askOnce(prompt, chat) {
-    const session = await ensureSession();
+async function askOnce(prompt, chat, timeoutMs = TIMEOUT_MS, signal) {
+    const session = await ensureSession(timeoutMs, signal);
     const body = new URLSearchParams({
         "f.req": JSON.stringify([null, JSON.stringify([[prompt], null,
         chat ? [chat.cid, chat.rid, chat.rcid] : ["", "", ""]])]),
@@ -255,7 +261,9 @@ async function askOnce(prompt, chat) {
                 ...headers(),
                 "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
             },
-            body: body.toString()
+            body: body.toString(),
+            timeoutMs,
+            signal
         });
     } catch (err) {
         throw new GeminiError(err.message, "GEMINI_NETWORK");
@@ -295,7 +303,7 @@ function resetConversation(id) {
 /**
  * Hỏi trợ lý AI. `conversationId` giữ ngữ cảnh nhiều lượt trong RAM.
  * @param {string} question
- * @param {{ conversationId?: string }} [opts]
+ * @param {{ conversationId?: string, timeoutMs?: number, retry?: boolean, signal?: AbortSignal }} [opts]
  * @returns {Promise<string>} câu trả lời dạng text
  */
 async function ask(question, opts = {}) {
@@ -311,7 +319,10 @@ async function ask(question, opts = {}) {
 
     // Luôn chat được, không đòi cấu hình: nếu cookie phiên hỏng/hết hạn thì
     // chuyển sang phiên khách rồi hỏi lại; chỉ báo lỗi khi cả hai đều thất bại.
-    const hoiMotLan = () => askOnce(build(!chat || !chat.cid), chat);
+    const timeoutMs = Number.isFinite(Number(opts.timeoutMs)) && Number(opts.timeoutMs) > 0
+        ? Number(opts.timeoutMs)
+        : TIMEOUT_MS;
+    const hoiMotLan = () => askOnce(build(!chat || !chat.cid), chat, timeoutMs, opts.signal);
 
     // Gemini từ chối cả phiên cookie lẫn phiên khách → báo "đang bận" cho người
     // dùng thay vì câu "chưa được cấu hình" (không còn đúng nữa). Giữ 401 để FE
@@ -329,6 +340,8 @@ async function ask(question, opts = {}) {
     } catch (err) {
         token = null;
 
+        if (opts.retry === false) throw loiChoNguoiDung(err);
+
         // Cookie hỏng/hết hạn → bỏ cookie phiên, dùng phiên khách ngay.
         if (!guestMode && (err.code === "GEMINI_AUTH" || err.code === "GEMINI_PARSE")) {
             chuyenSangPhienKhach();
@@ -342,7 +355,7 @@ async function ask(question, opts = {}) {
             // Hội thoại cũ có thể đã mất ngữ cảnh phía Gemini → mở hội thoại mới.
             resetConversation(opts.conversationId);
             try {
-                return await askOnce(build(true), getChat(opts.conversationId));
+                return await askOnce(build(true), getChat(opts.conversationId), timeoutMs, opts.signal);
             } catch (lan3) {
                 throw loiChoNguoiDung(lan3);
             }

@@ -9,6 +9,7 @@
     "start:iu": "npx electron tests/CRWEB/test-iu.js",
     "dev:api": "node API/index.js",
     "test:api": "node tests/API/test-api.js",
+    "test:learning-apis": "node tests/API/test-learning-apis.js",
     "test:sprint1": "node tests/API/test-database-sprint1.js",
     "test:diemhoc": "npx electron tests/CRWEB/test-diemhoc.js",
     "test:giaima": "node tests/CRWEB/test-giaima.js",

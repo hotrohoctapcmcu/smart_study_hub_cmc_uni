@@ -118,7 +118,8 @@ router.patch('/study/:id/status', xuLy(async req => {
         throw loi(`status phải là một trong: ${validStatuses.join(', ')}`);
     }
 
-    await db.capNhatTrangThaiLichTuHoc(req.params.id, status, NGUOI_DUNG_ID);
+    const updated = await db.capNhatTrangThaiLichTuHoc(req.params.id, status, NGUOI_DUNG_ID);
+    if (!updated) throw loi('Không tìm thấy lịch tự học.', 404);
     return { message: 'Đã cập nhật trạng thái lịch tự học.' };
 }));
 
@@ -127,19 +128,14 @@ router.patch('/study/:id/status', xuLy(async req => {
  * PATCH /study/:id/status chỉ đổi trạng thái; sửa giờ phải qua route này.
  */
 router.put('/study/:id', xuLy(async req => {
-    let data;
-    try {
-        data = await db.capNhatLichTuHoc(NGUOI_DUNG_ID, req.params.id, req.body || {});
-    } catch (err) {
-        // Lỗi nghiệp vụ từ service (giờ sai, trùng lịch) là 400, không phải 500.
-        throw loi(err.message);
-    }
+    const data = await db.capNhatLichTuHoc(NGUOI_DUNG_ID, req.params.id, req.body || {});
     if (!data) throw loi('Không tìm thấy lịch tự học.', 404);
     return { message: 'Đã cập nhật lịch tự học.', data };
 }));
 
 router.delete('/study/:id', xuLy(async req => {
-    await db.xoaLichTuHoc(req.params.id, NGUOI_DUNG_ID);
+    const deleted = await db.xoaLichTuHoc(req.params.id, NGUOI_DUNG_ID);
+    if (!deleted) throw loi('Không tìm thấy lịch tự học.', 404);
     return { message: 'Đã xóa lịch tự học.' };
 }));
 

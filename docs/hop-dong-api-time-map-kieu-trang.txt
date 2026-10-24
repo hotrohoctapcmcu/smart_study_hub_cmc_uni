@@ -1,0 +1,145 @@
+﻿HỢP ĐỒNG API TIME MAP - GỬI KIỀU TRANG
+Ngày đối soát: 2026-10-24
+Endpoint: GET /api/v1/timemap?from=YYYY-MM-DD&to=YYYY-MM-DD
+
+1. REQUEST
+
+Ví dụ:
+GET /api/v1/timemap?from=2026-10-25&to=2026-10-26
+
+Hai query param bắt buộc, định dạng YYYY-MM-DD, from không được sau to. Ngày
+được xử lý theo lịch Việt Nam UTC+7. Timestamp trong response là ISO-8601 kèm
+offset +07:00.
+
+2. RESPONSE THÀNH CÔNG ĐANG ĐƯỢC TRẢ
+
+Response hiện tại có {success, data, meta}; không có trường message. data là
+object với key là ngày YYYY-MM-DD, value là mảng block của ngày đó. Mỗi block
+có id, type, startTime, endTime, title, isRequired.
+
+Mẫu minh họa. Các ID class/exam/self-study là ví dụ; các ID free-time bên dưới
+được tạo theo ngày và epoch millisecond UTC:
+
+{
+  "success": true,
+  "data": {
+    "2026-10-25": [
+      {
+        "id": "free-time:2026-10-25:1792861200000",
+        "type": "free-time",
+        "startTime": "2026-10-25T00:00:00+07:00",
+        "endTime": "2026-10-25T08:00:00+07:00",
+        "title": "Thời gian trống",
+        "isRequired": false
+      },
+      {
+        "id": "class:12:2026-10-25",
+        "type": "class",
+        "startTime": "2026-10-25T08:00:00+07:00",
+        "endTime": "2026-10-25T09:30:00+07:00",
+        "title": "Lập trình Web",
+        "isRequired": true
+      },
+      {
+        "id": "free-time:2026-10-25:1792895400000",
+        "type": "free-time",
+        "startTime": "2026-10-25T09:30:00+07:00",
+        "endTime": "2026-10-25T13:00:00+07:00",
+        "title": "Thời gian trống",
+        "isRequired": false
+      },
+      {
+        "id": "exam:8",
+        "type": "exam",
+        "startTime": "2026-10-25T13:00:00+07:00",
+        "endTime": "2026-10-25T14:30:00+07:00",
+        "title": "Thi cuối kỳ",
+        "isRequired": true
+      },
+      {
+        "id": "free-time:2026-10-25:1792913400000",
+        "type": "free-time",
+        "startTime": "2026-10-25T14:30:00+07:00",
+        "endTime": "2026-10-25T15:00:00+07:00",
+        "title": "Thời gian trống",
+        "isRequired": false
+      },
+      {
+        "id": "self-study:21",
+        "type": "self-study",
+        "startTime": "2026-10-25T15:00:00+07:00",
+        "endTime": "2026-10-25T16:00:00+07:00",
+        "title": "Ôn tập",
+        "isRequired": false
+      },
+      {
+        "id": "free-time:2026-10-25:1792918800000",
+        "type": "free-time",
+        "startTime": "2026-10-25T16:00:00+07:00",
+        "endTime": "2026-10-26T00:00:00+07:00",
+        "title": "Thời gian trống",
+        "isRequired": false
+      }
+    ],
+    "2026-10-26": [
+      {
+        "id": "free-time:2026-10-26:<epoch-ms>",
+        "type": "free-time",
+        "startTime": "2026-10-26T00:00:00+07:00",
+        "endTime": "2026-10-27T00:00:00+07:00",
+        "title": "Thời gian trống",
+        "isRequired": false
+      }
+    ]
+  },
+  "meta": {
+    "sources": {
+      "timetables": { "available": true },
+      "exams": { "available": true },
+      "studySchedules": { "available": true },
+      "pomodoros": { "available": false }
+    },
+    "warnings": ["Lịch sử Pomodoro chưa được lưu trong database; Time Map hiện chưa bao gồm các phiên Pomodoro."]
+  }
+}
+
+Lưu ý: nếu ngày không có block bận, service có thể tạo một block trống cả ngày.
+Block có thể bị cắt thành nhiều phần khi xử lý overlap; ID phần bị cắt có hậu
+tố :part-N.
+
+Các type hiện hỗ trợ: class, exam, self-study, pomodoro, free-time. Ưu tiên khi
+overlap: exam > class > pomodoro > self-study. isRequired: class/exam là true;
+self-study/pomodoro/free-time là false.
+
+3. MÃ LỖI VÀ BODY
+
+Global error handler trả:
+{
+  "success": false,
+  "message": "Mô tả lỗi"
+}
+
+Ngoài production có thêm trường stack. Trạng thái đã đối chiếu:
+- 400: thiếu/sai ngày, ngày không hợp lệ, from > to.
+- 404: không tìm thấy hồ sơ sinh viên cho Time Map.
+- 500: lỗi dữ liệu/schema nguồn hoặc lỗi nội bộ.
+- 503: database chưa sẵn sàng.
+
+Các mã được hỏi:
+- 401: Time Map hiện không có middleware xác thực/trả 401.
+- 403: Time Map hiện không chủ động trả 403.
+- 409: Time Map hiện không chủ động trả 409.
+- 504: chưa có timeout riêng cho request Time Map và chưa có handler 504.
+
+StudySchedules có thể trả 409 khi tạo/sửa lịch tự học bị xung đột; đây là API
+khác, không nên gán 409 vào contract Time Map nếu chưa sửa server.
+
+4. CÁC ĐIỂM CẦN THỐNG NHẤT VỚI BACKEND
+
+- Contract thành công hiện là {success, data, meta}, không phải {success, data,
+  message}. Nếu FE cần message thì cần thay đổi backend sau khi thống nhất.
+- Không có type riêng free-slots; các khoảng trống là block type free-time.
+- Pomodoro chỉ có nếu database có bảng và cột nhận diện được. Schema đang đối
+  soát chưa khai báo Pomodoros; meta.sources/meta.warnings cho biết trạng thái.
+- Endpoint đang dùng NGUOI_DUNG_ID cấu hình mặc định, chưa lấy student từ token.
+- Ngày from/to tính cả hai đầu; UI nên gửi ngày địa phương YYYY-MM-DD.

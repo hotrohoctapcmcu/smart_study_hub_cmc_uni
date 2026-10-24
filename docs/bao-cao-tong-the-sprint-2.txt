@@ -1,0 +1,133 @@
+﻿BÁO CÁO TỔNG THỂ API VÀ KIỂM THỬ - SPRINT 2
+Ngày lập: 2026-10-24
+Phạm vi: các thay đổi API, service, database, tài liệu và kiểm thử đang nằm trong PR Sprint 2.
+
+1. TÓM TẮT
+
+Trong phiên làm việc đã chuẩn bị các hạng mục API Time Map, Progress, StudySchedules,
+quản lý task/checklist, thông báo và lịch thi. Đã thêm bộ test HTTP/integration và các
+tài liệu bàn giao cho nhóm.
+
+PR: https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/pull/18
+Nhánh: feature/sprint2-api-deliverables
+Commit ban đầu: f974f14
+Reviewer đã được yêu cầu: vtishan
+PR được xác nhận tạo thành công và mở tại thời điểm tạo. Trạng thái GitHub hiện thời
+chưa được kiểm tra lại trong báo cáo này.
+
+2. CÁC HẠNG MỤC ĐÃ TRIỂN KHAI
+
+2.1 Time Map - PB-43
+Endpoint: GET /api/v1/timemap?from=YYYY-MM-DD&to=YYYY-MM-DD
+- Lấy Timetables, Exams, StudySchedules và dò Pomodoros nếu có trong SQLite.
+- Chuẩn hóa block về id, type, startTime, endTime, title, isRequired.
+- Xử lý timestamp/giờ địa phương theo UTC+7, gộp overlap theo ưu tiên Exam > Class >
+  Pomodoro > Self-study, tạo block free-time và nhóm kết quả theo ngày.
+- Response thành công thực tế là { success, data, meta }; meta có sources và warnings.
+- Schema hiện chưa khai báo bảng Pomodoros nên API có thể báo thiếu nguồn này.
+
+2.2 Progress - PB-33/PB-34
+Endpoint: GET /api/v1/progress
+- Tổng hợp số bài quá hạn, tỷ lệ hoàn thành theo môn, giờ tự học/Pomodoro trong tuần,
+  GPA theo kỳ và ngày tới kỳ thi kế tiếp.
+- Gọi Gemini để tạo lời khuyên ngắn; response là { success, data: { metrics, advice } }.
+- Query và tính tuần/ngày trong Progress dùng lịch UTC+7.
+- Khi Gemini lỗi/timeout, service hiện trả lời khuyên dự phòng cố định. Đây không phải
+  metric giả nhưng không phải nội dung Gemini sinh ra; cần thống nhất với quy định cấm
+  trả dữ liệu AI giả khi lỗi.
+
+2.3 StudySchedules - PB-13/PB-22
+Prefix: /api/v1/schedules
+- Có API đọc/thêm/sửa/xóa buổi tự học, cập nhật trạng thái, xem khoảng trống và kiểm tra
+  xung đột qua POST /conflicts/check.
+- Luồng thêm/sửa kiểm tra dữ liệu và lịch xung đột trước khi lưu.
+- Kiểm tra sở hữu dựa trên student/user ID đang cấu hình trong ứng dụng.
+
+2.4 Task, Checklist, Reminder và Exam - PB-24/PB-28 cùng API liên quan
+- Xóa task ID số theo nhánh xóa task nội bộ; task EDUX dạng chuỗi được ẩn bằng is_hidden
+  để không xuất hiện lại sau đồng bộ.
+- Checklist có API xóa và kiểm tra chủ sở hữu.
+- Nhắc nhở nhiều tầng có kiểm tra trùng trước khi thêm và ràng buộc/index UNIQUE trong
+  schema; database migration có bước dọn các bản ghi trùng cũ trước khi tạo index.
+- Bộ test bao gồm một số luồng tạo/đọc/sửa/xóa kỳ thi, kế hoạch ôn thi và thông báo.
+
+2.5 AI APIs hiện có
+- Đã đăng ký GET /api/v1/ai/status và POST /api/v1/ai/ask.
+- /ask kiểm tra question không rỗng, giới hạn 4.000 ký tự; conversationId được giới hạn
+  tối đa 64 ký tự.
+- Chưa thấy các API /plan, /exam-plan, /check, /summarize, /draft-leave hoặc module
+  API/shared/study-context.js trong source hiện tại.
+
+3. KIỂM THỬ VÀ BẰNG CHỨNG
+
+- tests/API/test-learning-apis.js chạy các request HTTP với server API và SQLite tạm.
+- Kết quả lần chạy đã ghi nhận trước đó: 48/48 kiểm tra đạt; package script là
+  npm run test:learning-apis (PowerShell có thể cần dùng npm.cmd do execution policy).
+- Test tạo dữ liệu riêng trong database tạm, bao gồm hồ sơ, môn học, lịch, task, kỳ thi,
+  checklist và reminder. Test thay gemini.ask bằng hàm giả lập.
+- Test xác nhận các luồng API trong môi trường cô lập; không phải bằng chứng chạy bằng
+  tài khoản CMC thật, không xác minh Gemini thật, và không kiểm tra bảng Pomodoros thật.
+- tests/API/delete-deadlines-checklists.http là bộ request REST Client để chạy thủ công.
+  Nó cần API/database đang chạy và cần thay các ID placeholder bằng ID hợp lệ.
+- Không chạy lại test khi lập báo cáo này.
+
+4. DỮ LIỆU, DATABASE VÀ ĐIỂM CẦN XÁC NHẬN
+
+- API entry point nạp database/index.js ở thư mục database cấp gốc; module này nạp
+  database/sprint1Service.js và database/connection/db.js. Schema được nạp từ
+  database/schema/00_sqlite_init.sql.
+- Repository đồng thời có thư mục lồng database/database/ với bản sao schema/service
+  khác. API entry point hiện nêu trên không nạp bản sao đó; cần tránh sửa nhầm và nên
+  thống nhất nguồn schema để giảm lệch về sau.
+- Runtime dùng DB_PATH hoặc SQLite mặc định data/unistudy.db. NGUOI_DUNG_ID mặc định là
+  1; chưa có bằng chứng cấu hình hiện tại trỏ tới hồ sơ CMC thật hoặc xác thực token.
+- Pomodoros không có trong schema SQLite hiện tại. Tên bảng/cột được service dò theo một
+  danh sách ứng viên, chưa được xác nhận với người phụ trách database.
+- Progress GPA giả định các cột Grades.semester, academic_year, attempt_number, credits,
+  final_score và letter_grade. Schema hiện tại có các cột này; quy tắc GPA cần nghiệp vụ
+  xác nhận.
+- API Time Map hiện dùng response success {success,data,meta}; không có message.
+  Lỗi qua global handler có {success:false,message}, và stack chỉ ở môi trường khác
+  production. Time Map chưa định nghĩa riêng các mã 401/403/409/504.
+
+5. CÁC RỦI RO VÀ VIỆC CÒN MỞ
+
+Ưu tiên xác nhận trước nghiệm thu:
+1. Chạy test trên DB/tài khoản CMC được cấp quyền, ghi lại môi trường, kết quả và bằng
+   chứng; không dùng dữ liệu seed của test làm kết quả nghiệm thu.
+2. Hồng Thắm xác nhận schema Pomodoros, cột chủ sở hữu, cột thời gian và timezone.
+3. Sửa/chuẩn hóa cách lấy ngày tại API/index.js dashboard và API/modules/thoiKhoaBieu.js
+   /today: hiện còn dùng toISOString().slice/split, có thể lấy ngày UTC hôm trước trước
+   07:00 giờ Việt Nam. Time Map và Progress đã có hàm xử lý ngày UTC+7 riêng.
+4. Văn Tuấn xác nhận module AI, các API chuyên biệt và hợp đồng buildStudyContext nếu có.
+   Hiện chưa thấy các endpoint plan/exam-plan/check/summarize/draft-leave.
+5. Thống nhất với Kiều Trang rằng response Time Map có meta, không có message; nếu frontend
+   yêu cầu một dạng khác thì cần cập nhật API contract và server đồng thời.
+6. Xem lại fallback advice của Progress theo quy định không trả nội dung AI giả khi lỗi.
+7. Xác định yêu cầu xác thực/ủy quyền production; hiện một số route dựa trên
+   NGUOI_DUNG_ID cấu hình, không lấy student từ access token.
+8. Hàm xoaTheoChuSoHuu vẫn parseInt ID, nhưng route xóa EDUX tách nhánh trước và gọi
+   anBaiTapEDUX với external ID dạng chuỗi; test cần giữ ca này để ngăn hồi quy.
+
+6. FILE CHÍNH TRONG PHẠM VI THAY ĐỔI
+
+API:
+- API/modules/baiTap.js, API/modules/index.js, API/modules/thoiKhoaBieu.js
+- API/modules/timemap.js, timemap.controller.js, timemap.service.js
+- API/modules/progress.js, progress.controller.js, progress.service.js
+- API/shared/gemini-client.js
+
+Database/configuration:
+- database/connection/db.js, database/index.js, database/sprint1Service.js
+- database/schema/00_sqlite_init.sql, package.json
+
+Test/tài liệu:
+- tests/API/test-learning-apis.js
+- tests/API/delete-deadlines-checklists.http
+- docs/bao-cao-kiem-thu-api.md, docs/luong-xu-ly-he-thong.md
+- docs/bao-cao-long-nhat.txt, docs/doi-soat-database-time-map-hong-tham.txt
+- docs/hop-dong-api-time-map-kieu-trang.txt, docs/ket-noi-ai-van-tuan.txt
+- docs/product_backlog.md, Quy_tac.txt
+
+Báo cáo này phản ánh source và kết quả đã ghi nhận trong worktree/PR; không thay thế
+biên bản kiểm thử trên môi trường CMC hoặc xác nhận nghiệm thu của nhóm.

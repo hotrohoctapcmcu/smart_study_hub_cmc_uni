@@ -1,0 +1,84 @@
+﻿BÁO CÁO TỔNG HỢP PHIÊN LÀM VIỆC - GỬI LONG NHẬT
+Ngày đối soát: 2026-10-24
+Phạm vi: trạng thái Git, mã API, schema SQLite và bộ kiểm thử hiện có.
+
+1. TÌNH TRẠNG WORKTREE
+
+Các mục dưới đây đang thay đổi/chưa commit so với HEAD. Git status không cho biết chính xác thay đổi nào thuộc riêng một yêu cầu hay một lượt làm việc.
+
+File đã sửa:
+- API/modules/baiTap.js
+- API/modules/index.js
+- API/modules/thoiKhoaBieu.js
+- API/shared/gemini-client.js
+- database/connection/db.js
+- database/index.js
+- database/schema/00_sqlite_init.sql
+- database/sprint1Service.js
+- docs/product_backlog.md
+- package.json
+
+File mới:
+- API/modules/progress.controller.js
+- API/modules/progress.js
+- API/modules/progress.service.js
+- API/modules/timemap.controller.js
+- API/modules/timemap.js
+- API/modules/timemap.service.js
+- Quy_tac.txt
+- docs/bao-cao-kiem-thu-api.md
+- docs/luong-xu-ly-he-thong.md
+- tests/API/delete-deadlines-checklists.http
+- tests/API/test-learning-apis.js
+
+2. CÁC API ĐÃ ĐỐI SOÁT
+
+Time Map - GET /api/v1/timemap?from=YYYY-MM-DD&to=YYYY-MM-DD
+- Đã đăng ký trong API/modules/index.js.
+- Truy vấn Timetables, Exams, StudySchedules; Pomodoros được dò nếu bảng tồn tại.
+- Chuẩn hóa UTC+7, xử lý overlap, chèn block free-time và nhóm theo ngày.
+- Test có class/exam/self-study/free-time, mốc +07:00, ngày sai và cảnh báo khi thiếu bảng Pomodoros.
+- Chưa xác minh trên schema Pomodoros thật; schema SQLite hiện tại không khai báo bảng này.
+
+Progress - GET /api/v1/progress
+- Đã đăng ký; truy vấn bài tập, giờ tự học/Pomodoro, GPA và kỳ thi tiếp theo; sau đó gọi Gemini lấy lời khuyên.
+- Test bao gồm các chỉ số chính. AI trong test được thay bằng hàm giả lập, không phải Gemini thật.
+- Nếu Gemini lỗi/timeout, service trả về một câu thông báo dự phòng cố định.
+
+StudySchedules - prefix /api/v1/schedules
+- Có thao tác đọc/thêm/sửa/xóa buổi tự học, cập nhật trạng thái, free-slots và POST /conflicts/check.
+- Bộ test kiểm tra lưu lịch, sửa/xóa, xung đột và từ chối lưu lịch bị trùng.
+
+Lịch thi - prefix /api/v1/exams
+- Bộ test kiểm tra tạo/đọc/sửa/xóa kỳ thi và tạo/cập nhật/xóa kế hoạch ôn thi.
+
+Thông báo - prefix /api/v1/notifications
+- Bộ test kiểm tra tạo/đọc/đánh dấu đã đọc/xóa thông báo và gọi nhắc nhở đa tầng lặp lại để xác nhận không thêm trùng theo tier.
+
+Task và Checklist - prefix /api/v1/tasks
+- Test xóa task ID số, ẩn task EDUX có ID chuỗi, giữ trạng thái ẩn sau đồng bộ, từ chối xóa task của hồ sơ khác, xóa checklist và từ chối checklist của hồ sơ khác.
+- HTTP test riêng: tests/API/delete-deadlines-checklists.http.
+
+3. KẾT QUẢ KIỂM THỬ ĐÃ GHI NHẬN
+
+- node tests/API/test-learning-apis.js: 48/48 ca đạt.
+- npm.cmd run test:learning-apis: 48/48 ca đạt.
+- Test dùng SQLite tạm, dữ liệu seed riêng và thay gemini.ask bằng hàm giả lập.
+- Kết quả không xác nhận Gemini thật, schema Pomodoros thật, hay toàn bộ giao diện Electron.
+- Trong PowerShell, npm run từng bị chặn bởi execution policy của npm.ps1; npm.cmd chạy được. Đây là hạn chế shell, không phải test fail.
+
+4. CÁC ĐIỂM CẦN NHÓM XÁC NHẬN
+
+- Pomodoros: chưa có bảng trong database/schema/00_sqlite_init.sql. Tên cột hiện tại chỉ là danh sách ứng viên code tự dò.
+- Nhận dạng người dùng: API đang dùng NGUOI_DUNG_ID cấu hình (mặc định 1), chưa thấy xác thực token/session tại các route này. Kiểm tra quyền sở hữu cần đối chiếu với mô hình đăng nhập thực tế.
+- Progress GPA: service dùng Grades.semester, academic_year, attempt_number, credits, final_score, letter_grade. Schema hiện có các cột này; quy tắc quy đổi điểm 4.0 và cách chọn lần học cần chủ nghiệp vụ xác nhận.
+- Time Map thành công trả {success,data,meta}; không có message. Time Map hiện không chủ động trả 401/403/409/504.
+- AI: chỉ có /api/v1/ai/status và /api/v1/ai/ask; các endpoint AI khác chưa được đăng ký.
+
+5. FILE ĐỐI CHIẾU THEO NGƯỜI NHẬN
+
+- Thắm: docs/doi-soat-database-time-map-hong-tham.txt
+- Trang: docs/hop-dong-api-time-map-kieu-trang.txt
+- Tuấn: docs/ket-noi-ai-van-tuan.txt
+
+Đây là báo cáo đọc từ source code/worktree hiện tại, không phải xác nhận đã triển khai production.
