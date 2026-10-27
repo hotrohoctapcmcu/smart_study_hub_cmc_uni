@@ -1,31 +1,35 @@
-# UniStudy CMC — Bản demo tải về
+# UniStudy CMC — Frontend
 
-Bản xuất từ phiên bản 24 của giao diện demo đang dùng:
-https://unistudy-cmc-prototype.kieuhuyentrang2007.chatgpt.site/
+Giao diện HTML/CSS và JavaScript ES modules dùng chung với Electron, Express API và SQLite của dự án.
 
-## Mở trên máy tính
+## Chạy ứng dụng
 
-1. Giải nén toàn bộ ZIP, giữ nguyên thư mục assets cạnh index.html.
-2. Mở index.html bằng Chrome hoặc Edge.
-3. Bấm Trải nghiệm để vào workspace; chọn Đồng bộ dữ liệu để xem phần dữ liệu minh họa của bản demo.
+Tại thư mục gốc repository:
 
-Nếu trình duyệt hạn chế file cục bộ hoặc localStorage, mở thư mục bằng VS Code và chạy index.html bằng Live Server. Không cần npm install hoặc backend.
+```powershell
+npm install
+npm start
+```
 
-## Nội dung
+Để chạy API và giao diện web:
 
-- index.html: trang và các thành phần giao diện.
-- styles.css: bố cục, font, responsive và theme.
-- app.js: thao tác của bản mô phỏng.
-- assets/: toàn bộ ảnh nền, avatar và sticker cáo CMC đi kèm.
+```powershell
+npm run start:headless
+```
 
-## Phạm vi của bản demo
+Mở `http://localhost:8080`. API mặc định ở cổng `3001`; cấu hình frontend nằm trong `src/shared/config/app.config.js` và registry route ở `src/shared/config/endpoints.js`. Đồng bộ IU tự động cần Electron để mở cửa sổ đăng nhập và sử dụng IPC bridge.
 
-Đây là bản mô phỏng UI hiện có, không phải dự án frontend mới triển khai theo bộ Sprint. Nút đồng bộ và AI chưa gọi backend thật; dữ liệu minh họa trong bản demo không phải dữ liệu sinh viên lấy trực tiếp từ CMC.
+## Tiến độ và dữ liệu
 
-Những tùy chọn được lưu trong trình duyệt chỉ áp dụng trên máy và trình duyệt đó. Bản tải về không mang theo dữ liệu cá nhân hoặc trạng thái tab của phiên trên website.
+Trang Tiến độ đọc báo cáo đã lưu từ `/api/v1/progress?advice=false` và bản đồ thời gian từ `/api/v1/timemap`. Các biểu đồ Pomodoro trên thiết bị vẫn được ghi nhãn riêng. Metadata tài liệu, ghi chú và lịch sử timer hiện có lưu trong localStorage; chưa có upload file hoặc tự động nhập localStorage vào SQLite.
 
-Roboto được tải từ Google Fonts khi có Internet; khi offline trình duyệt dùng font dự phòng. Video giới thiệu cần Internet. Các ảnh nền và sticker trong assets được đóng gói sẵn.
+## Kiểm tra
 
-## Kiểm tra bản xuất
+```powershell
+npm run test:frontend
+npm run test:learning-apis
+npm run test:sprint2-integration
+npm run test:sprint2:e2e
+```
 
-Mã ứng dụng giữ nguyên từ bản demo đã lưu. Đã kiểm tra cú pháp JavaScript, các đường dẫn ảnh cục bộ và tính toàn vẹn của ZIP. Không bao gồm thông tin tài khoản, cấu hình triển khai hoặc lịch sử Git.
+Xem [báo cáo tích hợp hai nhánh](../docs/tich_hop_sprint2.md) và [luồng hệ thống](../docs/luong-xu-ly-he-thong.md) để biết phạm vi và kết quả kiểm thử.

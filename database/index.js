@@ -20,6 +20,8 @@ const {
     withTransaction
 } = require('./connection/db');
 const sprint1Service = require('./sprint1Service');
+const sprint2Service = require('./sprint2/sprint2Service');
+const sprint2Integrity = require('./sprint2/sprint2Integrity');
 
 /**
  * Hàm kết nối tới Database và trả ra danh sách toàn bộ các hàm được sử dụng trong Sprint 1
@@ -33,6 +35,8 @@ async function ketNoiDatabase() {
 
     // Return theo từng chức năng của Sprint 1 (giữ nguyên tên hàm, tham số, giá trị trả về):
     return {
+        ...sprint2Service,
+        ...sprint2Integrity,
         // Kết nối cơ bản
         sql,
         getPool,
@@ -103,6 +107,7 @@ async function ketNoiDatabase() {
         // ─── ĐỒNG BỘ EDUX (BÀI TẬP AI LƯU XUỐNG SQLITE) ────────────────
         luuBaiTapEDUX: sprint1Service.luuBaiTapEDUX,
         layBaiTapEDUX: sprint1Service.layBaiTapEDUX,
+        anBaiTapEDUX: sprint1Service.anBaiTapEDUX,
         capNhatTrangThaiBaiTapEDUX: sprint1Service.capNhatTrangThaiBaiTapEDUX,
         xoaBaiTapEDUX: sprint1Service.xoaBaiTapEDUX
 
@@ -111,7 +116,7 @@ async function ketNoiDatabase() {
 }
 
 // Gán trực tiếp các hàm vào function ketNoiDatabase để hỗ trợ mọi cú pháp import
-Object.assign(ketNoiDatabase, sprint1Service);
+Object.assign(ketNoiDatabase, sprint1Service, sprint2Service, sprint2Integrity);
 ketNoiDatabase.ketNoiDatabase = ketNoiDatabase;
 ketNoiDatabase.closePool = closePool;
 

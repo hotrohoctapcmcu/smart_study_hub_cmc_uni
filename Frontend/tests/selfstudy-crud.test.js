@@ -19,6 +19,7 @@ import {
 } from "../src/features/schedule/schedule.service.js";
 import { findScheduleConflicts } from "../src/features/schedule/schedule.conflicts.js";
 import { validateStudySessionForm } from "../src/features/schedule/schedule.validation.js";
+import { APP_CONFIG } from "../src/shared/config/app.config.js";
 
 function assert(condition, message) {
   if (!condition) {
@@ -30,6 +31,9 @@ function assert(condition, message) {
 console.log("\n=== KIỂM THỬ CHỨC NĂNG SỬA & XÓA LỊCH TỰ HỌC (CRUD) ===");
 
 // Chuẩn bị môi trường sạch
+const previousApiConnected = APP_CONFIG.isApiConnected;
+APP_CONFIG.isApiConnected = false;
+try {
 resetSessionState();
 state.studyEvents = [];
 
@@ -136,3 +140,6 @@ assert(state.studyEvents.length === 0, "Xóa lịch tự học còn lại thành
 assert(findScheduleConflicts(state.studyEvents).count === 0, "Danh sách rỗng không có xung đột");
 
 console.log("--> Toàn bộ test CRUD và xung đột Self-Study PASS!");
+} finally {
+  APP_CONFIG.isApiConnected = previousApiConnected;
+}

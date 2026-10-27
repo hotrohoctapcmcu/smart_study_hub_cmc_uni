@@ -1,0 +1,112 @@
+﻿ĐỐI SOÁT DATABASE TIME MAP - GỬI HỒNG THẮM
+Ngày đối soát: 2026-10-24
+Module: API/modules/timemap.service.js
+Endpoint: GET /api/v1/timemap?from=YYYY-MM-DD&to=YYYY-MM-DD
+
+1. CÁC TRUY VẤN SQL ĐANG DÙNG
+
+1.1 Thời khóa biểu (Timetables):
+
+SELECT t.timetable_id, t.student_id, t.class_name, t.day_of_week,
+       t.start_time, t.end_time, t.start_date, t.end_date,
+       sub.subject_name
+FROM Timetables t
+LEFT JOIN Subjects sub ON sub.subject_id = t.subject_id
+WHERE t.student_id = @studentId
+  AND date(t.start_date) <= date(@to)
+  AND date(t.end_date) >= date(@from);
+
+Cột dùng:
+- Timetables: timetable_id, student_id, class_name, day_of_week, start_time,
+  end_time, start_date, end_date, subject_id.
+- Subjects: subject_id, subject_name.
+
+Code đọc ngày bắt đầu/kết thúc của một lịch thứ hàng tuần, sau đó lặp ngày
+trong from-to và lọc theo day_of_week. Quy ước thứ trong DB mà code đang hiểu:
+Thứ Hai=2, ..., Chủ Nhật=8.
+
+1.2 Lịch thi (Exams):
+
+SELECT e.exam_id, e.exam_date, e.exam_time, e.duration_minutes,
+       e.exam_name, sub.subject_name
+FROM Exams e
+LEFT JOIN Subjects sub ON sub.subject_id = e.subject_id
+WHERE e.student_id = @studentId
+  AND date(e.exam_date) >= date(@from)
+  AND date(e.exam_date) <= date(@to);
+
+Cột dùng:
+- Exams: exam_id, student_id, exam_date, exam_time, duration_minutes,
+  exam_name, subject_id.
+- Subjects: subject_id, subject_name.
+
+1.3 Buổi tự học (StudySchedules):
+
+SELECT schedule_id, student_id, title, study_date,
+       start_time, end_time, status
+FROM StudySchedules
+WHERE student_id = @studentId
+  AND date(study_date) >= date(@from)
+  AND date(study_date) <= date(@to)
+  AND upper(status) != 'CANCELLED';
+
+Cột dùng: schedule_id, student_id, title, study_date, start_time, end_time,
+status.
+
+1.4 Pomodoro (truy vấn động, nếu bảng tồn tại):
+
+Tìm bảng:
+SELECT name FROM sqlite_master
+WHERE type = 'table' AND lower(name) = lower(@tableName) LIMIT 1;
+
+Đọc cột:
+PRAGMA table_info("<tên bảng được tìm thấy>");
+
+Truy vấn bản ghi:
+SELECT * FROM "<tên bảng được tìm thấy>"
+WHERE "<cột chủ sở hữu phát hiện được>" = @ownerId;
+
+Tên bảng tìm kiếm là Pomodoros. Các cột ứng viên trong code:
+- ID: pomodoro_id, session_id, id.
+- Chủ sở hữu: student_id, user_id.
+- Bắt đầu: started_at, start_time, created_at.
+- Kết thúc: ended_at, end_time, finished_at.
+- Thời lượng giây nếu không có cột kết thúc: actual_study_seconds,
+  study_seconds, duration_seconds.
+
+Query Pomodoro không lọc from/to ở SQL; service lọc các block sau khi lấy dữ
+liệu. SQLite datetime không có hậu tố timezone được hiểu là UTC; timestamp có
+timezone thì phải có Z hoặc offset. Cần xác nhận quy ước này với schema và cách
+ghi dữ liệu của module Pomodoro.
+
+2. ĐIỀU KIỆN NGÀY VÀ UTC+7
+
+- from và to bắt buộc theo YYYY-MM-DD, phải là ngày hợp lệ, from <= to.
+- Query ba bảng lịch dùng date(column) và date(@from/@to). Code giả định các
+  cột ngày là ngày lịch Việt Nam, không phải timestamp UTC cần chuyển đổi.
+- Giờ trong Timetables, Exams, StudySchedules được hiểu là giờ địa phương UTC+7.
+- Đầu ra ISO-8601 kèm +07:00.
+- Timetables được mở rộng theo thứ trong khoảng ngày; Exams và StudySchedules
+  lọc ngày trong khoảng, tính cả from và to.
+
+3. ĐỐI CHIẾU SCHEMA HIỆN TẠI
+
+database/schema/00_sqlite_init.sql khai báo các cột Timetables,
+StudySchedules, Exams và Subjects nêu trên. Exams hiện không được truy vấn cột
+semester hay academic_year trong Time Map; query Time Map không phụ thuộc hai
+cột đó. GPA trong Progress lấy semester/academic_year từ bảng Grades.
+
+Schema hiện tại không có CREATE TABLE Pomodoros. Khi thiếu bảng, Time Map trả
+nguồn này rỗng và thêm warning; API vẫn có thể trả dữ liệu từ nguồn còn lại.
+
+4. CÁC ĐIỂM CẦN THẮM XÁC NHẬN
+
+1. Tên bảng và cột Pomodoro chính thức; khóa liên kết với user/student.
+2. Kiểu dữ liệu và timezone của cột thời điểm Pomodoro.
+3. Pomodoro tính theo thời điểm bắt đầu/kết thúc hay thời lượng học thực tế;
+   code hiện ưu tiên cột kết thúc nếu có.
+4. Các cột ngày lịch hiện có lưu theo ngày Việt Nam hay ngày UTC.
+5. Quy ước day_of_week trong Timetables có đúng Thứ Hai=2 đến Chủ Nhật=8 không.
+
+Tài liệu trích query đang có trong source, không khẳng định các tên cột
+Pomodoro ứng viên là schema đã thống nhất.

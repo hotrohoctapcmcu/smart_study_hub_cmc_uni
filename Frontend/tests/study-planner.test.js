@@ -3,14 +3,15 @@
  */
 import {
   validatePlannerInput,
-  generateMockSessions,
   generateAIStudySchedule,
+  confirmStudyPlan,
   getStudyPlans,
   getStudyPlanById,
   updateStudyPlan,
   deleteStudyPlan
 } from "../src/features/study-planner/study-planner.service.js";
 import { state, resetSessionState } from "../src/app/state.js";
+import { renderPlansListOrEmpty } from "../src/features/study-planner/study-planner.view.js";
 
 function assert(condition, message) {
   if (!condition) {
@@ -22,6 +23,19 @@ function assert(condition, message) {
 export async function runStudyPlannerTests() {
   console.log("\n=== KIỂM THỬ TÍNH NĂNG KẾ HOẠCH HỌC TẬP (AI PLANNER) ===");
   resetSessionState();
+  const previousFetch = globalThis.fetch;
+  const requests = [];
+  let failRequest = false;
+  globalThis.fetch = async (url, options = {}) => {
+    const body = options.body ? JSON.parse(options.body) : null;
+    requests.push({ url, body });
+    const data = url.endsWith("/plan/confirm") ? { persisted: true, sessions: [{ schedule_id: 1 }] }
+      : url.endsWith("/schedules/study") ? []
+      : { preview: true, persisted: false, sessions: [{ date: "2028-01-01", start: "08:00", end: "10:00", title: "Ôn <script>alert(1)</script>", subject: "CSDL", durationMinutes: 120 }] };
+    return { ok: !failRequest, status: failRequest ? 503 : 200,
+      json: async () => failRequest ? { success: false, message: "AI chưa cấu hình" } : { success: true, data } };
+  };
+  try {
 
   // 1. Validation input
   const val1 = validatePlannerInput({});
@@ -39,13 +53,7 @@ export async function runStudyPlannerTests() {
   const val5 = validatePlannerInput({ subject: "Cấu trúc dữ liệu & GT", targetHours: 12 });
   assert(val5.isValid && val5.errors.length === 0, "Dữ liệu hợp lệ vượt qua validation");
 
-  // 2. Mock sessions generation
-  const sessions = generateMockSessions("Lập trình Web", "evening", 10);
-  assert(Array.isArray(sessions) && sessions.length > 0, "Sinh danh sách ca học mô phỏng theo ca tối");
-  assert(sessions[0].day.includes("Thứ"), "Ca học có ngày học cụ thể trong tuần");
-  assert(sessions[0].time === "19:30 – 21:30", "Khung giờ khớp với cấu hình ca tối");
-
-  // 3. Phân tích & Tạo kế hoạch mô phỏng (Mock mode)
+  // 3. Bản xem trước từ backend AI
   const res = await generateAIStudySchedule({
     subject: "Hệ quản trị CSDL",
     freeSlot: "morning",
@@ -53,10 +61,23 @@ export async function runStudyPlannerTests() {
   });
   assert(res.success === true, "Tạo kế hoạch học tập thành công");
   assert(res.data.statusLabel === "Kế hoạch học tập đề xuất", "Mang nhãn 'Kế hoạch học tập đề xuất'");
+  assert(res.data.preview === true && res.data.persisted === false, "Chưa xác nhận thì chưa lưu lịch");
+  assert(requests[0].url.endsWith("/ai/plan"), "Gọi API lập kế hoạch thật");
+  assert(requests[0].body.freeStartTime === "07:30", "Gửi đúng khung giờ ưu tiên");
+  assert(!requests.some(item => item.url.endsWith("/confirm")), "Tạo đề xuất không tự xác nhận");
 
   const plans = getStudyPlans();
   assert(plans.length === 1, "Kế hoạch được lưu vào state phiên");
   assert(plans[0].subject === "Hệ quản trị CSDL", "Tên môn học trong state chính xác");
+  const html = renderPlansListOrEmpty(plans);
+  assert(html.includes("data-confirm-plan-id"), "Có nút xác nhận trên bản xem trước");
+  assert(!html.includes("<script>"), "Escape HTML trả về từ AI");
+  const confirmed = await confirmStudyPlan(plans[0].id);
+  assert(confirmed.success && confirmed.data.persisted, "Xác nhận mới lưu lịch");
+  assert(requests.find(item => item.url.endsWith("/plan/confirm")).body.confirmed === true, "Gửi xác nhận rõ ràng");
+  const countAfterConfirm = requests.length;
+  await confirmStudyPlan(plans[0].id);
+  assert(requests.length === countAfterConfirm, "Không gửi lại khi kế hoạch đã lưu");
 
   // 4. Xem chi tiết
   const fetched = getStudyPlanById(plans[0].id);
@@ -79,6 +100,12 @@ export async function runStudyPlannerTests() {
   assert(getStudyPlans().length === 1, "Tạo kế hoạch thứ 2");
   resetSessionState();
   assert(getStudyPlans().length === 0, "Reset session dọn sạch kế hoạch học tập");
+
+  failRequest = true;
+  const failed = await generateAIStudySchedule({ subject: "CSDL", targetHours: 4 });
+  assert(!failed.success && failed.message.includes("chưa cấu hình"), "Hiện lỗi AI thật, không tạo lịch mô phỏng thay thế");
+  assert(getStudyPlans().length === 0, "Lỗi backend không tạo kế hoạch giả");
+  } finally { globalThis.fetch = previousFetch; }
 
   console.log("--> Toàn bộ test Study Planner PASS!\n");
 }

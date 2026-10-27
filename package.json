@@ -9,10 +9,18 @@
     "start:iu": "npx electron tests/CRWEB/test-iu.js",
     "dev:api": "node API/index.js",
     "test:api": "node tests/API/test-api.js",
+    "test:learning-apis": "node tests/API/test-learning-apis.js",
+    "test:sprint2-integration": "node --test tests/API/test-sprint2-integration.js",
+    "test:sprint2:e2e": "node tests/e2e-sprint2-integration.cjs",
     "test:sprint1": "node tests/API/test-database-sprint1.js",
     "test:diemhoc": "npx electron tests/CRWEB/test-diemhoc.js",
     "test:giaima": "node tests/CRWEB/test-giaima.js",
-    "test:iu-sync": "node tests/API/test-iu-sync.js"
+    "test:iu-sync": "node tests/API/test-iu-sync.js",
+    "test:ai": "node --test tests/API/test-ai-sprint2.js",
+    "test:exam-sync": "node --test tests/API/test-exam-sync-window.js",
+    "test:ai:live": "node tests/API/test-ai-live.js",
+    "test:ai:e2e": "electron tests/e2e-ai-sprint2.cjs",
+    "test:frontend": "node Frontend/tests/runner.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

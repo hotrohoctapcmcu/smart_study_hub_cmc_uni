@@ -12,6 +12,17 @@ import {
 
 export function attachTasksEvents(containerEl) {
   const modalHost = containerEl.querySelector("#taskModalHost");
+  const removeTask = async (taskId) => {
+    const task = state.tasks.find(item => item.id === taskId);
+    try {
+      if (task?.isLocalDraft) deleteLocalTask(taskId);
+      else await deleteTaskApi(taskId);
+      return true;
+    } catch (error) {
+      window.alert(error.message || "Không thể xóa công việc.");
+      return false;
+    }
+  };
 
   // 1. Chuyển tab lọc (Tất cả / Đang làm / Sắp đến hạn / Hoàn thành)
   const tabBtns = containerEl.querySelectorAll("[data-task-tab]");
@@ -156,14 +167,10 @@ export function attachTasksEvents(containerEl) {
     // Nút Xóa trong khung chi tiết
     const deleteBtn = modalEl.querySelector("#taskDetailDeleteBtn");
     if (deleteBtn) {
-      deleteBtn.addEventListener("click", () => {
+      deleteBtn.addEventListener("click", async () => {
         const ok = window.confirm(`Bạn có chắc chắn muốn xóa công việc "${task.title}" không?`);
         if (ok) {
-          close();
-          deleteLocalTask(task.id);
-          deleteTaskApi(task.id).catch((e) =>
-            console.warn("[Tasks] Lỗi xóa task trên backend:", e)
-          );
+          if (await removeTask(task.id)) close();
         }
       });
     }
@@ -177,6 +184,7 @@ export function attachTasksEvents(containerEl) {
     let localChecklist = initialData?.checklist
       ? initialData.checklist.map((c) => ({
           id: c.id || `chk_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+          backendId: c.backendId,
           text: c.text,
           done: Boolean(c.done)
         }))
@@ -263,7 +271,7 @@ export function attachTasksEvents(containerEl) {
     // Submit form task
     const form = modalEl.querySelector("#taskModalForm");
     if (form) {
-      form.addEventListener("submit", (e) => {
+      form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const fd = new FormData(form);
 
@@ -315,10 +323,14 @@ export function attachTasksEvents(containerEl) {
         }
 
         if (initialData?.id) {
-          updateLocalTask(initialData.id, data);
-          updateTaskApi(initialData.id, data).catch((err) =>
-            console.warn("[Tasks] Lỗi cập nhật task lên backend:", err)
-          );
+          if (initialData.isLocalDraft) updateLocalTask(initialData.id, data);
+          else {
+            const remainingIds = new Set(cleanChecklist.map(item => item.backendId).filter(Boolean));
+            data.removedChecklistIds = (initialData.checklist || [])
+              .map(item => item.backendId).filter(id => id && !remainingIds.has(id));
+            try { await updateTaskApi(initialData.id, data); }
+            catch (error) { window.alert(error.message); return; }
+          }
         } else {
           addLocalTask(data);
           createTaskApi(data).catch((err) =>
@@ -434,15 +446,12 @@ export function attachTasksEvents(containerEl) {
   // 5. Nút Xóa trên bảng
   const deleteBtns = containerEl.querySelectorAll("[data-delete-task-id]");
   deleteBtns.forEach((btn) => {
-    btn.addEventListener("click", (e) => {
+    btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       const id = btn.getAttribute("data-delete-task-id");
       const ok = window.confirm("Bạn có chắc chắn muốn xóa công việc này?");
       if (ok) {
-        deleteLocalTask(id);
-        deleteTaskApi(id).catch((err) =>
-          console.warn("[Tasks] Lỗi xóa task trên backend:", err)
-        );
+        await removeTask(id);
       }
     });
   });

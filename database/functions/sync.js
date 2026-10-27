@@ -228,7 +228,7 @@ async function saveIUData(studentCode, dataIU) {
         // ────────────────────────────────────────────────────────────────
         // 4. Đồng bộ lịch thi
         // ────────────────────────────────────────────────────────────────
-        if (Array.isArray(dataIU.lich_thi) && dataIU.lich_thi.length > 0) {
+        if (Array.isArray(dataIU.lich_thi)) {
             // Xóa lịch thi cũ từ IU
             await executeQuery(
                 "DELETE FROM Exams WHERE student_id = @sid AND source = 'IU'",

@@ -5,16 +5,20 @@ import { state } from "../../app/state.js";
 import { formatDateVN } from "../../shared/utils/date.js";
 import { renderEmptyState } from "../../shared/components/empty-state.js";
 import { renderModal } from "../../shared/components/modal.js";
+import { APP_CONFIG } from "../../shared/config/app.config.js";
 
 export function renderExamsView() {
   const exams = state.exams;
+  const from = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+  const to = new Date(Date.parse(`${from}T00:00:00Z`) + APP_CONFIG.examLookaheadDays * 86400000).toISOString().slice(0, 10);
 
   return `
     <div class="exams-container">
       <div class="exams-header">
         <div>
-          <span class="eyebrow"><svg><use href="#i-exam"></use></svg> Học kỳ hiện tại</span>
+          <span class="eyebrow"><svg><use href="#i-exam"></use></svg> ${APP_CONFIG.examLookaheadDays} ngày tới</span>
           <h1 style="margin:4px 0 0;font-size:1.8rem;color:var(--ink-950);">Lịch thi & Kế hoạch ôn thi</h1>
+          <p class="muted" style="margin:6px 0 0;">Đồng bộ lịch thi từ ${formatDateVN(from)} đến ${formatDateVN(to)}.</p>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button type="button" class="button ghost" id="examSyncBtn">

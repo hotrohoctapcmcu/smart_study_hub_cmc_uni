@@ -1,8 +1,10 @@
 /**
  * UniStudy CMC - Study Planner Service
- * Quản lý logic đề xuất lịch học, tạo kế hoạch mô phỏng và CRUD kế hoạch học tập.
+ * Đề xuất lịch học bằng AI, xem trước, xác nhận và quản lý thẻ kế hoạch.
  */
-import { APP_CONFIG } from "../../shared/config/app.config.js";
+import { ENDPOINTS } from "../../shared/config/endpoints.js";
+import { requestAssistant, getLocalStudyData } from "../ai-tutor/ai-tutor.service.js";
+import { fetchStudySchedules } from "../schedule/schedule.service.js";
 import { state, addLocalStudyPlan, updateLocalStudyPlan, deleteLocalStudyPlan } from "../../app/state.js";
 
 export const FREE_SLOT_OPTIONS = {
@@ -59,45 +61,7 @@ export function validatePlannerInput(preferences = {}) {
 }
 
 /**
- * Sinh danh sách các buổi học mô phỏng theo thông tin người dùng nhập
- */
-export function generateMockSessions(subject, freeSlotKey, targetHours) {
-  const slotDef = FREE_SLOT_OPTIONS[freeSlotKey] || FREE_SLOT_OPTIONS.evening;
-  const hours = Number(targetHours) || 10;
-  
-  // Tính số buổi cần xếp (mỗi buổi 2-3h)
-  const sessionDuration = slotDef.id === "weekend" ? 3 : 2;
-  const sessionCount = Math.max(1, Math.min(slotDef.days.length, Math.round(hours / sessionDuration)));
-
-  const sessionTemplates = [
-    { topic: "Lý thuyết cốt lõi & sơ đồ tư duy", tag: "Lý thuyết" },
-    { topic: "Thực hành bài tập & giải đề trắc nghiệm", tag: "Thực hành" },
-    { topic: "Tổng hợp kiến thức & giải quyết thắc mắc", tag: "Ôn tập" },
-    { topic: "Luyện đề thi thử & kiểm tra lại phần sai", tag: "Luyện đề" },
-    { topic: "Thực hành chuyên sâu & chuẩn bị bài tập lớn", tag: "Nâng cao" }
-  ];
-
-  const sessions = [];
-  for (let i = 0; i < sessionCount; i++) {
-    const day = slotDef.days[i % slotDef.days.length];
-    const template = sessionTemplates[i % sessionTemplates.length];
-    sessions.push({
-      id: `sess-${i + 1}`,
-      day,
-      time: slotDef.defaultTime,
-      duration: `${sessionDuration} giờ`,
-      topic: `${subject}: ${template.topic}`,
-      tag: template.tag
-    });
-  }
-
-  return sessions;
-}
-
-/**
- * Gọi phân tích và đề xuất kế hoạch:
- * - Nếu backend AI được cấu hình: kết nối API backend thật.
- * - Nếu ở chế độ mock (chưa kết nối API): tạo kế hoạch mô phỏng, ghi rõ chưa kết nối AI.
+ * Lấy bản xem trước từ AI thật; chỉ lưu lịch sau khi người học xác nhận.
  */
 export async function generateAIStudySchedule(preferences = {}) {
   const validation = validatePlannerInput(preferences);
@@ -109,14 +73,29 @@ export async function generateAIStudySchedule(preferences = {}) {
       message: validation.errors[0]
     };
   }
-
-
-
   const subject = preferences.subject.trim();
   const freeSlotKey = preferences.freeSlot || "evening";
   const slotDef = FREE_SLOT_OPTIONS[freeSlotKey] || FREE_SLOT_OPTIONS.evening;
   const targetHours = Number(preferences.targetHours) || 10;
-  const sessions = generateMockSessions(subject, freeSlotKey, targetHours);
+  const windows = {
+    evening: ["19:00", "22:00"], morning: ["07:30", "11:30"],
+    afternoon: ["13:30", "17:30"], weekend: ["07:00", "22:00"]
+  };
+  const [freeStartTime, freeEndTime] = windows[freeSlotKey] || windows.evening;
+  const startDate = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+  const endDate = new Date(Date.parse(`${startDate}T00:00:00Z`) + 6 * 86400000).toISOString().slice(0, 10);
+  const response = await requestAssistant(ENDPOINTS.ai.plan, {
+    subject, startDate, endDate, freeStartTime, freeEndTime, targetHours,
+    durationMinutes: 120, ...(freeSlotKey === "weekend" ? { daysOfWeek: [7, 8] } : {}),
+    studyData: getLocalStudyData()
+  });
+  if (!response.success) return response;
+  const proposed = response.data?.sessions || [];
+  if (!proposed.length) return { success: false, message: response.data?.message || "Chưa có buổi học phù hợp. Hãy chọn khung giờ khác." };
+  const sessions = proposed.map(session => ({
+    ...session, day: session.date, time: `${session.start} – ${session.end}`,
+    duration: `${session.durationMinutes} phút`, topic: session.title, tag: "AI đề xuất"
+  }));
 
   const planData = {
     title: `Lộ trình ôn tập: ${subject}`,
@@ -130,12 +109,26 @@ export async function generateAIStudySchedule(preferences = {}) {
   };
 
   const savedPlan = addLocalStudyPlan(planData);
+  updateLocalStudyPlan(savedPlan.id, { isMock: false, preview: true, persisted: false });
 
   return {
     success: true,
-    data: savedPlan,
-    message: "Đã thiết lập kế hoạch học tập thành công."
+    data: getStudyPlanById(savedPlan.id),
+    message: "Đã tạo bản xem trước. Hãy xác nhận để lưu vào lịch tự học."
   };
+}
+
+export async function confirmStudyPlan(planId) {
+  const plan = getStudyPlanById(planId);
+  if (!plan || plan.isMock) return { success: false, message: "Hãy tạo lại kế hoạch bằng AI trước khi xác nhận." };
+  if (plan.persisted) return { success: true, data: plan };
+  const response = await requestAssistant(ENDPOINTS.ai.confirmPlan, {
+    confirmed: true, sessions: plan.sessions
+  });
+  if (!response.success) return response;
+  updateLocalStudyPlan(planId, { preview: false, persisted: true, statusLabel: "Đã lưu vào lịch tự học" });
+  try { await fetchStudySchedules(); } catch { /* Lịch đã lưu; tải lại ở trang Thời khóa biểu. */ }
+  return { success: true, data: getStudyPlanById(planId) };
 }
 
 /**

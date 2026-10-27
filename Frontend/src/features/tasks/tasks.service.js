@@ -206,10 +206,11 @@ export async function updateTaskApi(taskId, updates) {
   if (updates.priority !== undefined) updateBody.priority = updates.priority;
 
   if (Object.keys(updateBody).length > 0) {
-    await apiRequest(ENDPOINTS.tasks.update, {
+    const result = await apiRequest(ENDPOINTS.tasks.update, {
       params: { id: numericId },
       body: updateBody
     });
+    if (!result.success) throw new Error(result.error || "Không thể lưu công việc.");
   }
 
   if (updates.status !== undefined) {
@@ -220,10 +221,28 @@ export async function updateTaskApi(taskId, updates) {
         ? "IN_PROGRESS"
         : "PENDING";
 
-    await apiRequest(ENDPOINTS.tasks.updateStatus, {
+    const result = await apiRequest(ENDPOINTS.tasks.updateStatus, {
       params: { id: numericId },
       body: { status: backendStatus }
     });
+    if (!result.success) throw new Error(result.error || "Không thể lưu trạng thái công việc.");
+  }
+
+  for (const itemId of updates.removedChecklistIds || []) {
+    const result = await apiRequest(ENDPOINTS.tasks.deleteChecklistItem, { params: { itemId } });
+    if (!result.success) throw new Error(result.error || "Không thể xóa mục checklist.");
+  }
+  for (const item of updates.checklist || []) {
+    const result = await apiRequest(item.backendId ? ENDPOINTS.tasks.updateChecklistItem : ENDPOINTS.tasks.addChecklistItem, {
+      params: item.backendId ? { itemId: item.backendId } : { taskId: numericId },
+      body: { title: item.text, isCompleted: item.done }
+    });
+    if (!result.success) throw new Error(result.error || "Không thể lưu checklist.");
+    const checklistId = item.backendId || result.data?.data?.checklist_id;
+    if (checklistId) {
+      const toggled = await toggleChecklistItemApi(checklistId, Boolean(item.done));
+      if (!toggled.success) throw new Error(toggled.error || "Không thể lưu trạng thái checklist.");
+    }
   }
 
   await fetchTasksFromApi();

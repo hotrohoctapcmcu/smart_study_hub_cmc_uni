@@ -7,6 +7,7 @@ import { getActiveTab } from "../../app/workspace.js";
 import { formatDateISO, formatDateVN, getDaysOfWeek } from "../../shared/utils/date.js";
 import { findScheduleConflicts } from "./schedule.conflicts.js";
 import { renderModal } from "../../shared/components/modal.js";
+import { escapeHtml } from "../../shared/utils/validation.js";
 import { 
   HOUR_HEIGHT, 
   HOURS_24, 
@@ -1023,7 +1024,7 @@ export function renderAiScheduleModal(viewState = {}) {
   const todayStr = formatDateISO(new Date());
   const startDate = formData.startDate || todayStr;
   const endDate = formData.endDate || todayStr;
-  const subject = formData.subject || "";
+  const subject = escapeHtml(formData.subject || "");
   const freeStartHour = formData.freeStartHour || "19:00";
   const freeEndHour = formData.freeEndHour || "22:00";
   const durationHours = formData.durationHours || "2";
@@ -1152,10 +1153,10 @@ export function renderAiScheduleModal(viewState = {}) {
         <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;" role="status">
           <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#92400e;margin-bottom:6px;">
             <svg style="width:18px;height:18px;color:#d97706;"><use href="#i-spark"></use></svg>
-            <span>Hệ thống AI đang chờ kết nối API Backend</span>
+            <span>Chưa thể tạo hoặc lưu kế hoạch</span>
           </div>
           <p style="margin:0 0 10px;font-size:0.86rem;color:#78350f;line-height:1.45;">
-            Chức năng gợi ý xếp lịch AI đang chờ kết nối máy chủ API backend chính thức. Hiện tại chưa có endpoint AI được cấu hình. Để đảm bảo tính chính xác và an toàn dữ liệu, hệ thống không tạo đề xuất giả trong ứng dụng chính.
+            ${escapeHtml(message || "Vui lòng kiểm tra kết nối và thử lại.")}
           </p>
           <button type="button" class="button secondary small" id="retryAiScheduleBtn" style="background:white;border-color:#f59e0b;color:#b45309;">
             <svg style="width:14px;height:14px;"><use href="#i-sync"></use></svg>
@@ -1176,7 +1177,7 @@ export function renderAiScheduleModal(viewState = {}) {
                 (p, idx) => `
               <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:white;border:1px solid var(--ink-200);border-radius:8px;">
                 <div>
-                  <div style="font-weight:700;font-size:0.88rem;color:var(--ink-950);">${p.title || p.subject}</div>
+                  <div style="font-weight:700;font-size:0.88rem;color:var(--ink-950);">${escapeHtml(p.title || p.subject)}</div>
                   <div style="font-size:0.78rem;color:var(--ink-600);">Ngày ${formatDateVN(p.date)} · ${p.start} – ${p.end}</div>
                 </div>
                 <span class="status-pill violet" style="font-size:0.72rem;">Đề xuất #${idx + 1}</span>

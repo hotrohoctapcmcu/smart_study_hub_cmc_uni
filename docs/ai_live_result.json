@@ -1,0 +1,111 @@
+{
+  "testedAt": "2026-10-27T06:46:58.869Z",
+  "checks": [
+    {
+      "label": "ask-real-study-context",
+      "passed": true
+    },
+    {
+      "label": "progress-real-edux-and-grades",
+      "passed": true
+    },
+    {
+      "label": "plan-against-all-real-classes-and-exams",
+      "passed": true
+    },
+    {
+      "label": "confirm-persist-and-reload-on-snapshot",
+      "passed": true
+    },
+    {
+      "label": "repeat-confirm-is-rejected",
+      "passed": true
+    },
+    {
+      "label": "exam-plan-respects-actual-exam-dates",
+      "passed": true
+    },
+    {
+      "label": "difficult-notes-do-not-invent-missing-source",
+      "passed": true
+    },
+    {
+      "label": "summarize-real-edux-content",
+      "passed": true
+    },
+    {
+      "label": "check-answer-functional-input",
+      "passed": true
+    },
+    {
+      "label": "leave-draft-matches-untruncated-iu-timetable",
+      "passed": true
+    }
+  ],
+  "remoteGemini": "passed",
+  "profileFound": true,
+  "contextChars": 17679,
+  "sources": {
+    "profile": {
+      "available": true,
+      "total": null,
+      "included": null,
+      "truncated": false
+    },
+    "timetable": {
+      "available": true,
+      "total": 87,
+      "included": 40,
+      "truncated": true
+    },
+    "studySchedules": {
+      "available": true,
+      "total": 0,
+      "included": 0,
+      "truncated": false
+    },
+    "assignments": {
+      "available": true,
+      "total": 3,
+      "included": 3,
+      "truncated": false
+    },
+    "exams": {
+      "available": true,
+      "total": 2,
+      "included": 2,
+      "truncated": false
+    },
+    "grades": {
+      "available": true,
+      "total": 10,
+      "included": 10,
+      "truncated": false
+    },
+    "documents": {
+      "available": false,
+      "total": 0,
+      "included": 0,
+      "truncated": false
+    },
+    "notes": {
+      "available": false,
+      "total": 0,
+      "included": 0,
+      "truncated": false
+    }
+  },
+  "mode": "web-guest",
+  "recordCounts": {
+    "classes": 87,
+    "exams": 2,
+    "grades": 10,
+    "edux": 97,
+    "existingStudy": 0
+  },
+  "upcomingExams": 0,
+  "proposedSessions": 2,
+  "rejectedSessions": 0,
+  "confirmedSessionsOnSnapshot": 2,
+  "originalDatabaseUnchanged": true
+}

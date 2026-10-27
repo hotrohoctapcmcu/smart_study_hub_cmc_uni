@@ -3,9 +3,18 @@
  */
 import { getActiveTab, updateActiveTabLocalState } from "../../app/workspace.js";
 import { shiftDateByDays, shiftDateByMonths, formatDateISO } from "../../shared/utils/date.js";
+import { requestProgressAdvice } from "./progress.service.js";
+import { runAIAnalysis, progressAnalysisKey } from "../ai-tutor/ai-analysis.store.js";
 
 export function attachProgressEvents(containerEl, uiState, reRenderCallback) {
   const activeTab = getActiveTab();
+  const adviceButton = containerEl.querySelector("#progressAdviceBtn");
+  adviceButton?.addEventListener("click", async () => {
+    const period = uiState.period || "week";
+    const date = uiState.selectedDate || formatDateISO(new Date());
+    await runAIAnalysis(progressAnalysisKey(period, date), () => requestProgressAdvice(period, date, uiState.serverProgress?.metrics), data =>
+      [data.overview, ...data.comments, ...data.revisionSuggestions].join("\n\n"));
+  });
 
   // 1. Chuyển chu kỳ Ngày / Tuần / Tháng
   const periodBtns = containerEl.querySelectorAll("[data-period]");

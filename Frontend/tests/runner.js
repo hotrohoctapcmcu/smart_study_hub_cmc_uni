@@ -19,7 +19,11 @@ async function runAllTests() {
     await import("./browser-eval.test.js");
     const { runStudyPlannerTests } = await import("./study-planner.test.js");
     await runStudyPlannerTests();
+    const { runAISprint2Tests } = await import("./ai-sprint2.test.js");
+    await runAISprint2Tests();
     await import("./sprint2-features.test.js");
+    const { runBranchIntegrationTests } = await import("./branch-integration.test.js");
+    await runBranchIntegrationTests();
     console.log("====================================================");
     console.log("      TẤT CẢ CÁC BÀI KIỂM THỬ ĐÃ ĐẠT (ALL PASS)     ");
     console.log("====================================================");

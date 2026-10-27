@@ -288,6 +288,9 @@ async function getPool() {
         // Nâng cấp cấu trúc cũ (file .db tạo từ schema trước đây) lên schema hiện tại.
         migrateSchema(db);
 
+        // Cùng một kết nối và transaction migration, trước khi nhận request.
+        await require('../sprint2/sprint2Migration').ensureSprint2Migration(db);
+
         _db = db;
         // Tạo file .db ngay từ lần chạy đầu (không đợi tới lúc tắt app).
         persistNow();
@@ -354,6 +357,24 @@ function runSchema(db) {
  * @param {Database} db - sql.js database instance
  */
 function migrateSchema(db) {
+    // Dọn các bản ghi trùng lịch sử trước khi áp dụng unique index cho DB cũ.
+    try {
+        db.run(`
+            DELETE FROM Reminders
+            WHERE reminder_id NOT IN (
+                SELECT MIN(reminder_id)
+                FROM Reminders
+                GROUP BY student_id, target_type, target_id, tier
+            );
+        `);
+        db.run(`
+            CREATE UNIQUE INDEX IF NOT EXISTS UX_Reminders_Student_Target_Tier
+            ON Reminders (student_id, target_type, target_id, tier);
+        `);
+    } catch (err) {
+        console.error('[DB] Không thể thiết lập chống trùng nhắc nhở:', err.message);
+    }
+
     // Các cột bổ sung sau này — thêm bằng ALTER TABLE vì CREATE TABLE IF NOT EXISTS
     // không đụng tới bảng đã tồn tại. Chạy TRƯỚC khối Students bên dưới: khối đó
     // return sớm khi bảng Students đã đúng schema, nếu đặt sau sẽ không bao giờ chạy.
@@ -369,6 +390,7 @@ function migrateSchema(db) {
     themCotNeuThieu(db, 'EduxAssignments', 'highest_score', 'INTEGER');
     themCotNeuThieu(db, 'EduxAssignments', 'doc_done', 'INTEGER NOT NULL DEFAULT 0');
     themCotNeuThieu(db, 'EduxAssignments', 'doc_total', 'INTEGER NOT NULL DEFAULT 0');
+    themCotNeuThieu(db, 'EduxAssignments', 'is_hidden', 'INTEGER NOT NULL DEFAULT 0');
 
     try {
         const cols = queryAll(db, 'PRAGMA table_info("Students");').map(c => c.name);
@@ -469,6 +491,7 @@ function migrateEduxAssignments(db) {
                 highest_score  INTEGER,
                 doc_done       INTEGER NOT NULL DEFAULT 0,
                 doc_total      INTEGER NOT NULL DEFAULT 0,
+                is_hidden      INTEGER NOT NULL DEFAULT 0,
                 synced_at      TEXT    NOT NULL DEFAULT (datetime('now')),
                 created_at     TEXT    NOT NULL DEFAULT (datetime('now')),
                 updated_at     TEXT    NOT NULL DEFAULT (datetime('now')),
@@ -478,7 +501,7 @@ function migrateEduxAssignments(db) {
             db.run(`INSERT INTO EduxAssignments_new
                         (edux_id, user_id, external_id, title, subject_name,
                          subject_ext_id, model_id, chapter, description, status,
-                         priority, highest_score, doc_done, doc_total, synced_at,
+                         priority, highest_score, doc_done, doc_total, is_hidden, synced_at,
                          created_at, updated_at)
                     SELECT ${pick('edux_id', 'NULL')},
                            ${userId},
@@ -494,6 +517,7 @@ function migrateEduxAssignments(db) {
                            ${pick('highest_score', 'NULL')},
                            ${pick('doc_done', '0')},
                            ${pick('doc_total', '0')},
+                           ${pick('is_hidden', '0')},
                            ${pick('synced_at', "datetime('now')")},
                            ${pick('created_at', "datetime('now')")},
                            ${pick('updated_at', "datetime('now')")}

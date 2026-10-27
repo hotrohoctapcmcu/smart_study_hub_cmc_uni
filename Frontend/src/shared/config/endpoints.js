@@ -3,6 +3,8 @@
  * Khai báo tập trung method và path theo API Backend Sprint 1.
  */
 export const ENDPOINTS = {
+  progress: { get: { method: "GET", path: "/api/v1/progress" } },
+  timemap: { get: { method: "GET", path: "/api/v1/timemap" } },
   // Lịch học & thời khóa biểu
   schedules: {
     list: { method: "GET", path: "/api/v1/schedules" },
@@ -85,7 +87,15 @@ export const ENDPOINTS = {
   // Trợ lý AI
   ai: {
     status: { method: "GET", path: "/api/v1/ai/status" },
-    ask: { method: "POST", path: "/api/v1/ai/ask" }
+    ask: { method: "POST", path: "/api/v1/ai/ask" },
+    plan: { method: "POST", path: "/api/v1/ai/plan" },
+    confirmPlan: { method: "POST", path: "/api/v1/ai/plan/confirm" },
+    examPlan: { method: "POST", path: "/api/v1/ai/exam-plan" },
+    check: { method: "POST", path: "/api/v1/ai/check" },
+    summarize: { method: "POST", path: "/api/v1/ai/summarize" },
+    draftLeave: { method: "POST", path: "/api/v1/ai/draft-leave" },
+    progressAdvice: { method: "POST", path: "/api/v1/ai/progress-advice" },
+    difficultNotes: { method: "POST", path: "/api/v1/ai/difficult-notes" }
   },
   // Dashboard
   dashboard: {

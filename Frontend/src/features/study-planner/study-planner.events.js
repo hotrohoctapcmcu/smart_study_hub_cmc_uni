@@ -5,6 +5,7 @@
 import { changeCurrentTabRoute } from "../../app/workspace.js";
 import {
   generateAIStudySchedule,
+  confirmStudyPlan,
   getStudyPlans,
   getStudyPlanById,
   updateStudyPlan,
@@ -102,6 +103,19 @@ function refreshPlansList(containerEl) {
  * Gắn sự kiện cho các nút trong danh sách kế hoạch: xem, sửa, xóa, chuyển sang lịch tự học
  */
 function attachDynamicPlanEvents(containerEl) {
+  containerEl.querySelectorAll("[data-confirm-plan-id]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      try {
+        const result = await confirmStudyPlan(btn.getAttribute("data-confirm-plan-id"));
+        if (!result.success) {
+          const alertBox = containerEl.querySelector("#plannerAlertBox");
+          if (alertBox) { alertBox.textContent = result.message; alertBox.style.display = "block"; }
+        }
+        refreshPlansList(containerEl);
+      } finally { btn.disabled = false; }
+    });
+  });
   // Nút Chuyển sang Xếp lịch tự học thủ công
   const manualScheduleBtns = containerEl.querySelectorAll("#gotoManualScheduleBtn");
   manualScheduleBtns.forEach((btn) => {

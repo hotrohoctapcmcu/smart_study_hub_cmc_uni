@@ -122,8 +122,8 @@ router.post('/iu/pull', xuLy(async req => {
     const saved = iuKho.getSession(NGUOI_DUNG_ID);
     if (!saved) throw loi('Chưa có phiên IU.', 401);
 
-    const { ngayBatDau, ngayKetThuc, luuDb = true } = req.body || {};
-    const { data, thatBai } = await keoDuLieuIU(saved.session, saved.cookie, { ngayBatDau, ngayKetThuc });
+    const { ngayBatDau, ngayKetThuc, soNgayLichThi, luuDb = true } = req.body || {};
+    const { data, thatBai } = await keoDuLieuIU(saved.session, saved.cookie, { ngayBatDau, ngayKetThuc, soNgayLichThi });
 
     iuKho.saveSession(NGUOI_DUNG_ID, {
         session: saved.session,
@@ -147,7 +147,7 @@ router.post('/iu/pull', xuLy(async req => {
         message += ` Một số nhóm lỗi: ${thatBai.join('; ')}`;
     }
 
-    return { message, thatBai, savedDb };
+    return { message, thatBai, savedDb, examRange: data.IU?.lich_thi?.range || null };
 }));
 
 router.post('/iu/group', xuLy(async req => {

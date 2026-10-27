@@ -16,6 +16,8 @@ import {
 } from "./documents.service.js";
 import { renderDocumentsView, renderUploadDocumentModal } from "./documents.view.js";
 import { attachModalEvents } from "../../shared/components/modal.js";
+import { analyzeDifficultNotes } from "../ai-tutor/ai-tutor.service.js";
+import { runAIAnalysis } from "../ai-tutor/ai-analysis.store.js";
 
 let debounceTimer = null;
 
@@ -192,6 +194,7 @@ export function attachDocumentsEvents(containerEl, uiState, onStateChange) {
     const tagsInput = containerEl.querySelector("#noteTagsInput");
     const contentTextarea = containerEl.querySelector("#noteContentTextarea");
     const saveStatusText = containerEl.querySelector("#saveStatusText");
+    const difficultInput = containerEl.querySelector("#noteDifficultInput");
 
     const getActiveId = () => {
       return uiState.activeNoteId || (getNotes()[0] && getNotes()[0].id);
@@ -216,7 +219,7 @@ export function attachDocumentsEvents(containerEl, uiState, onStateChange) {
           .filter(Boolean);
         const content = contentTextarea?.value || "";
 
-        updateNote(activeId, { title, subject, tags, content });
+        updateNote(activeId, { title, subject, tags, content, isDifficult: Boolean(difficultInput?.checked) });
 
         const now = new Date();
         const hh = String(now.getHours()).padStart(2, "0");
@@ -241,6 +244,23 @@ export function attachDocumentsEvents(containerEl, uiState, onStateChange) {
     if (subjectInput) subjectInput.addEventListener("input", triggerAutoSave);
     if (tagsInput) tagsInput.addEventListener("input", triggerAutoSave);
     if (contentTextarea) contentTextarea.addEventListener("input", triggerAutoSave);
+    if (difficultInput) difficultInput.addEventListener("change", triggerAutoSave);
+
+    const analyzeButton = containerEl.querySelector("#analyzeDifficultNotesBtn");
+    analyzeButton?.addEventListener("click", async () => {
+      const activeId = getActiveId();
+      if (activeId) {
+        clearTimeout(debounceTimer);
+        updateNote(activeId, {
+          title: titleInput?.value || "Trang không tên", subject: subjectInput?.value || "",
+          tags: (tagsInput?.value || "").split(",").map(tag => tag.trim()).filter(Boolean),
+          content: contentTextarea?.value || "", isDifficult: Boolean(difficultInput?.checked)
+        });
+      }
+      await runAIAnalysis("difficult-notes", analyzeDifficultNotes, data => data.difficultNotesCount
+        ? [...data.topics.map(item => `${item.topic}: ${item.reason || ""}`), ...data.suggestions].join("\n\n") || "Chưa đủ nội dung để đề xuất chủ đề ôn tập."
+        : "Chưa có ghi chú được đánh dấu khó hiểu.");
+    });
 
     // 5. Nút Lưu thủ công
     const manualSaveBtn = containerEl.querySelector("#saveNoteManualBtn");
@@ -259,7 +279,7 @@ export function attachDocumentsEvents(containerEl, uiState, onStateChange) {
           .filter(Boolean);
         const content = contentTextarea?.value || "";
 
-        updateNote(activeId, { title, subject, tags, content });
+        updateNote(activeId, { title, subject, tags, content, isDifficult: Boolean(difficultInput?.checked) });
 
         const now = new Date();
         const hh = String(now.getHours()).padStart(2, "0");

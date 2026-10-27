@@ -18,6 +18,7 @@ function loadIU() {
     // eslint-disable-next-line global-require
     return require('../../CRWEB/IU');
 }
+const { vietnamToday, getExamWindow } = require('../../CRWEB/IU/exam-calendar');
 
 function s(v) {
     return v == null ? '' : String(v);
@@ -159,7 +160,7 @@ function mapSangDataIU(schema) {
         ngay_thang_nam_sinh: toDMY(cn.ngay_sinh),
         bang_diem,
         tkb,
-        lich_thi
+        ...(!Array.isArray(iu.lich_thi?.chi_tiet_lich_thi) || iu.lich_thi.fetched === false ? {} : { lich_thi })
     };
 }
 
@@ -168,9 +169,9 @@ function mapSangDataIU(schema) {
  * tới 31/08 năm sau (bao quát năm học hiện tại).
  */
 function khoangNgayMacDinh() {
-    const now = new Date();
+    const [year, month] = vietnamToday().split('-').map(Number);
     // Nếu đang ở tháng 1-7 thì năm học bắt đầu từ năm trước.
-    const namBatDau = now.getMonth() + 1 >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+    const namBatDau = month >= 8 ? year : year - 1;
     return {
         ngayBatDau: `01/09/${namBatDau}`,
         ngayKetThuc: `31/08/${namBatDau + 1}`
@@ -187,6 +188,7 @@ function khoangNgayMacDinh() {
 async function keoDuLieuIU(session, cookie, opts = {}) {
     if (!session) throw Object.assign(new Error('session là bắt buộc.'), { statusCode: 400 });
     if (!cookie) throw Object.assign(new Error('cookie là bắt buộc.'), { statusCode: 400 });
+    getExamWindow(opts.soNgayLichThi);
     const iu = loadIU();
     // TKB chỉ lấy được khi có khoảng ngày — thiếu thì dùng năm học hiện tại,
     // tránh trường hợp đồng bộ xong báo 0 tiết TKB.

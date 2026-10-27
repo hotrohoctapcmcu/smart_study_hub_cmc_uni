@@ -15,7 +15,9 @@ import {
 } from "./schedule.view.js";
 import { attachModalEvents } from "../../shared/components/modal.js";
 import { areEventsConflicting, findScheduleConflicts } from "./schedule.conflicts.js";
-import { createSelfStudy, updateSelfStudy, deleteSelfStudy } from "./schedule.service.js";
+import { createSelfStudy, updateSelfStudy, deleteSelfStudy, fetchStudySchedules } from "./schedule.service.js";
+import { ENDPOINTS } from "../../shared/config/endpoints.js";
+import { requestAssistant, getLocalStudyData } from "../ai-tutor/ai-tutor.service.js";
 
 // Lưu vị trí cuộn để không tự cuộn lại sau mỗi lần render (mặc định ~07:00)
 let savedScrollTop = 420;
@@ -536,13 +538,11 @@ export function attachScheduleEvents(containerEl) {
             };
             renderCurrentAiModal();
 
-            // Kiểm tra kết nối API AI thật (chưa có endpoint backend được xác nhận)
-            await new Promise((resolve) => setTimeout(resolve, 600));
-
-            // Thông báo đang chờ API kết nối, KHÔNG tạo đề xuất giả trong app chính
-            currentViewState = {
-              ...currentViewState,
-              status: "waiting-api"
+            const result = await requestAssistant(ENDPOINTS.ai.plan, { ...formData, studyData: getLocalStudyData() });
+            const proposals = result.data?.sessions || [];
+            currentViewState = { ...currentViewState, proposals,
+              status: result.success && proposals.length ? "preview" : "waiting-api",
+              message: result.message || result.data?.message || "Chưa có buổi học phù hợp. Hãy chọn khoảng thời gian khác."
             };
             renderCurrentAiModal();
           });
@@ -563,38 +563,15 @@ export function attachScheduleEvents(containerEl) {
         // Áp dụng đề xuất xem trước nếu có
         const applyBtn = modalEl.querySelector("#applyAiProposalsBtn");
         if (applyBtn && currentViewState.proposals.length > 0) {
-          applyBtn.addEventListener("click", () => {
-            // Kiểm tra xung đột trước khi áp dụng
-            let hasConflict = false;
-            const sessionsToApply = [];
-
-            for (const prop of currentViewState.proposals) {
-              const sessionCandidate = {
-                id: prop.id || `study-ai-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-                date: prop.date,
-                start: prop.start,
-                end: prop.end,
-                title: prop.title || prop.subject,
-                subject: prop.subject || prop.title,
-                source: "Tự thêm",
-                note: prop.note || "Đề xuất bởi trợ lý AI UniStudy"
-              };
-
-              // Kiểm tra xem đã có sự kiện tương đương chưa (chống trùng bản ghi)
-              const alreadyExists = state.studyEvents.some(
-                (s) => s.date === sessionCandidate.date && s.start === sessionCandidate.start && s.end === sessionCandidate.end && s.title === sessionCandidate.title
-              );
-
-              if (!alreadyExists) {
-                sessionsToApply.push(sessionCandidate);
-              }
+          applyBtn.addEventListener("click", async () => {
+            applyBtn.disabled = true;
+            const result = await requestAssistant(ENDPOINTS.ai.confirmPlan, { confirmed: true, sessions: currentViewState.proposals });
+            if (!result.success) {
+              currentViewState = { ...currentViewState, status: "waiting-api", proposals: [], message: result.message };
+              renderCurrentAiModal();
+              return;
             }
-
-            // Lưu các buổi học
-            sessionsToApply.forEach((sess) => {
-              createSelfStudy(sess);
-            });
-
+            try { await fetchStudySchedules(); } catch { /* Đã lưu; tải lại lịch khi mở trang. */ }
             close();
             notifyStateChange();
           });

@@ -5,6 +5,7 @@
 import { getProgressAnalytics } from "./progress.service.js";
 import { formatDateISO } from "../../shared/utils/date.js";
 import { escapeHtml } from "../../shared/utils/validation.js";
+import { getAIAnalysis, progressAnalysisKey } from "../ai-tutor/ai-analysis.store.js";
 
 /**
  * Render Biểu đồ Ngày dưới dạng trục toạ độ tung - hoành chuyên nghiệp
@@ -115,9 +116,37 @@ function renderDayCoordinateChart(data) {
   `;
 }
 
+function renderServerReport(uiState) {
+  const metrics = uiState.serverProgress?.metrics;
+  const week = metrics?.weeklyStudyHours;
+  const map = uiState.serverTimeMap;
+  const labels = { class: "Lịch học", exam: "Thi", "self-study": "Tự học", pomodoro: "Pomodoro", "free-time": "Thời gian trống" };
+  return `
+    <section class="progress-card" aria-label="Tiến độ đã lưu">
+      <h2>Tiến độ đã lưu</h2>
+      ${uiState.serverLoading ? '<p role="status">Đang tải tiến độ và bản đồ thời gian...</p>' : ''}
+      ${(uiState.serverErrors || []).map(error => `<p role="status" class="muted">${escapeHtml(error)}</p>`).join('')}
+      ${metrics ? `
+        <p>Tuần hiện tại: ${escapeHtml(week.weekStart)} đến trước ${escapeHtml(week.weekEnd)}</p>
+        <p><strong>${week.totalHours} giờ học</strong> · Tự học: ${week.selfStudyHours} giờ · Pomodoro: ${week.pomodoroHours} giờ · ${metrics.overdueCount} bài quá hạn</p>
+        ${metrics.nextExam ? `<p>Kỳ thi gần nhất: ${escapeHtml(metrics.nextExam.examName)} · còn ${metrics.nextExam.daysRemaining} ngày</p>` : '<p>Chưa có kỳ thi sắp tới.</p>'}
+        <div class="subject-progress-grid">
+          ${(metrics.subjects || []).map(subject => `<div class="subject-progress-item"><strong>${escapeHtml(subject.subjectName)}</strong><p>${subject.completedAssignments}/${subject.totalAssignments} bài hoàn thành · ${subject.completionRate}%</p></div>`).join('')}
+        </div>
+        ${(metrics.gpaBySemester || []).map(item => `<p>GPA kỳ ${escapeHtml(item.semester)} (${escapeHtml(item.academicYear || '')}): ${item.gpa10}/10 · ${item.gpa4}/4</p>`).join('')}
+        ${(week.warnings || []).map(warning => `<p class="muted">${escapeHtml(warning)}</p>`).join('')}
+      ` : ''}
+      ${map ? `<h3>Bản đồ thời gian theo khoảng đã chọn</h3>
+        ${Object.entries(map.data).map(([date, blocks]) => `<details><summary>${escapeHtml(date)} · ${blocks.length} khoảng</summary><ul>${blocks.map(block => `<li>${escapeHtml(block.startTime.slice(11, 16))}–${escapeHtml(block.endTime.slice(11, 16))} · ${escapeHtml(labels[block.type] || block.type)}: ${escapeHtml(block.title || '')}</li>`).join('')}</ul></details>`).join('')}
+        ${(map.meta?.warnings || []).map(warning => `<p class="muted">${escapeHtml(warning)}</p>`).join('')}
+      ` : ''}
+    </section>`;
+}
+
 export function renderProgressView(uiState = {}) {
   const currentPeriod = (uiState.period === "day" || uiState.period === "month") ? uiState.period : "week";
   const selectedDateStr = uiState.selectedDate || formatDateISO(new Date());
+  const analysis = getAIAnalysis(progressAnalysisKey(currentPeriod, selectedDateStr));
 
   const data = getProgressAnalytics(currentPeriod, selectedDateStr);
 
@@ -127,6 +156,12 @@ export function renderProgressView(uiState = {}) {
 
   return `
     <div class="progress-page-container">
+      ${renderServerReport(uiState)}
+      <p class="muted small">Biểu đồ bên dưới tổng hợp lịch sử Pomodoro trên thiết bị và công việc trong phiên hiện tại.</p>
+      <div class="progress-card">
+        <button type="button" class="button secondary" id="progressAdviceBtn" ${analysis.pending ? "disabled" : ""}>AI nhận xét & gợi ý ôn tập</button>
+        <div id="progressAdviceResult" role="status" style="white-space:pre-wrap;margin-top:12px;">${escapeHtml(analysis.pending ? "Đang phân tích tiến độ..." : analysis.error || analysis.text)}</div>
+      </div>
       <!-- Header -->
       <div class="progress-header">
         <div>

@@ -1,0 +1,90 @@
+﻿ĐỐI SOÁT TÍCH HỢP AI - GỬI VĂN TUẤN
+Ngày đối soát: 2026-10-24
+Phạm vi: API/modules/troLyAI.js, API/shared/, API/modules/progress.service.js,
+API/modules/progress.controller.js
+
+1. HIỆN TRẠNG MODULE AI DÙNG CHUNG
+
+Không tìm thấy API/shared/study-context.js trong source hiện tại. Các file
+API/shared đang có gồm gemini-client.js, nguoiDung.js, errorHandler.js và các
+module session/client khác. API/modules/troLyAI.js không import buildStudyContext
+hay hàm nào từ study-context.js.
+
+Vì vậy hiện chưa có hàm buildStudyContext(studentId) được gọi bởi Controller
+hoặc Route, và chưa có hợp đồng dữ liệu giữa API của Long Nhật với module
+study-context của Tuấn. Cần Tuấn gửi tên file, export, tham số và cấu trúc
+context nếu muốn kết nối.
+
+2. CÁC ENDPOINT AI HIỆN CÓ
+
+- GET /api/v1/ai/status
+  Gọi gemini.getStatus(), trả data trạng thái Gemini.
+- POST /api/v1/ai/ask
+  Body: {"question":"...", "conversationId":"..."}.
+  Gọi gemini.ask(question, { conversationId }).
+  Thành công: {"success":true,"data":{"answer":"...","conversationId":"..."}}.
+
+Chưa thấy route cho:
+- POST /api/v1/ai/plan
+- POST /api/v1/ai/exam-plan
+- POST /api/v1/ai/check
+- POST /api/v1/ai/summarize
+- POST /api/v1/ai/draft-leave
+
+Nếu các path cần dùng không có tiền tố /ai (ví dụ /plan), cũng chưa thấy route
+tương ứng trong API/modules/index.js.
+
+3. CÁC LỜI GỌI AI TỪ SERVICE HIỆN TẠI
+
+troLyAI.js:
+- gemini.getStatus(): không tham số; trả thông tin provider/ready/guest/model.
+- gemini.ask(question, { conversationId }): nhận câu hỏi và ID hội thoại tùy chọn;
+  kết quả mong đợi là chuỗi câu trả lời.
+
+progress.service.js:
+- gemini.ask(prompt, { timeoutMs: 10000, retry: false, signal }): prompt gồm
+  JSON metrics tiến độ; kết quả mong đợi là chuỗi nhận xét tiến độ.
+- progress.controller.js tạo metrics từ các hàm service rồi gọi
+  generateProgressAdvice(metrics), trả {success:true,data:{metrics,advice}}.
+
+Không có hàm nào trong các route trên gọi buildStudyContext(studentId).
+
+4. VALIDATE, TIMEOUT VÀ JSON LỖI
+
+POST /api/v1/ai/ask:
+- question phải là chuỗi không rỗng, tối đa 4000 ký tự.
+- conversationId tùy chọn; nếu là chuỗi thì trim và giới hạn 64 ký tự.
+- question không hợp lệ thì route ném lỗi 400 qua global error handler.
+
+Gemini client:
+- Timeout mặc định 45000 ms, cấu hình bằng GEMINI_TIMEOUT_MS.
+- Đọc các dòng phản hồi JSON stream; bỏ qua dòng không parse được.
+- Không parse được nội dung hợp lệ thì ném GeminiError mã GEMINI_PARSE.
+- Lỗi mạng, HTTP và parse thành error; client không tự tạo nội dung AI giả.
+- Cookie Gemini không hợp lệ có thể khiến client chuyển sang guest mode và tiếp
+  tục gọi Gemini. Đây là gọi dịch vụ thật, không phải mock.
+
+Progress:
+- Timeout 10 giây, dùng AbortController/Promise.race.
+- Bắt lỗi AI và trả lời khuyên dự phòng cố định bằng tiếng Việt.
+- Câu này là fallback, không phải kết quả Gemini; không nên mô tả là đã loại bỏ
+  hoàn toàn mọi nội dung mặc định. Metrics vẫn được truy vấn từ database.
+
+5. GIỚI HẠN BẰNG CHỨNG KIỂM THỬ
+
+tests/API/test-learning-apis.js thay gemini.ask bằng hàm trả chuỗi cố định để
+test độc lập mạng. Ca test Progress xác nhận response khi mock trả lời, nhưng
+không xác nhận cookie, timeout, JSON thực tế hoặc endpoint Gemini thật.
+
+6. THÔNG TIN CẦN TỪ VĂN TUẤN ĐỂ KHỚP NỐI
+
+1. Tên file module và cách export (CommonJS/ESM).
+2. Tên hàm chính xác, ví dụ buildStudyContext, và tham số đầu vào.
+3. Cấu trúc object context, trường bắt buộc và trường có thể null.
+4. Module chỉ tạo context hay tự gọi AI và trả lời luôn.
+5. Chuẩn lỗi/timeout và cách route/controller được phép xử lý fallback.
+6. Các API plan, exam-plan, check, summarize, draft-leave đã có chưa và
+   request/response contract dự kiến.
+
+Báo cáo mô tả source code hiện có; không khẳng định các API chưa thấy là không
+tồn tại ở nhánh khác.

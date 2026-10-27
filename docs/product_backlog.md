@@ -362,7 +362,7 @@ Phụ thuộc: PB-31.
 PB-33 | Epic: Tiến độ | Sprint 3 | Should | 5 | Backlog
 User Story: Là sinh viên, tôi muốn xem tiến độ học tập tổng hợp để biết mình
 đang ở đâu.
-Hiện trạng: route 'progress' isImplemented: false.
+Hiện trạng: API backend `GET /api/v1/progress` đã có; route giao diện `progress` vẫn chưa được đánh dấu triển khai. Lịch sử Pomodoro hiện lưu cục bộ nên chưa được tính vào số giờ từ API.
 Acceptance Criteria:
   - Hiển thị tiến độ công việc, điểm số, thời gian học từ dữ liệu thật.
 Phụ thuộc: PB-24, PB-31.

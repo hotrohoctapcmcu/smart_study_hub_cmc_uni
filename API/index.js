@@ -112,6 +112,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
-// Export start để index.js gốc gọi tường minh khi require (lúc đó
-// require.main không phải file này nên khối auto-start bên trên không chạy).
 module.exports.start = start;

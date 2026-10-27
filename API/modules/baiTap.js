@@ -1,143 +1,153 @@
+
 const express = require('express');
 const { NGUOI_DUNG_ID } = require('../shared/nguoiDung');
 const eduxKho = require('../shared/edux-session');
 const { keoBaiTapEDUX, laHetPhien } = require('../shared/edux-client');
 
 const router = express.Router();
+const trangThaiHopLe = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'OVERDUE'];
+const trangThaiEDUX = ['Chưa làm', 'Đang làm', 'Hoàn thành'];
 let db;
 
-const loi = (message, statusCode = 400) => Object.assign(new Error(message), { statusCode });
-
-const trangThaiHopLe = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'OVERDUE'];
+const loi = (message, statusCode = 400) =>
+    Object.assign(new Error(message), { statusCode });
 
 const kiemTra = (dieuKien, message) => {
     if (!dieuKien) throw loi(message);
 };
 
-const xuLy = (callback, status = 200, message = '') => async (req, res, next) => {
+const xuLy = (callback, status = 200, message) => async (req, res, next) => {
     try {
         const data = await callback(req);
-        res.status(status).json({ success: true, ...(message && { message }), ...(data !== undefined && { data }) });
+        res.status(status).json({
+            success: true,
+            ...(message && { message }),
+            ...(data !== undefined && { data })
+        });
     } catch (err) {
         next(err);
     }
 };
 
+const layPhienEDUX = () => {
+    const saved = eduxKho.getSession(NGUOI_DUNG_ID);
+    if (!saved) throw loi('Chưa có phiên EDUX. Hãy đăng nhập EDUX trước.', 401);
+    return saved;
+};
 
-router.get('/', xuLy(req => db.layDanhSachDeadline(NGUOI_DUNG_ID, req.query.status || null)));
+router.get('/', xuLy(req =>
+    db.layDanhSachDeadline(NGUOI_DUNG_ID, req.query.status || null)
+));
 
-router.get('/upcoming', xuLy(req => db.layDeadlineSapToi(NGUOI_DUNG_ID, parseInt(req.query.days || 3, 10))));
+router.get('/upcoming', xuLy(req =>
+    db.layDeadlineSapToi(NGUOI_DUNG_ID, parseInt(req.query.days || '3', 10))
+));
 
-/**
- * Bài tập AI lấy từ EDUX, đã chuẩn hoá về đúng shape task frontend dùng.
- *
- * Nguồn dữ liệu là SQLite (bảng EduxAssignments), KHÔNG phải RAM: nhờ vậy mở
- * lại app vẫn thấy bài tập dù phiên EDUX đã mất. Chỉ khi cần `refresh=1` mới
- * gọi lại cổng EDUX (và ghi đè DB).
- *
- * - Chưa đồng bộ lần nào + không có phiên EDUX -> 401 để FE mời đăng nhập.
- * - `refresh=1` -> gọi lại EDUX rồi lưu DB.
- * - `subjectId` -> chỉ lấy bài tập của một học phần.
- * - `questions=1` -> kèm câu hỏi chi tiết (tạo phiên làm bài mới trên EDUX).
- */
 router.get('/edux', xuLy(async req => {
-    const subjectId = req.query.subjectId || undefined;
-    const questions = req.query.questions === '1' || req.query.questions === 'true';
-    const muonKeoLai = req.query.refresh === '1' || req.query.refresh === 'true';
+    const { subjectId, questions, refresh } = req.query;
+    const canCauHoi = ['1', 'true'].includes(questions);
+    const lamMoi = ['1', 'true'].includes(refresh);
+    const options = { subjectId: subjectId || undefined, questions: canCauHoi };
     const saved = eduxKho.getSession(NGUOI_DUNG_ID);
 
-    // Đường đọc thường: lấy từ DB (không cần phiên EDUX còn sống).
-    if (!muonKeoLai && !questions) {
-        const trongDb = await db.layBaiTapEDUX(NGUOI_DUNG_ID, { subjectId });
+    if (!lamMoi && !canCauHoi) {
+        const cachedAssignments = await db.layBaiTapEDUX(NGUOI_DUNG_ID, {
+            subjectId: options.subjectId,
+            includeHidden: true
+        });
+        const assignments = cachedAssignments.filter(item => !item.isHidden);
 
-        if (trongDb.length > 0) {
-            return { source: 'EDUX', cached: true, assignments: trongDb, total: trongDb.length };
+        if (cachedAssignments.length) {
+            return {
+                source: 'EDUX',
+                cached: true,
+                assignments,
+                total: assignments.length
+            };
         }
 
-        // DB trống: chỉ báo 401 khi cũng không có phiên để kéo dữ liệu.
-        if (!saved) throw loi('Chưa có phiên EDUX. Hãy đăng nhập EDUX trước.', 401);
+        if (saved && Array.isArray(saved.data)) {
+            const subjectIds = saved.subjectIds || [];
 
-        if (Array.isArray(saved.data)) {
-            const subjectIds = Array.isArray(saved.subjectIds) ? saved.subjectIds : [];
-            if (subjectId && subjectIds.length && !subjectIds.includes(String(subjectId))) {
+            if (subjectId && subjectIds.length &&
+                !subjectIds.includes(String(subjectId))) {
                 throw loi(`Không tìm thấy học phần ${subjectId} trên EDUX.`, 404);
             }
-            const assignments = subjectId
-                ? saved.data.filter(item => String(item.subjectId) === String(subjectId))
-                : saved.data;
 
-            // Phiên RAM có dữ liệu nhưng DB trống (vd vừa nâng cấp) -> ghi bù.
             await db.luuBaiTapEDUX(NGUOI_DUNG_ID, saved.data);
+            const daLuu = await db.layBaiTapEDUX(NGUOI_DUNG_ID, { subjectId });
 
-            return { source: 'EDUX', cached: true, assignments, total: assignments.length };
+            return {
+                source: 'EDUX',
+                cached: true,
+                assignments: daLuu,
+                total: daLuu.length
+            };
         }
     }
 
-    if (!saved) throw loi('Chưa có phiên EDUX. Hãy đăng nhập EDUX trước.', 401);
+    const session = layPhienEDUX();
+    let result;
 
-    let ketQua;
     try {
-        ketQua = await keoBaiTapEDUX(saved.cookie, { subjectId, questions });
+        result = await keoBaiTapEDUX(session.cookie, options);
     } catch (err) {
-        if (laHetPhien(err)) {
-            eduxKho.clearSession(NGUOI_DUNG_ID);
-            throw loi('Phiên EDUX đã hết hạn. Hãy đăng nhập EDUX lại.', 401);
-        }
-        throw err;
+        if (!laHetPhien(err)) throw err;
+
+        eduxKho.clearSession(NGUOI_DUNG_ID);
+        throw loi('Phiên EDUX đã hết hạn. Hãy đăng nhập EDUX lại.', 401);
     }
 
     eduxKho.saveSession(NGUOI_DUNG_ID, {
-        cookie: saved.cookie,
-        email: saved.email,
-        data: ketQua.assignments,
-        subjectIds: ketQua.subjectIds
+        cookie: session.cookie,
+        email: session.email,
+        data: result.assignments,
+        subjectIds: result.subjectIds
     });
 
-    // Lưu xuống DB để lần sau đọc được mà không cần gọi lại EDUX.
-    await db.luuBaiTapEDUX(NGUOI_DUNG_ID, ketQua.assignments);
+    await db.luuBaiTapEDUX(NGUOI_DUNG_ID, result.assignments);
+    const assignments = await db.layBaiTapEDUX(NGUOI_DUNG_ID, { subjectId });
 
     return {
         source: 'EDUX',
         cached: false,
-        assignments: ketQua.assignments,
-        total: ketQua.assignments.length,
-        thatBai: ketQua.thatBai
+        assignments,
+        total: assignments.length,
+        thatBai: result.thatBai
     };
 }));
 
-/** Một bài tập EDUX theo id ổn định (`edux-<subjectId>-<modelId>`). */
 router.get('/edux/:id', xuLy(async req => {
-    const trongDb = await db.layBaiTapEDUX(NGUOI_DUNG_ID);
-    const assignment = trongDb.find(item => item.id === req.params.id);
-    if (assignment) return { source: 'EDUX', assignment };
+    const assignments = await db.layBaiTapEDUX(NGUOI_DUNG_ID);
+    let assignment = assignments.find(item => item.id === req.params.id);
 
-    // Chưa có trong DB nhưng phiên RAM còn dữ liệu -> tìm trong RAM.
-    const saved = eduxKho.getSession(NGUOI_DUNG_ID);
-    if (saved && Array.isArray(saved.data)) {
-        const trongRam = saved.data.find(item => item.id === req.params.id);
-        if (trongRam) return { source: 'EDUX', assignment: trongRam };
+    if (!assignment) {
+        const saved = eduxKho.getSession(NGUOI_DUNG_ID);
+        assignment = saved?.data?.find(item => item.id === req.params.id);
     }
 
-    if (!saved) throw loi('Chưa có phiên EDUX. Hãy đăng nhập EDUX trước.', 401);
+    if (assignment) return { source: 'EDUX', assignment };
+
+    layPhienEDUX();
     throw loi(`Không tìm thấy bài tập EDUX: ${req.params.id}`, 404);
 }));
 
-/** Cập nhật trạng thái một bài tập EDUX đã lưu (tick trên app, không gọi EDUX). */
 router.patch('/edux/:id/status', xuLy(async req => {
-    const { status } = req.body || {};
-    const hopLe = ['Chưa làm', 'Đang làm', 'Hoàn thành'];
-    if (!status || !hopLe.includes(status)) {
-        throw loi(`status phải là một trong: ${hopLe.join(', ')}`);
-    }
+    kiemTra(trangThaiEDUX.includes(req.body?.status),
+        `status phải là một trong: ${trangThaiEDUX.join(', ')}`);
 
-    const row = await db.capNhatTrangThaiBaiTapEDUX(NGUOI_DUNG_ID, req.params.id, status);
+    const row = await db.capNhatTrangThaiBaiTapEDUX(
+        NGUOI_DUNG_ID, req.params.id, req.body.status
+    );
+
     if (!row) throw loi(`Không tìm thấy bài tập EDUX: ${req.params.id}`, 404);
-    return { message: 'Đã cập nhật trạng thái bài tập EDUX.', data: row };
-}));
+    return row;
+}, 200, 'Đã cập nhật trạng thái bài tập EDUX.'));
 
 router.post('/', xuLy(req => {
     const { subjectId, title, deadline } = req.body;
-    kiemTra(subjectId && title && deadline, 'subjectId, title và deadline là bắt buộc.');
+    kiemTra(subjectId && title && deadline,
+        'subjectId, title và deadline là bắt buộc.');
     return db.themBaiTap(NGUOI_DUNG_ID, req.body);
 }, 201, 'Đã tạo bài tập.'));
 
@@ -147,40 +157,70 @@ router.put('/:id', xuLy(req => {
 }, 200, 'Đã cập nhật bài tập.'));
 
 router.patch('/:id/status', xuLy(req => {
-    const { status } = req.body;
-    kiemTra(status && trangThaiHopLe.includes(status), `status phải là một trong: ${trangThaiHopLe.join(', ')}`);
-    return db.capNhatTrangThaiBaiTap(req.params.id, status, NGUOI_DUNG_ID);
+    kiemTra(trangThaiHopLe.includes(req.body?.status),
+        `status phải là một trong: ${trangThaiHopLe.join(', ')}`);
+    return db.capNhatTrangThaiBaiTap(
+        req.params.id, req.body.status, NGUOI_DUNG_ID
+    );
 }, 200, 'Đã cập nhật trạng thái bài tập.'));
 
-router.delete('/:id', xuLy(req => db.xoaBaiTap(req.params.id, NGUOI_DUNG_ID), 200, 'Đã xóa bài tập và nhắc nhở liên quan.'));
+router.delete('/:id', xuLy(async req => {
+    const id = String(req.params.id || '').trim();
+    if (/^edux-/i.test(id)) {
+        const hidden = await db.anBaiTapEDUX(NGUOI_DUNG_ID, id);
+        if (!hidden) throw loi(`Không tìm thấy bài tập EDUX: ${id}`, 404);
+        return { id, hidden: true };
+    }
+    kiemTra(/^\d+$/.test(id) && Number.isSafeInteger(Number(id)) && Number(id) > 0,
+        'ID bài tập phải là số nguyên dương hoặc có tiền tố edux-.');
+    await db.xoaBaiTap(Number(id), NGUOI_DUNG_ID);
+    return { id: Number(id) };
+}, 200, 'Đã xóa hoặc ẩn bài tập và nhắc nhở liên quan.'));
 
-router.get('/checklist', xuLy(req => db.layChecklist(NGUOI_DUNG_ID)));
+router.get('/checklist', xuLy(() =>
+    db.layChecklist(NGUOI_DUNG_ID)
+));
 
 router.get('/:taskId/checklist', xuLy(async req => {
-    const all = await db.layChecklist(NGUOI_DUNG_ID);
-    return all.filter(item => item.assignment_id === Number(req.params.taskId));
+    const items = await db.layChecklist(NGUOI_DUNG_ID);
+    return items.filter(item =>
+        item.assignment_id === Number(req.params.taskId)
+    );
 }));
 
 router.post('/checklist', xuLy(req => {
-    kiemTra(req.body.title, 'title là bắt buộc.');
+    kiemTra(req.body?.title, 'title là bắt buộc.');
     return db.themChecklist(NGUOI_DUNG_ID, req.body);
 }, 201, 'Đã thêm task vào checklist.'));
 
 router.post('/:taskId/checklist', xuLy(req => {
-    kiemTra(req.body.title, 'title là bắt buộc.');
+    kiemTra(req.body?.title, 'title là bắt buộc.');
     return db.themChecklist(NGUOI_DUNG_ID, {
         ...req.body,
         assignmentId: Number(req.params.taskId)
     });
 }, 201, 'Đã thêm task con vào bài tập.'));
 
-router.put('/checklist/:id', xuLy(req => db.capNhatChecklist(req.params.id, req.body, NGUOI_DUNG_ID), 200, 'Đã cập nhật task.'));
+router.put('/checklist/:id', xuLy(req =>
+    db.capNhatChecklist(req.params.id, req.body, NGUOI_DUNG_ID),
+    200, 'Đã cập nhật task.'
+));
 
-router.patch('/checklist/:id/done', xuLy(req => {
-    return db.hoanThanhChecklist(req.params.id, req.body.isCompleted !== false, NGUOI_DUNG_ID);
-}, 200, 'Đã cập nhật trạng thái checklist.'));
+router.patch('/checklist/:id/done', xuLy(req =>
+    db.hoanThanhChecklist(
+        req.params.id, req.body?.isCompleted !== false, NGUOI_DUNG_ID
+    ),
+    200, 'Đã cập nhật trạng thái checklist.'
+));
 
-router.delete('/checklist/:id', xuLy(req => db.xoaChecklist(req.params.id, NGUOI_DUNG_ID), 200, 'Đã xóa task.'));
+router.delete('/checklist/:id', xuLy(async req => {
+    const id = String(req.params.id || '').trim();
+    kiemTra(/^\d+$/.test(id) && Number.isSafeInteger(Number(id)) && Number(id) > 0,
+        'checklistId phải là số nguyên dương.');
+    const deleted = await db.xoaChecklist(Number(id), NGUOI_DUNG_ID);
+    if (!deleted) throw loi('Không tìm thấy checklist thuộc người dùng hiện tại.', 404);
+    return { checklistId: Number(id) };
+}, 200, 'Đã xóa task.'));
 
 module.exports = router;
 module.exports.setDb = instance => {

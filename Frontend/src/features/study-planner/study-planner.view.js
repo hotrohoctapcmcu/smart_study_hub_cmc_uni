@@ -4,6 +4,14 @@
  */
 import { ASSETS } from "../../shared/config/assets.js";
 import { getStudyPlans } from "./study-planner.service.js";
+import { escapeHtml } from "../../shared/utils/validation.js";
+
+function safePlan(plan) {
+  const escaped = Object.fromEntries(Object.entries(plan).map(([key, value]) => [key, typeof value === "string" ? escapeHtml(value) : value]));
+  escaped.sessions = (plan.sessions || []).map(session => Object.fromEntries(Object.entries(session)
+    .map(([key, value]) => [key, typeof value === "string" ? escapeHtml(value) : value])));
+  return escaped;
+}
 
 export function renderStudyPlannerView() {
   const plans = getStudyPlans();
@@ -70,7 +78,7 @@ export function renderStudyPlannerView() {
         <div class="planner-results-wrapper">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
             <h3 style="margin:0;font-size:1.15rem;color:var(--ink-950);">Kế hoạch đề xuất từ AI</h3>
-            <span class="status-pill emerald" style="font-size:0.75rem;">✓ Kế hoạch hoạt động</span>
+            <span class="status-pill emerald" style="font-size:0.75rem;">Xem trước rồi xác nhận</span>
           </div>
 
           <div id="aiResultBox" class="planner-results-box-container">
@@ -92,9 +100,9 @@ export function renderPlansListOrEmpty(plans = []) {
         <div class="planner-fox-sticker">
           <img src="${ASSETS.fox.aiTutor}" alt="Linh vật cáo AI UniStudy" />
         </div>
-        <strong style="color:var(--violet-900);display:block;margin-bottom:6px;font-size:1rem;">Kế hoạch mô phỏng — chưa kết nối AI</strong>
+        <strong style="color:var(--violet-900);display:block;margin-bottom:6px;font-size:1rem;">Lập kế hoạch từ lịch học thực tế</strong>
         <p style="margin:0 0 16px;font-size:0.86rem;line-height:1.5;max-width:540px;margin-left:auto;margin-right:auto;">
-          Nhập môn học và khung giờ rảnh ở trên, sau đó bấm <strong>Phân tích & Đề xuất kế hoạch AI</strong> để hệ thống tạo lịch học mô phỏng theo thông tin của bạn. 
+          Nhập môn học và khung giờ rảnh, sau đó bấm <strong>Phân tích & Đề xuất kế hoạch AI</strong> để xem các buổi học trong 7 ngày tới. Lịch chỉ được lưu khi bạn xác nhận.
           Bạn cũng có thể tự xếp lịch học thủ công trên Thời khóa biểu.
         </p>
         <button type="button" class="button secondary small planner-cta-btn" id="gotoManualScheduleBtn">
@@ -123,6 +131,7 @@ export function renderPlansListOrEmpty(plans = []) {
  * Render từng thẻ kế hoạch học tập
  */
 function renderPlanCard(plan) {
+  plan = safePlan(plan);
   const sessions = plan.sessions || [];
 
   return `
@@ -131,7 +140,7 @@ function renderPlanCard(plan) {
         <div class="plan-card-title-group">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <strong class="plan-card-title">${plan.title}</strong>
-            <span class="status-pill emerald" style="font-size:0.72rem;">✓ Đang áp dụng</span>
+            <span class="status-pill emerald" style="font-size:0.72rem;">${plan.persisted ? "✓ Đã lưu lịch" : "Bản xem trước"}</span>
           </div>
           <div class="plan-card-meta">
             <span><strong>Môn:</strong> ${plan.subject}</span>
@@ -143,6 +152,7 @@ function renderPlanCard(plan) {
         </div>
 
         <div class="plan-card-actions">
+          ${!plan.persisted && !plan.isMock ? `<button type="button" class="button primary small" data-confirm-plan-id="${plan.id}">Xác nhận & lưu lịch</button>` : ""}
           <button type="button" class="button ghost small" data-view-plan-id="${plan.id}" title="Xem chi tiết">
             <svg><use href="#i-tasks"></use></svg>
             <span>Chi tiết</span>
@@ -183,6 +193,7 @@ function renderPlanCard(plan) {
  * Modal Xem chi tiết kế hoạch
  */
 export function renderPlanDetailModal(plan) {
+  plan = safePlan(plan);
   const sessions = plan.sessions || [];
 
   return `
@@ -201,7 +212,7 @@ export function renderPlanDetailModal(plan) {
             <div><strong>Môn học:</strong> ${plan.subject}</div>
             <div><strong>Khung giờ ưu tiên:</strong> ${plan.freeSlotLabel}</div>
             <div><strong>Mục tiêu:</strong> ${plan.targetHours} giờ / tuần (${sessions.length} buổi học)</div>
-            <div><strong>Trạng thái:</strong> <span class="status-pill violet" style="display:inline-block;padding:2px 8px;font-size:0.75rem;">Kế hoạch mô phỏng — chưa kết nối AI</span></div>
+            <div><strong>Trạng thái:</strong> <span class="status-pill violet" style="display:inline-block;padding:2px 8px;font-size:0.75rem;">${plan.persisted ? "Đã lưu vào lịch tự học" : "Bản xem trước — chưa lưu lịch"}</span></div>
             ${plan.note ? `<div style="margin-top:4px;"><strong>Ghi chú:</strong> ${plan.note}</div>` : ""}
           </div>
 
@@ -240,6 +251,7 @@ export function renderPlanDetailModal(plan) {
  * Modal Chỉnh sửa kế hoạch
  */
 export function renderPlanEditModal(plan) {
+  plan = safePlan(plan);
   return `
     <div class="modal-backdrop" id="planEditModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="planEditTitle">
       <div class="modal-dialog" style="max-width:540px;">

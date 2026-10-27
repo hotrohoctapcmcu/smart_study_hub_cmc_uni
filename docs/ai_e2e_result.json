@@ -1,0 +1,32 @@
+{
+  "testedAt": "2026-10-27T09:36:35.229Z",
+  "mode": "web-guest",
+  "checks": [
+    {
+      "label": "ui-loads-synced-cmc-profile-schedule-and-edux",
+      "passed": true
+    },
+    {
+      "label": "ui-preview-does-not-save-schedules",
+      "passed": true
+    },
+    {
+      "label": "ui-confirm-saves-real-database-snapshot",
+      "passed": true
+    },
+    {
+      "label": "ui-reload-restores-confirmed-schedules",
+      "passed": true
+    },
+    {
+      "label": "ui-difficult-note-uses-actual-edux-excerpt-in-isolated-storage",
+      "passed": true
+    },
+    {
+      "label": "ui-progress-advice-uses-synced-edux-tasks",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "originalDatabaseUnchanged": true
+}

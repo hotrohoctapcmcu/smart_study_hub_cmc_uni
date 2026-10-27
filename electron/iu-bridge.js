@@ -107,6 +107,7 @@ function registerIuBridge() {
         const json = await postJson("/sync/iu/pull", {
             ngayBatDau: opts.ngayBatDau,
             ngayKetThuc: opts.ngayKetThuc,
+            soNgayLichThi: opts.soNgayLichThi,
             luuDb: opts.luuDb !== false,
         });
         const saved = (json && json.savedDb) || {};

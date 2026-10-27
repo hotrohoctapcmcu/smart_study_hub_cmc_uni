@@ -260,7 +260,7 @@ async function dongBoHoSoIU(studentCode, dataIU) {
 function sqlDayOfWeek(dateStr) {
     // JS getDay(): 0=CN, 1=T2, ..., 6=T7
     // Dự án: 2=T2, ..., 7=T7, 8=CN
-    const jsDay = new Date(dateStr).getDay();
+    const jsDay = new Date(`${String(dateStr).slice(0, 10)}T00:00:00Z`).getUTCDay();
     return jsDay === 0 ? 8 : jsDay + 1;
 }
 
@@ -496,6 +496,109 @@ async function xoaTietHoc(timetableId, studentId = null) {
 // 3. CHỨC NĂNG 2: AI XẾP LỊCH TỰ HỌC & CẢNH BÁO TRÙNG (SCHEDULING & CONFLICT ALERT)
 // ===================================================================================
 
+function loiLichTuHoc(message, statusCode = 400) {
+    return Object.assign(new Error(message), { statusCode });
+}
+
+let hangDoiGhiLichTuHoc = Promise.resolve();
+
+function ghiLichTuHocTuanTu(thaoTac) {
+    const ketQua = hangDoiGhiLichTuHoc.then(thaoTac, thaoTac);
+    hangDoiGhiLichTuHoc = ketQua.then(() => undefined, () => undefined);
+    return ketQua;
+}
+
+function kiemTraNgayTuHoc(value) {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        throw loiLichTuHoc('studyDate phải có định dạng YYYY-MM-DD.');
+    }
+
+    const [year, month, day] = value.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (year < 1000 || date.getUTCFullYear() !== year
+        || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+        throw loiLichTuHoc('studyDate không phải ngày hợp lệ.');
+    }
+}
+
+function doiGioThanhPhut(value, fieldName) {
+    if (typeof value !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) {
+        throw loiLichTuHoc(`${fieldName} phải có định dạng HH:mm hợp lệ.`);
+    }
+    const [hour, minute] = value.split(':').map(Number);
+    return hour * 60 + minute;
+}
+
+function chuanHoaLichTuHoc(data, current = null) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw loiLichTuHoc('Dữ liệu lịch tự học phải là một object.');
+    }
+    const allowedFields = new Set([
+        'title', 'studyDate', 'startTime', 'endTime', 'subjectId', 'notes', 'isAiSuggested'
+    ]);
+    const unknownField = Object.keys(data).find(field => !allowedFields.has(field));
+    if (unknownField) throw loiLichTuHoc(`Trường ${unknownField} không được hỗ trợ.`);
+
+    const title = data.title === undefined ? current?.title : data.title;
+    const studyDate = data.studyDate === undefined ? current?.study_date : data.studyDate;
+    const startTime = data.startTime === undefined ? current?.start_time : data.startTime;
+    const endTime = data.endTime === undefined ? current?.end_time : data.endTime;
+
+    if (typeof title !== 'string' || !title.trim()) {
+        throw loiLichTuHoc('title không được để trống.');
+    }
+    if (title.trim().length > 200) {
+        throw loiLichTuHoc('title không được vượt quá 200 ký tự.');
+    }
+    kiemTraNgayTuHoc(studyDate);
+
+    const startMinutes = doiGioThanhPhut(startTime, 'startTime');
+    const endMinutes = doiGioThanhPhut(endTime, 'endTime');
+    if (endMinutes <= startMinutes) {
+        throw loiLichTuHoc('endTime phải sau startTime trong cùng ngày.');
+    }
+
+    const subjectId = data.subjectId === undefined
+        ? current?.subject_id ?? null
+        : data.subjectId === null || data.subjectId === ''
+            ? null
+            : Number(data.subjectId);
+    if (subjectId !== null && (!Number.isInteger(subjectId) || subjectId <= 0)) {
+        throw loiLichTuHoc('subjectId phải là số nguyên dương hoặc null.');
+    }
+
+    const notes = data.notes === undefined ? current?.notes ?? null : data.notes;
+    if (notes !== null && typeof notes !== 'string') {
+        throw loiLichTuHoc('notes phải là chuỗi hoặc null.');
+    }
+    if (notes && notes.length > 2000) {
+        throw loiLichTuHoc('notes không được vượt quá 2.000 ký tự.');
+    }
+    if (data.isAiSuggested !== undefined
+        && ![true, false, 0, 1].includes(data.isAiSuggested)) {
+        throw loiLichTuHoc('isAiSuggested phải là boolean.');
+    }
+
+    return {
+        title: title.trim(),
+        studyDate,
+        startTime,
+        endTime,
+        subjectId,
+        notes,
+        durationMinutes: endMinutes - startMinutes
+    };
+}
+
+async function kiemTraMonHocTonTai(subjectId) {
+    if (subjectId === null) return;
+    const rows = await executeQuery(
+        'SELECT subject_id FROM Subjects WHERE subject_id = @subjectId LIMIT 1',
+        { subjectId }
+    );
+    if (!rows.length) throw loiLichTuHoc('Không tìm thấy môn học được chọn.');
+}
+
 async function kiemTraTrungLich(studentId) {
     if (!studentId) throw new Error('studentId là bắt buộc');
     const sid = await layStudentId(studentId);
@@ -535,11 +638,26 @@ async function kiemTraTrungLich(studentId) {
 }
 
 async function kiemTraXungDotLichTuHoc(studentId, studyDate, startTime, endTime, excludeScheduleId = null) {
-    if (!studentId) throw new Error('studentId là bắt buộc');
-    if (!studyDate || !startTime || !endTime) throw new Error('studyDate, startTime và endTime là bắt buộc');
+    if (!studentId) throw loiLichTuHoc('studentId là bắt buộc.');
+    if (!studyDate || !startTime || !endTime) {
+        throw loiLichTuHoc('studyDate, startTime và endTime là bắt buộc.');
+    }
+
+    kiemTraNgayTuHoc(studyDate);
+    const startMinutes = doiGioThanhPhut(startTime, 'startTime');
+    const endMinutes = doiGioThanhPhut(endTime, 'endTime');
+    if (endMinutes <= startMinutes) throw loiLichTuHoc('endTime phải sau startTime trong cùng ngày.');
+
+    let excludedId = null;
+    if (excludeScheduleId !== null && excludeScheduleId !== undefined && excludeScheduleId !== '') {
+        excludedId = Number(excludeScheduleId);
+        if (!Number.isInteger(excludedId) || excludedId <= 0) {
+            throw loiLichTuHoc('excludeScheduleId phải là số nguyên dương.');
+        }
+    }
 
     const sid = await layStudentId(studentId);
-    if (!sid) return [];
+    if (!sid) throw loiLichTuHoc('Không tìm thấy hồ sơ sinh viên.', 404);
 
     const dayOfWeek = sqlDayOfWeek(studyDate);
 
@@ -574,53 +692,46 @@ async function kiemTraXungDotLichTuHoc(studentId, studyDate, startTime, endTime,
           AND ss.status != 'CANCELLED'
           AND (@ex IS NULL OR ss.schedule_id != @ex)
           AND ss.start_time < @et AND ss.end_time > @st
-    `, { sid, sd: studyDate, st: startTime, et: endTime, ex: excludeScheduleId ? parseInt(excludeScheduleId, 10) : null });
+    `, { sid, sd: studyDate, st: startTime, et: endTime, ex: excludedId });
     conflicts.push(...studyConflicts);
 
     return conflicts;
 }
 
 async function xepLichTuHoc(studentId, data = {}) {
-    if (!studentId) throw new Error('studentId là bắt buộc');
-    if (!data.title || !data.studyDate || !data.startTime || !data.endTime) {
-        throw new Error('title, studyDate, startTime và endTime là bắt buộc');
-    }
+    if (!studentId) throw loiLichTuHoc('studentId là bắt buộc.');
+    const schedule = chuanHoaLichTuHoc(data);
 
-    const sid = await layStudentId(studentId);
-    if (!sid) throw new Error('Không tìm thấy sinh viên');
+    return ghiLichTuHocTuanTu(async () => {
+        const sid = await layStudentId(studentId);
+        if (!sid) throw loiLichTuHoc('Không tìm thấy hồ sơ sinh viên.', 404);
+        await kiemTraMonHocTonTai(schedule.subjectId);
 
-    // Kiểm tra xung đột nếu không ép buộc
-    if (data.forceSave !== 1) {
         const conflicts = await kiemTraXungDotLichTuHoc(
-            studentId, data.studyDate, data.startTime, data.endTime, null
+            studentId, schedule.studyDate, schedule.startTime, schedule.endTime
         );
         if (conflicts.length > 0) {
-            throw new Error('Khung giờ tự học bị trùng với lịch học chính khóa hoặc lịch tự học khác.');
+            throw loiLichTuHoc('Khung giờ tự học bị trùng với lịch học chính khóa hoặc lịch tự học khác.', 409);
         }
-    }
 
-    // Tính duration
-    const [sh, sm] = data.startTime.split(':').map(Number);
-    const [eh, em] = data.endTime.split(':').map(Number);
-    const durationMinutes = (eh * 60 + em) - (sh * 60 + sm);
+        await executeQuery(`
+            INSERT INTO StudySchedules (student_id, subject_id, title, study_date,
+                                        start_time, end_time, duration_minutes,
+                                        is_ai_suggested, status, notes)
+            VALUES (@sid, @subId, @title, @sd, @st, @et, @dur, @ais, 'PLANNED', @nt)
+        `, {
+            sid,
+            subId: schedule.subjectId,
+            title: schedule.title, sd: schedule.studyDate,
+            st: schedule.startTime, et: schedule.endTime,
+            dur: schedule.durationMinutes,
+            ais: data.isAiSuggested ? 1 : 0,
+            nt: schedule.notes
+        });
+        const idRes = await executeQuery('SELECT last_insert_rowid() AS schedule_id');
 
-    await executeQuery(`
-        INSERT INTO StudySchedules (student_id, subject_id, title, study_date,
-                                    start_time, end_time, duration_minutes,
-                                    is_ai_suggested, status, notes)
-        VALUES (@sid, @subId, @title, @sd, @st, @et, @dur, @ais, 'PLANNED', @nt)
-    `, {
-        sid,
-        subId: data.subjectId ? parseInt(data.subjectId, 10) : null,
-        title: data.title, sd: data.studyDate,
-        st: data.startTime, et: data.endTime,
-        dur: durationMinutes,
-        ais: data.isAiSuggested ? 1 : 0,
-        nt: data.notes || null
+        return idRes.length > 0 ? idRes[0] : null;
     });
-    const idRes = await executeQuery('SELECT last_insert_rowid() AS schedule_id');
-
-    return idRes.length > 0 ? idRes[0] : null;
 }
 
 /**
@@ -632,76 +743,69 @@ async function xepLichTuHoc(studentId, data = {}) {
  *
  * @param {string} studentId
  * @param {number|string} scheduleId
- * @param {Object} data - { title?, studyDate?, startTime?, endTime?, subjectId?, notes?, status?, forceSave? }
+ * @param {Object} data - { title?, studyDate?, startTime?, endTime?, subjectId?, notes?, isAiSuggested? }
  */
 async function capNhatLichTuHoc(studentId, scheduleId, data = {}) {
-    if (!studentId) throw new Error('studentId là bắt buộc');
-    if (!scheduleId) throw new Error('scheduleId là bắt buộc');
+    if (!studentId) throw loiLichTuHoc('studentId là bắt buộc.');
+    const id = Number(scheduleId);
+    if (!Number.isInteger(id) || id <= 0) throw loiLichTuHoc('scheduleId phải là số nguyên dương.');
+    if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).length === 0) {
+        throw loiLichTuHoc('Cần cung cấp ít nhất một trường để cập nhật.');
+    }
 
     const sid = await layStudentId(studentId);
-    if (!sid) throw new Error('Không tìm thấy sinh viên');
+    if (!sid) throw loiLichTuHoc('Không tìm thấy hồ sơ sinh viên.', 404);
 
-    const id = parseInt(scheduleId, 10);
     const hienTai = await executeQuery(
         'SELECT * FROM StudySchedules WHERE schedule_id = @id AND student_id = @sid LIMIT 1',
         { id, sid }
     );
     if (hienTai.length === 0) return null;
     const cu = hienTai[0];
+    const schedule = chuanHoaLichTuHoc(data, cu);
 
-    const studyDate = data.studyDate || cu.study_date;
-    const startTime = data.startTime || cu.start_time;
-    const endTime = data.endTime || cu.end_time;
-
-    if (startTime && endTime) {
-        const [sh, sm] = String(startTime).split(':').map(Number);
-        const [eh, em] = String(endTime).split(':').map(Number);
-        if (!Number.isFinite(sh) || !Number.isFinite(sm) || !Number.isFinite(eh) || !Number.isFinite(em)) {
-            throw new Error('startTime và endTime phải có dạng HH:mm');
-        }
-        if ((eh * 60 + em) <= (sh * 60 + sm)) {
-            throw new Error('endTime phải sau startTime');
-        }
-    }
-
-    if (data.forceSave !== 1 && data.forceSave !== true) {
+    return ghiLichTuHocTuanTu(async () => {
+        await kiemTraMonHocTonTai(schedule.subjectId);
         const conflicts = await kiemTraXungDotLichTuHoc(
-            studentId, studyDate, startTime, endTime, id
+            studentId, schedule.studyDate, schedule.startTime, schedule.endTime, id
         );
         if (conflicts.length > 0) {
-            throw new Error('Khung giờ tự học bị trùng với lịch học chính khóa hoặc lịch tự học khác.');
+            throw loiLichTuHoc('Khung giờ tự học bị trùng với lịch học chính khóa hoặc lịch tự học khác.', 409);
         }
-    }
 
-    const [sh2, sm2] = String(startTime).split(':').map(Number);
-    const [eh2, em2] = String(endTime).split(':').map(Number);
-    const durationMinutes = (eh2 * 60 + em2) - (sh2 * 60 + sm2);
+        await executeQuery(`
+            UPDATE StudySchedules
+            SET title = @title,
+                subject_id = @subId,
+                study_date = @sd,
+                start_time = @st,
+                end_time = @et,
+                duration_minutes = @dur,
+                notes = @nt,
+                is_ai_suggested = @isAiSuggested,
+                updated_at = datetime('now')
+            WHERE schedule_id = @id AND student_id = @sid
+        `, {
+            title: schedule.title,
+            subId: schedule.subjectId,
+            sd: schedule.studyDate,
+            st: schedule.startTime,
+            et: schedule.endTime,
+            dur: schedule.durationMinutes,
+            nt: schedule.notes,
+            isAiSuggested: data.isAiSuggested === undefined
+                ? Number(cu.is_ai_suggested) || 0
+                : data.isAiSuggested ? 1 : 0,
+            id,
+            sid
+        });
 
-    await executeQuery(`
-        UPDATE StudySchedules
-        SET title = COALESCE(@title, title),
-            subject_id = COALESCE(@subId, subject_id),
-            study_date = @sd,
-            start_time = @st,
-            end_time = @et,
-            duration_minutes = @dur,
-            notes = COALESCE(@nt, notes),
-            updated_at = datetime('now')
-        WHERE schedule_id = @id AND student_id = @sid
-    `, {
-        title: data.title || null,
-        subId: data.subjectId ? parseInt(data.subjectId, 10) : null,
-        sd: studyDate,
-        st: startTime,
-        et: endTime,
-        dur: durationMinutes,
-        nt: data.notes !== undefined ? (data.notes || null) : null,
-        id,
-        sid
+        const res = await executeQuery(
+            'SELECT * FROM StudySchedules WHERE schedule_id = @id AND student_id = @sid',
+            { id, sid }
+        );
+        return res.length > 0 ? res[0] : null;
     });
-
-    const res = await executeQuery('SELECT * FROM StudySchedules WHERE schedule_id = @id', { id });
-    return res.length > 0 ? res[0] : null;
 }
 
 async function layLichTuHoc(studentId, tuNgay = null, denNgay = null) {
@@ -816,17 +920,21 @@ async function timKhoangTrongTuHoc(userId, ngay, thoiLuongPhut = 60) {
 }
 
 async function capNhatTrangThaiLichTuHoc(scheduleId, status, studentId = null) {
-    if (!scheduleId || !status) throw new Error('scheduleId và status là bắt buộc');
+    const id = Number(scheduleId);
+    if (!Number.isInteger(id) || id <= 0) throw loiLichTuHoc('scheduleId phải là số nguyên dương.');
+    if (!['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].includes(status)) {
+        throw loiLichTuHoc('status không hợp lệ.');
+    }
     const soDong = await capNhatTrangThaiTheoChuSoHuu(
-        'StudySchedules', 'schedule_id', scheduleId, 'status', status, studentId
+        'StudySchedules', 'schedule_id', id, 'status', status, studentId
     );
     return soDong > 0;
 }
 
 async function xoaLichTuHoc(scheduleId, studentId = null) {
-    if (!scheduleId) throw new Error('scheduleId là bắt buộc');
-    await xoaTheoChuSoHuu('StudySchedules', 'schedule_id', scheduleId, studentId);
-    return true;
+    const id = Number(scheduleId);
+    if (!Number.isInteger(id) || id <= 0) throw loiLichTuHoc('scheduleId phải là số nguyên dương.');
+    return (await xoaTheoChuSoHuu('StudySchedules', 'schedule_id', id, studentId)) > 0;
 }
 
 // ===================================================================================
@@ -891,6 +999,19 @@ async function layDeadlineSapToi(studentId, soNgay = 3) {
     `, { sid, d: `+${soNgayHopLe} days` });
 }
 
+async function nhacNhoDaTonTai(studentId, targetType, targetId, tier) {
+    const rows = await executeQuery(`
+        SELECT 1
+        FROM Reminders
+        WHERE student_id = @sid
+          AND target_type = @targetType
+          AND target_id = @targetId
+          AND tier = @tier
+        LIMIT 1
+    `, { sid: studentId, targetType, targetId, tier });
+    return rows.length > 0;
+}
+
 async function themBaiTap(studentId, data = {}) {
     if (!studentId) throw new Error('studentId là bắt buộc');
     if (!data.subjectId || !data.title || !data.deadline) {
@@ -934,18 +1055,19 @@ async function themBaiTap(studentId, data = {}) {
 
         for (const t of tiers) {
             const remindTime = new Date(dl.getTime() + t.hours * 60 * 60 * 1000);
-            if (remindTime > now) {
-                await executeQuery(`
-                    INSERT OR IGNORE INTO Reminders (student_id, target_type, target_id, title, message, tier, remind_time, channel)
-                    VALUES (@sid, 'ASSIGNMENT', @aid, @title, @msg, @tier, @rt, 'APP')
-                `, {
-                    sid, aid: newId,
-                    title: `Nhắc nhở: Sắp đến hạn bài tập: ${data.title}`,
-                    msg: t.msg,
-                    tier: t.tier,
-                    rt: remindTime.toISOString()
-                });
-            }
+            if (remindTime <= now) continue;
+            if (await nhacNhoDaTonTai(sid, 'ASSIGNMENT', newId, t.tier)) continue;
+
+            await executeQuery(`
+                INSERT OR IGNORE INTO Reminders (student_id, target_type, target_id, title, message, tier, remind_time, channel)
+                VALUES (@sid, 'ASSIGNMENT', @aid, @title, @msg, @tier, @rt, 'APP')
+            `, {
+                sid, aid: newId,
+                title: `Nhắc nhở: Sắp đến hạn bài tập: ${data.title}`,
+                msg: t.msg,
+                tier: t.tier,
+                rt: remindTime.toISOString()
+            });
         }
     }
 
@@ -1027,12 +1149,23 @@ async function xoaBaiTap(assignmentId, studentId = null) {
     // checklist của bài tập thuộc hồ sơ khác.
     if (studentId) {
         const sid = await layStudentId(studentId);
-        if (!sid) return true;
+        if (!sid) {
+            throw Object.assign(new Error('Không tìm thấy hồ sơ người dùng.'), { statusCode: 404 });
+        }
         const soHuu = await executeQuery(
             'SELECT 1 FROM Assignments WHERE assignment_id = @id AND student_id = @sid LIMIT 1',
             { id: aid, sid }
         );
-        if (soHuu.length === 0) return true;
+        if (soHuu.length === 0) {
+            const tonTai = await executeQuery(
+                'SELECT 1 FROM Assignments WHERE assignment_id = @id LIMIT 1',
+                { id: aid }
+            );
+            if (tonTai.length > 0) {
+                throw Object.assign(new Error('Bạn không có quyền xóa bài tập này.'), { statusCode: 403 });
+            }
+            throw Object.assign(new Error('Không tìm thấy bài tập.'), { statusCode: 404 });
+        }
     }
 
     // Ba câu xóa phải cùng thành công hoặc cùng hủy, nếu không sẽ còn
@@ -1152,9 +1285,11 @@ async function hoanThanhChecklist(checklistId, isCompleted = true, studentId = n
 }
 
 async function xoaChecklist(checklistId, studentId = null) {
-    if (!checklistId) throw new Error('checklistId là bắt buộc');
-    await xoaTheoChuSoHuu('Checklists', 'checklist_id', checklistId, studentId);
-    return true;
+    const id = Number(checklistId);
+    if (!Number.isInteger(id) || id <= 0) {
+        throw Object.assign(new Error('checklistId phải là số nguyên dương.'), { statusCode: 400 });
+    }
+    return (await xoaTheoChuSoHuu('Checklists', 'checklist_id', id, studentId)) > 0;
 }
 
 // ===================================================================================
@@ -1226,16 +1361,19 @@ async function taoNhacNhoDaTang(studentId, targetType, targetId, title, deadline
 
     for (const t of tiers) {
         const remindTime = new Date(dl.getTime() + t.hours * 60 * 60 * 1000);
-        if (remindTime > now) {
-            await executeQuery(`
-                INSERT OR IGNORE INTO Reminders (student_id, target_type, target_id, title, message, tier, remind_time, channel)
-                VALUES (@sid, @tt, @tid, @title, @msg, @tier, @rt, @ch)
-            `, {
-                sid, tt: targetType, tid: parseInt(targetId, 10),
-                title, msg: t.msg, tier: t.tier, rt: remindTime.toISOString(), ch: channel
-            });
-            createdCount++;
-        }
+        if (remindTime <= now) continue;
+        const tid = parseInt(targetId, 10);
+        if (await nhacNhoDaTonTai(sid, targetType, tid, t.tier)) continue;
+
+        await executeQuery(`
+            INSERT OR IGNORE INTO Reminders (student_id, target_type, target_id, title, message, tier, remind_time, channel)
+            VALUES (@sid, @tt, @tid, @title, @msg, @tier, @rt, @ch)
+        `, {
+            sid, tt: targetType, tid,
+            title, msg: t.msg, tier: t.tier, rt: remindTime.toISOString(), ch: channel
+        });
+        const changed = await executeQuery('SELECT changes() AS so_dong');
+        createdCount += changed.length ? Number(changed[0].so_dong) || 0 : 0;
     }
 
     return { created_count: createdCount };
@@ -1684,6 +1822,7 @@ async function layBaiTapEDUX(userId, opts = {}) {
     const uid = String(userId);
     const params = { uid };
     let sqlText = 'SELECT * FROM EduxAssignments WHERE user_id = @uid';
+    if (!opts.includeHidden) sqlText += ' AND is_hidden = 0';
 
     if (opts.subjectId) {
         sqlText += ' AND subject_ext_id = @subId';
@@ -1712,8 +1851,29 @@ async function layBaiTapEDUX(userId, opts = {}) {
         highestScore: row.highest_score,
         source: 'EDUX',
         isLocalDraft: false,
-        syncedAt: row.synced_at
+        syncedAt: row.synced_at,
+        ...(opts.includeHidden && { isHidden: Number(row.is_hidden) === 1 })
     }));
+}
+
+/** Ẩn bài tập EDUX theo người dùng để các lần đồng bộ sau không làm hiện lại. */
+async function anBaiTapEDUX(userId, externalId) {
+    if (!userId || !externalId) throw new Error('userId và externalId là bắt buộc');
+
+    const uid = String(userId);
+    const ext = String(externalId);
+    const rows = await executeQuery(
+        'SELECT 1 FROM EduxAssignments WHERE user_id = @uid AND external_id = @ext LIMIT 1',
+        { uid, ext }
+    );
+    if (rows.length === 0) return false;
+
+    await executeQuery(`
+        UPDATE EduxAssignments
+        SET is_hidden = 1, updated_at = datetime('now')
+        WHERE user_id = @uid AND external_id = @ext
+    `, { uid, ext });
+    return true;
 }
 
 /**
@@ -1816,6 +1976,7 @@ module.exports = {
     // Đồng bộ EDUX — bài tập AI lưu xuống SQLite
     luuBaiTapEDUX,
     layBaiTapEDUX,
+    anBaiTapEDUX,
     capNhatTrangThaiBaiTapEDUX,
     xoaBaiTapEDUX
 };

@@ -4,10 +4,10 @@
  * Dựng HTTP server giả lập Gemini (trang /app + StreamGenerate), trỏ
  * GEMINI_ORIGIN vào đó rồi chạy toàn bộ luồng qua Express thật:
  *
- *   không cấu hình gì -> /ai/status ready=true (phiên khách), /ai/ask vẫn trả lời
+ *   không cần cấu hình key/cookie -> /ai/status ready=true (phiên khách)
  *   thiếu câu hỏi  -> 400
  *   hỏi thành công -> 200 + câu trả lời bóc từ payload Gemini
- *   Gemini lỗi 403 -> 401 cho FE
+ *   Gemini lỗi 403 -> 503 cho FE (phiên khách chưa truy cập được)
  *   hội thoại nhiều lượt -> gửi kèm conversationId, giữ cid/rid
  *
  * Chạy: node tests/API/test-ai-api.js (từ thư mục gốc dự án)
@@ -16,14 +16,21 @@
 "use strict";
 
 const http = require("http");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const testDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "unistudy-ai-web-"));
+process.env.DB_PATH = path.join(testDirectory, "test.db");
+process.env.GEMINI_SESSION_DIR = testDirectory;
+process.env.GEMINI_API_KEY = "";
 
 const GEMINI_PORT = 4598;
 const GEMINI_ORIGIN = `http://127.0.0.1:${GEMINI_PORT}`;
 
 // gemini-client đọc ORIGIN/COOKIES lúc require -> phải set trước khi nạp API.
 process.env.GEMINI_ORIGIN = GEMINI_ORIGIN;
-// Cố ý KHÔNG đặt GEMINI_COOKIES: trợ lý AI phải chạy được bằng phiên khách,
-// không cần cấu hình gì (đây là yêu cầu chính của luồng hỏi đáp).
+// Luồng khách mặc định không dùng key/cookie đăng nhập.
+process.env.GEMINI_COOKIES = "";
 process.env.GEMINI_TIMEOUT_MS = "5000";
 
 let pass = 0;
@@ -92,6 +99,7 @@ const geminiServer = http.createServer((req, res) => {
 async function main() {
     await new Promise((resolve) => geminiServer.listen(GEMINI_PORT, "127.0.0.1", resolve));
 
+    require("../../API/shared/gemini-client");
     const apiModule = require("../../API/index");
     const apiServer = await apiModule.start();
     const API = `http://127.0.0.1:${apiServer.address().port}/api/v1`;
@@ -113,7 +121,7 @@ async function main() {
         // 1. Trạng thái dịch vụ
         let r = await goi("GET", "/ai/status");
         ok(r.status === 200 && r.json.success === true, "GET /ai/status -> 200 success");
-        ok(r.json.data.ready === true, "không cấu hình gì -> ready=true (phiên khách)");
+        ok(r.json.data.ready === true, "không cấu hình key/cookie -> ready=true (phiên khách)");
         ok(r.json.data.guest === true, "không có cookie -> dùng phiên khách");
         ok(!JSON.stringify(r.json).includes("gia-lap-phien"), "status không lộ cookie");
 
@@ -144,23 +152,28 @@ async function main() {
         ok(lan2.includes("cid-1") && lan2.includes("rid-1"), "lượt sau gửi kèm cid/rid của lượt trước");
         ok(!lan2.includes("Hướng dẫn hệ thống"), "lượt sau không lặp lại hướng dẫn hệ thống");
 
-        // 5. Gemini từ chối -> 401 để FE hiển thị lỗi
+        // 5. Gemini từ chối phiên khách -> 503 để FE hiển thị lỗi
         tuChoi = true;
         r = await goi("POST", "/ai/ask", { question: "Câu hỏi khác" });
-        ok(r.status === 401, "Gemini trả 403 -> API trả 401");
+        ok(r.status === 503, "Gemini trả 403 -> API trả 503");
         ok(r.json.success === false && typeof r.json.message === "string", "lỗi có message cho FE");
         tuChoi = false;
 
     } finally {
+        apiServer.closeAllConnections();
+        geminiServer.closeAllConnections();
         await new Promise((resolve) => apiServer.close(resolve));
         await new Promise((resolve) => geminiServer.close(resolve));
+        await require("../../database/connection/db").closePool();
+        if (!path.resolve(testDirectory).startsWith(path.resolve(os.tmpdir()) + path.sep)) throw new Error("Unsafe test directory");
+        fs.rmSync(testDirectory, { recursive: true, force: true });
     }
 
     console.log(`\n==== AI API BRANCH: ${pass} PASS, ${fail} FAIL ====`);
-    process.exit(fail ? 1 : 0);
+    process.exitCode = fail ? 1 : 0;
 }
 
 main().catch((err) => {
     console.error("LỖI TEST:", err);
-    process.exit(1);
+    process.exitCode = 1;
 });

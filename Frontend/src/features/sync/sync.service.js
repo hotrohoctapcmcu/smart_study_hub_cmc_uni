@@ -4,6 +4,7 @@
  * Khi chưa có backend: trả trạng thái unavailable theo hợp đồng chung.
  */
 import { ENDPOINTS } from "../../shared/config/endpoints.js";
+import { APP_CONFIG } from "../../shared/config/app.config.js";
 import { apiRequest } from "../../shared/services/api-client.js";
 import { formatDateISO } from "../../shared/utils/date.js";
 import { SYNC_SOURCES } from "../../shared/config/sync-sources.js";
@@ -15,10 +16,7 @@ import {
   markSourceSynced
 } from "../../app/sync-state.js";
 
-// Khoảng thời gian mặc định để kéo TKB + lịch thi từ cổng IU khi người dùng
-// không chỉ định (bao quát học kỳ hiện tại: từ đầu học kỳ đến cuối năm).
-const NGAY_BAT_DAU_MAC_DINH = "01/09/2026";
-const NGAY_KET_THUC_MAC_DINH = "31/08/2027";
+// Backend xác định năm học của TKB tại thời điểm gọi; lịch thi có cửa sổ riêng.
 
 /**
  * Lấy danh sách nguồn đồng bộ
@@ -150,18 +148,19 @@ export async function loginIuViaBridge(opts = {}) {
  * @returns {Promise<{timetableCount, examsCount, gradesCount, thatBai}>}
  */
 export async function pullIuData(opts = {}) {
-  const ngayBatDau = opts.ngayBatDau || NGAY_BAT_DAU_MAC_DINH;
-  const ngayKetThuc = opts.ngayKetThuc || NGAY_KET_THUC_MAC_DINH;
+  const { ngayBatDau, ngayKetThuc } = opts;
+  const soNgayLichThi = opts.soNgayLichThi ?? APP_CONFIG.examLookaheadDays;
   const bridge = getIuBridge();
   if (bridge) {
     return await bridge.pullIU({
       ngayBatDau,
       ngayKetThuc,
+      soNgayLichThi,
       luuDb: opts.luuDb !== false
     });
   }
     const res = await apiRequest(ENDPOINTS.sync.iuPull, {
-    body: { ngayBatDau, ngayKetThuc, luuDb: opts.luuDb !== false }
+    body: { ngayBatDau, ngayKetThuc, soNgayLichThi, luuDb: opts.luuDb !== false }, timeout: 180000
   });
   if (!res.success) {
     throw new Error((res.data && res.data.message) || res.error || "Kéo dữ liệu IU thất bại.");

@@ -7,6 +7,8 @@ import { getDocuments, getNotes } from "./documents.service.js";
 import { formatDateTimeVN } from "../../shared/utils/date.js";
 import { renderEmptyState } from "../../shared/components/empty-state.js";
 import { renderModal } from "../../shared/components/modal.js";
+import { escapeHtml } from "../../shared/utils/validation.js";
+import { getAIAnalysis } from "../ai-tutor/ai-analysis.store.js";
 
 export const DOCUMENT_CATEGORIES = [
   "Tất cả",
@@ -233,6 +235,7 @@ function renderRepositoryTab(allDocs, selectedCategory, selectedSubject, searchQ
  * Render Tab Sổ tay ghi chú (Yêu cầu 5 - ĐẢO BỐ CỤC: Trang giấy bên TRÁI, Danh sách trang bên PHẢI)
  */
 function renderNotebookTab(allNotes, activeNoteId, searchQuery) {
+  const analysis = getAIAnalysis("difficult-notes");
   let filteredNotes = allNotes;
   if (searchQuery) {
     filteredNotes = filteredNotes.filter(
@@ -268,6 +271,7 @@ function renderNotebookTab(allNotes, activeNoteId, searchQuery) {
                 <svg style="width:14px;height:14px;"><use href="#i-check"></use></svg>
                 <span>Lưu ghi chú</span>
               </button>
+              <button type="button" class="button secondary small" id="analyzeDifficultNotesBtn" ${analysis.pending ? "disabled" : ""}>AI gợi ý ôn ghi chú khó</button>
               <button type="button" class="button ghost-danger small" id="deleteCurrentNoteBtn" data-note-id="${currentNote.id}" title="Xóa trang ghi chú này">
                 <svg style="width:14px;height:14px;"><use href="#i-trash"></use></svg>
                 <span>Xóa</span>
@@ -280,6 +284,8 @@ function renderNotebookTab(allNotes, activeNoteId, searchQuery) {
 
           <!-- Khu vực nhập Tiêu đề, Môn học, Tags và thời gian -->
           <div class="paper-meta-header">
+            <label><input type="checkbox" id="noteDifficultInput" ${currentNote.isDifficult ? "checked" : ""} /> Đánh dấu khó hiểu / cần ôn</label>
+            <div id="difficultNotesResult" role="status" style="white-space:pre-wrap;margin-top:8px;">${escapeHtml(analysis.pending ? "Đang phân tích ghi chú khó..." : analysis.error || analysis.text)}</div>
             <input 
               type="text" 
               id="noteTitleInput" 

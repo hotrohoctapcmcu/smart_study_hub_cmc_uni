@@ -57,6 +57,7 @@ export function createNote(noteData = {}) {
     subject: noteData.subject || "Ghi chép tự học",
     tags: noteData.tags || [],
     content: noteData.content || "",
+    isDifficult: Boolean(noteData.isDifficult),
     updatedAt: new Date().toISOString()
   };
   notes.unshift(newNote);

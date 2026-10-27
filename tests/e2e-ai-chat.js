@@ -2,8 +2,8 @@
  * E2E check cho trợ lý AI (chạy bằng Electron, không cần Gemini thật).
  *
  * Yêu cầu: một HTTP server giả lập Gemini đang chạy ở GEMINI_ORIGIN (mặc định
- * http://127.0.0.1:4598) và app đang chạy (node index.js) với GEMINI_ORIGIN +
- * GEMINI_COOKIES trỏ tới server đó.
+ * http://127.0.0.1:4598) và app đang chạy (node index.js) với GEMINI_ORIGIN
+ * trỏ tới server đó. Không cần API key hoặc cookie đăng nhập.
  *
  * Mở http://localhost:8080, mở panel trợ lý AI và kiểm tra:
  *   - panel render, trạng thái "Đã kết nối trợ lý AI"

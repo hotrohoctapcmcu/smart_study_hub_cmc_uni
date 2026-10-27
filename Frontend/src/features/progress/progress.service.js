@@ -5,6 +5,9 @@
  */
 import { state } from "../../app/state.js";
 import { getPomodoroStats } from "../pomodoro/pomodoro.storage.js";
+import { generateProgressAdvice } from "../ai-tutor/ai-tutor.service.js";
+import { ENDPOINTS } from "../../shared/config/endpoints.js";
+import { apiRequest } from "../../shared/services/api-client.js";
 import { 
   formatDateISO, 
   formatDateVN, 
@@ -22,6 +25,51 @@ import {
  * @param {string} targetDateStr - "YYYY-MM-DD"
  * @returns {Array<number>} mảng 24 phần tử (số phút học thực tế cho từng giờ 0..23)
  */
+export async function requestProgressAdvice(period, selectedDate, serverMetrics) {
+  const analytics = getProgressAnalytics(period, selectedDate);
+  const progress = { period: analytics.period, selectedDate: analytics.selectedDate };
+  if (serverMetrics) progress.currentDatabaseMetrics = serverMetrics;
+  if (analytics.hasStudyData) {
+    progress.studyTimeMinutes = analytics.totalStudyMinutes;
+    progress.completedSessions = analytics.pomodoroSessions;
+  }
+  if (analytics.hasTaskData) {
+    progress.tasks = {
+      total: analytics.totalTasks, completed: analytics.completedTasks,
+      completionRate: analytics.taskCompletionRate
+    };
+    progress.subjects = analytics.subjects;
+  }
+  return generateProgressAdvice(progress);
+}
+
+export async function fetchServerProgress() {
+  const response = await apiRequest(ENDPOINTS.progress.get, { queryParams: { advice: false }, silent: true });
+  if (!response.success) throw new Error(response.error || "Không thể tải tiến độ đã lưu.");
+  const data = response.data?.data;
+  if (!data?.metrics) throw new Error("Dữ liệu tiến độ trả về không hợp lệ.");
+  return data;
+}
+
+export async function fetchServerTimeMap(period, selectedDate) {
+  let from = selectedDate;
+  let to = selectedDate;
+  if (period === "week") {
+    const days = getDaysOfWeek(selectedDate);
+    from = days[0].dateStr;
+    to = days[6].dateStr;
+  } else if (period === "month") {
+    const [year, month] = selectedDate.split("-").map(Number);
+    from = `${selectedDate.slice(0, 7)}-01`;
+    to = `${selectedDate.slice(0, 7)}-${new Date(year, month, 0).getDate()}`;
+  }
+  const response = await apiRequest(ENDPOINTS.timemap.get, { queryParams: { from, to }, silent: true });
+  if (!response.success) throw new Error(response.error || "Không thể tải bản đồ thời gian đã lưu.");
+  const data = response.data;
+  if (!data?.data || Array.isArray(data.data)) throw new Error("Dữ liệu bản đồ thời gian không hợp lệ.");
+  return data;
+}
+
 export function allocateSessionToHours(sessionStartMs, sessionEndMs, targetDateStr) {
   const hourlyMinutes = new Array(24).fill(0);
   if (sessionEndMs <= sessionStartMs) return hourlyMinutes;
