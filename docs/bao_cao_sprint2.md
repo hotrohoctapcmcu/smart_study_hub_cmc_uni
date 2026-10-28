@@ -1,3 +1,5 @@
+> Cập nhật 27/10/2026: xem [Hoàn thiện Sprint 2](hoan_thien_sprint2.md) cho trạng thái triển khai mới. Các phần thiếu được nêu trong báo cáo cũ bên dưới là thông tin trước đợt hoàn thiện.
+
 Báo cáo tiến độ Sprint 2 – UniStudy CMC
 1. Kết quả thực hiện
 - Kho tài liệu môn học: Đã có Frontend.

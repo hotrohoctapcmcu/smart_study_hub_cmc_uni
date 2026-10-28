@@ -1,5 +1,7 @@
 # API AI Sprint 2 – phần việc Văn Tuấn
 
+**Cập nhật Sprint 3 (28/10/2026):** `/ask` đã lưu hội thoại, `/exam-plan` có buổi học và API xác nhận ghi bền; bổ sung Quiz, điểm yếu và lưu/xuất đơn. Hợp đồng mới và kết quả kiểm thử nằm trong [hoan_thien_sprint3.md](hoan_thien_sprint3.md). Các mô tả chỉ lưu RAM/preview trong tài liệu lịch sử này đã được thay thế.
+
 Ngày cập nhật: 27/10/2026. Base URL: `http://localhost:3001/api/v1/ai`.
 
 ## Cấu hình và hợp đồng chung

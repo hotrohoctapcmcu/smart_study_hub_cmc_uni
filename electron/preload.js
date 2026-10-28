@@ -20,6 +20,10 @@
 
 const { contextBridge, ipcRenderer } = require("electron");
 
+contextBridge.exposeInMainWorld("__uniStudyOutlook", {
+    connect: () => ipcRenderer.invoke("outlook:connect")
+});
+
 contextBridge.exposeInMainWorld("__uniStudyIU", {
     isAvailable: true,
 

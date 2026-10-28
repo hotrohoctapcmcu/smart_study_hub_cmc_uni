@@ -14,6 +14,7 @@ require("./index");
 
 try {
     require("./electron/iu-bridge").registerIuBridge();
+    require("./electron/outlook-bridge").registerOutlookBridge();
 } catch { }
 
 const FE_URL = "http://localhost:8080";
