@@ -6,6 +6,7 @@ import { formatDateVN } from "../../shared/utils/date.js";
 import { renderEmptyState } from "../../shared/components/empty-state.js";
 import { renderModal } from "../../shared/components/modal.js";
 import { APP_CONFIG } from "../../shared/config/app.config.js";
+import { escapeHtml as e } from "../../shared/utils/validation.js";
 
 export function renderExamsView() {
   const exams = state.exams;
@@ -21,6 +22,7 @@ export function renderExamsView() {
           <p class="muted" style="margin:6px 0 0;">Đồng bộ lịch thi từ ${formatDateVN(from)} đến ${formatDateVN(to)}.</p>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="button" class="button primary" id="examAiPlanBtn">AI tạo kế hoạch ôn thi</button>
           <button type="button" class="button ghost" id="examSyncBtn">
             <svg><use href="#i-refresh"></use></svg>
             <span>Đồng bộ lịch thi trường</span>
@@ -37,7 +39,8 @@ export function renderExamsView() {
         <svg style="color:var(--ink-500);width:22px;height:22px;"><use href="#i-spark"></use></svg>
         <div>
           <strong>Mức độ sẵn sàng ôn thi:</strong>
-          <span>Chưa có dữ liệu đánh giá (Tính năng phân tích độ sẵn sàng AI sẽ hoàn thiện trong Sprint 3).</span>
+          <span>Xem kết quả kiểm tra theo từng chủ đề để biết nội dung cần ưu tiên.</span>
+          <button class="button ghost small" id="examWeaknessBtn">Xem điểm yếu</button>
         </div>
       </div>
 
@@ -52,22 +55,23 @@ export function renderExamsView() {
               <div class="exam-card-item" data-exam-id="${ex.id}">
                 <div class="exam-card-top">
                   <div>
-                    <h2 class="exam-subject-title">${ex.subject} ${ex.code ? `(${ex.code})` : ""}</h2>
+                    <h2 class="exam-subject-title">${e(ex.subject)} ${ex.code ? `(${e(ex.code)})` : ""}</h2>
                     <div class="exam-meta-pills">
                       <span class="exam-meta-pill">
                         <svg><use href="#i-calendar"></use></svg>
                         ${formatDateVN(ex.date)} · ${ex.start} (${ex.duration} phút)
                       </span>
                       <span class="exam-meta-pill">
-                        Phòng thi: <strong>${ex.room || "Chưa xếp"}</strong>
+                        Phòng thi: <strong>${e(ex.room || "Chưa xếp")}</strong>
                       </span>
                       <span class="badge-draft" style="font-size:0.75rem;">
-                        ${ex.source || "Tự thêm"}
+                        ${e(ex.source || "Tự thêm")}
                       </span>
                     </div>
                   </div>
 
                   <div style="display:flex;gap:8px;">
+                    ${ex.examId ? `<button type="button" class="button primary small" data-ai-plan-exam="${e(ex.examId)}">AI ôn thi</button>` : ''}
                     <button type="button" class="button secondary small" data-goto-schedule-exam="${ex.date}">
                       Lên kế hoạch học
                     </button>
@@ -83,7 +87,7 @@ export function renderExamsView() {
                 ${
                   ex.scope
                     ? `<div style="font-size:0.86rem;color:var(--ink-600);">
-                         <strong>Phạm vi kiến thức:</strong> ${ex.scope}
+                         <strong>Phạm vi kiến thức:</strong> ${e(ex.scope)}
                        </div>`
                     : ""
                 }
@@ -100,8 +104,10 @@ export function renderExamsView() {
                              .map(
                                (m, i) => `
                              <div class="roadmap-milestone-card">
-                               <strong>Mốc ${i + 1}: ${m.title}</strong>
+                               <strong>Mốc ${i + 1}: ${e(m.title)}</strong>
                                <p>${m.targetDate ? `Mục tiêu: ${formatDateVN(m.targetDate)}` : "Tự do"}</p>
+                               ${m.target ? `<p>${e(m.target)}</p>` : ''}
+                               ${m.id ? `<p>${m.status === 'COMPLETED' ? 'Đã hoàn thành' : m.status === 'CANCELLED' ? 'Đã hủy' : 'Đang ôn tập'}</p><button class="button ghost small" data-phase-status="${e(m.id)}" data-status="${m.status === 'COMPLETED' ? 'PLANNED' : 'COMPLETED'}">${m.status === 'COMPLETED' ? 'Mở lại' : 'Hoàn thành'}</button><button class="button ghost small" data-phase-delete="${e(m.id)}">Xóa mốc</button>` : ''}
                              </div>
                            `
                              )
@@ -146,7 +152,7 @@ export function renderExamModal(examData = null) {
             name="subject" 
             required 
             placeholder="Ví dụ: Cơ sở dữ liệu" 
-            value="${examData?.subject || ""}"
+            value="${e(examData?.subject || "")}"
             style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;"
           />
         </label>
@@ -156,7 +162,7 @@ export function renderExamModal(examData = null) {
             type="text" 
             name="code" 
             placeholder="Ví dụ: DBI202" 
-            value="${examData?.code || ""}"
+            value="${e(examData?.code || "")}"
             style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;"
           />
         </label>
@@ -169,7 +175,7 @@ export function renderExamModal(examData = null) {
             type="date" 
             name="date" 
             required 
-            value="${examData?.date || ""}"
+            value="${e(examData?.date || "")}"
             style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;"
           />
         </label>
@@ -179,7 +185,7 @@ export function renderExamModal(examData = null) {
             type="time" 
             name="start" 
             required 
-            value="${examData?.start || "08:00"}"
+            value="${e(examData?.start || "08:00")}"
             style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;"
           />
         </label>
@@ -190,7 +196,7 @@ export function renderExamModal(examData = null) {
             name="duration" 
             required 
             min="15" 
-            value="${examData?.duration || 90}"
+            value="${e(examData?.duration || 90)}"
             style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;"
           />
         </label>
@@ -203,7 +209,7 @@ export function renderExamModal(examData = null) {
             type="text" 
             name="room" 
             placeholder="Ví dụ: A205" 
-            value="${examData?.room || ""}"
+            value="${e(examData?.room || "")}"
             style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;"
           />
         </label>
@@ -212,7 +218,7 @@ export function renderExamModal(examData = null) {
           <input 
             type="text" 
             disabled 
-            value="${examData?.source || "Sinh viên thêm"}" 
+            value="${e(examData?.source || "Sinh viên thêm")}"
             style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;background:var(--page);color:var(--ink-600);"
           />
         </label>
@@ -225,7 +231,7 @@ export function renderExamModal(examData = null) {
           rows="3" 
           placeholder="Ví dụ: Ôn tập Chương 1–6, các dạng bài tập thực hành..." 
           style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:10px 12px;font-family:inherit;"
-        >${examData?.scope || ""}</textarea>
+        >${e(examData?.scope || "")}</textarea>
       </label>
     </form>
   `;
@@ -233,7 +239,7 @@ export function renderExamModal(examData = null) {
   const footerHtml = `
     <button type="button" class="button ghost" data-close-modal="examDetailModal">Hủy</button>
     <button type="submit" form="examModalForm" class="button primary">
-      ${isEdit ? "Cập nhật kỳ thi" : "Lưu & Tạo lộ trình"}
+      ${isEdit ? "Cập nhật kỳ thi" : "Lưu kỳ thi"}
     </button>
   `;
 

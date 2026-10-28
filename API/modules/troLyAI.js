@@ -7,6 +7,7 @@ const { NGUOI_DUNG_ID } = require("../shared/nguoiDung");
 
 const router = express.Router();
 let db;
+const sprint3 = require('./sprint3').createSprint3Router({ getDb: () => db, loadFreeSlots, validatePlanSessions });
 
 const MAX_QUESTION_LENGTH = 4000;
 const MAX_TEXT_LENGTH = 30000;
@@ -434,16 +435,7 @@ async function analyzeDifficultNotes(studentId, options = {}) {
 router.get("/status", xuLy(async () => gemini.getStatus()));
 
 router.post("/ask", xuLy(async req => {
-    const question = requiredText(req.body?.question, "question", MAX_QUESTION_LENGTH);
-    const conversationId = optionalText(req.body?.conversationId, 64) || undefined;
-    const context = await studyContext.buildStudyContext(NGUOI_DUNG_ID, contextOptions(req));
-    const answer = await gemini.ask([
-        "Trả lời câu hỏi của người học. Khi câu hỏi liên quan dữ liệu cá nhân, chỉ dùng ngữ cảnh thật bên dưới. Nếu dữ liệu cần thiết không có, nói rõ là chưa có dữ liệu.",
-        `Ngữ cảnh học tập:\n${stringifyForAi(compactContext(context))}`,
-        `Câu hỏi:\n${question}`
-    ].join("\n\n"), { conversationId });
-
-    return { answer, conversationId: conversationId || null };
+    return sprint3.service.ask(req.body);
 }));
 
 router.post("/plan", xuLy(async req => {
@@ -576,11 +568,20 @@ router.post("/exam-plan", xuLy(async req => {
     );
     if (!exams.length) throw loi(examId ? "Không tìm thấy kỳ thi sắp tới." : "Chưa có kỳ thi sắp tới.", 404);
 
+    const lastDate = exams.reduce((latest, exam) => exam.date > latest ? exam.date : latest, nowDate);
+    const endDate = lastDate < addDays(nowDate, 30) ? lastDate : addDays(nowDate, 30);
+    const dates = dateRange(nowDate, endDate);
+    const freeSlots = await loadFreeSlots(NGUOI_DUNG_ID, dates, "07:00", "22:00");
+    const weaknesses = await sprint3.service.weaknesses();
+
     const output = await gemini.generateJson([
         "Tạo bản xem trước các giai đoạn ôn thi. Không lưu vào database.",
         "Ngày bắt đầu/kết thúc không được ở quá khứ và không được sau ngày thi tương ứng.",
         "Chỉ dùng môn thi, điểm và ghi chú thật được cung cấp; không bịa điểm hay mức độ thành thạo.",
+        "Đề xuất thêm sessions cụ thể trong các khoảng trống; mỗi session phải thuộc một phase cùng examId và kết thúc trước giờ thi. Phiên dài 30–240 phút. Không có khoảng trống thì trả sessions rỗng.",
         `Kỳ thi:\n${stringifyForAi(exams)}`,
+        `Khoảng trống hợp lệ trong 31 ngày tới:\n${stringifyForAi(freeSlots)}`,
+        `Điểm yếu đo từ bài kiểm tra:\n${stringifyForAi(weaknesses.topics)}`,
         `Điểm đã có:\n${stringifyForAi(context.grades)}`,
         `Ghi chú khó đã có:\n${stringifyForAi(context.notes.filter(note => note.isDifficult))}`
     ].join("\n\n"), {
@@ -593,7 +594,8 @@ router.post("/exam-plan", xuLy(async req => {
                 startDate: "YYYY-MM-DD",
                 endDate: "YYYY-MM-DD",
                 priority: "LOW|MEDIUM|HIGH|URGENT"
-            }]
+            }],
+            sessions: [{ examId: "number|string", date: "YYYY-MM-DD", start: "HH:mm", end: "HH:mm", title: "string", subject: "string", reason: "string" }]
         })
     });
 
@@ -604,6 +606,7 @@ router.post("/exam-plan", xuLy(async req => {
         const endDate = studyContext.normalizeDate(phase?.endDate);
         const title = optionalText(phase?.title, 180);
         if (!selectedExam || !startDate || !endDate || !title) return null;
+        if (startDate !== phase.startDate || endDate !== phase.endDate) return null;
         if (startDate < nowDate || endDate < startDate || endDate > selectedExam.date) return null;
         const priority = ["LOW", "MEDIUM", "HIGH", "URGENT"].includes(String(phase?.priority).toUpperCase())
             ? String(phase.priority).toUpperCase()
@@ -622,7 +625,14 @@ router.post("/exam-plan", xuLy(async req => {
         };
     }).filter(Boolean).slice(0, 30);
 
-    return { preview: true, persisted: false, phases };
+    const refreshedSlots = await loadFreeSlots(NGUOI_DUNG_ID, dates, "07:00", "22:00");
+    const checked = validatePlanSessions({ sessions: Array.isArray(output.sessions) ? output.sessions : [] }, { dates, freeSlots: refreshedSlots, exams });
+    const sessions = checked.sessions.filter(session => {
+        const exam = examMap.get(String(session.examId));
+        return exam && phases.some(p => String(p.examId) === String(session.examId) && session.date >= p.startDate && session.date <= p.endDate)
+            && (session.date < exam.date || (exam.time && session.end <= exam.time));
+    });
+    return { preview: true, persisted: false, phases, sessions, rejected: checked.rejected };
 }));
 
 router.post("/check", xuLy(async req => {
@@ -700,6 +710,8 @@ router.post("/draft-leave", xuLy(async req => {
 
 router.post("/progress-advice", xuLy(async req => generateProgressAdvice(req.body?.progress)));
 router.post("/difficult-notes", xuLy(async req => analyzeDifficultNotes(NGUOI_DUNG_ID, contextOptions(req))));
+
+router.use(sprint3.router);
 
 router.use((error, req, res, next) => {
     const status = error.statusCode || 500;

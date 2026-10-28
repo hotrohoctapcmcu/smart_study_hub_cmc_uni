@@ -364,6 +364,39 @@
 }
 
 /* Workspace Main Container */
+.workspace-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 24px;
+  min-height: 62px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--ink-200);
+  background: white;
+  z-index: 20;
+}
+.workspace-toolbar .search-bar-wrap { flex: 1; max-width: 800px; min-width: 0; }
+.workspace-toolbar .search-input-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--ink-50);
+  border: 1px solid var(--ink-200);
+  border-radius: 10px;
+}
+.workspace-toolbar .search-input-box svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--ink-500); }
+.workspace-toolbar input { width: 100%; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: .9rem; }
+.workspace-toolbar .search-input-box:focus-within { outline: 2px solid var(--violet-500); outline-offset: 1px; }
+.workspace-toolbar .search-shortcut-badge { white-space: nowrap; font-size: .75rem; color: var(--ink-500); }
+.workspace-toolbar .toolbar-actions { margin-left: auto; }
+.workspace-toolbar .mobile-only-btn { display: none; }
+@media (max-width: 768px) {
+  .workspace-toolbar { padding: 8px 12px; gap: 8px; }
+  .workspace-toolbar .mobile-only-btn { display: inline-grid; }
+  .workspace-toolbar .search-shortcut-badge { display: none; }
+}
+
 .workspace-main {
   flex: 1;
   display: flex;

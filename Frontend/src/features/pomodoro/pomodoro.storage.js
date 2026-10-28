@@ -93,6 +93,7 @@ export function saveHistoryItem(historyItem) {
     const history = getHistory();
     // Đảm bảo không ghi đè hoặc trùng id
     const item = {
+      ...historyItem,
       id: historyItem.id || `pomo-${Date.now()}`,
       createdAt: historyItem.createdAt || new Date().toISOString(),
       workDurationMinutes: historyItem.workDurationMinutes || 25,
@@ -100,15 +101,18 @@ export function saveHistoryItem(historyItem) {
       status: historyItem.status || "Hoàn thành", // "Hoàn thành" | "Kết thúc sớm"
       notes: historyItem.notes || ""
     };
-    const updated = [item, ...history];
-    // Giới hạn lưu tối đa 50 phiên gần nhất
-    const limited = updated.slice(0, 50);
+    const updated = [item, ...history.filter(previous => previous.id !== item.id)];
+    const limited = updated;
     getStorage().setItem(STORAGE_KEYS.HISTORY, JSON.stringify(limited));
     return limited;
   } catch (err) {
     console.error("[Pomodoro Storage] Lỗi ghi lịch sử Pomodoro:", err);
     return getHistory();
   }
+}
+
+export function replacePomodoroHistory(history) {
+  getStorage().setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
 }
 
 /**

@@ -4,6 +4,54 @@
  * Trích xuất deadline và lịch thi tự động để thêm vào state
  */
 import { addLocalTask, addLocalExam } from "../../app/state.js";
+import { workspaceRequest } from "../../shared/services/workspace-api.js";
+
+export const schoolEmailStatus = { pending: false, error: "", text: "" };
+const storeEmails = emails => getStorage().setItem(STORAGE_KEY, JSON.stringify(emails));
+
+export async function fetchSchoolEmails() {
+  const emails = await workspaceRequest("GET", "/email", { silent: true });
+  hasCleanedLegacySeed = true; storeEmails(emails); return emails;
+}
+
+export async function syncSchoolEmails(connect = false) {
+  if (schoolEmailStatus.pending) return;
+  schoolEmailStatus.pending = true; schoolEmailStatus.error = "";
+  try {
+    if (connect) {
+      if (!globalThis.window?.__uniStudyOutlook?.connect) throw new Error("Mở bằng npm start để đăng nhập Outlook; sau đó chọn Đồng bộ hòm thư.");
+      await window.__uniStudyOutlook.connect();
+    }
+    const result = await workspaceRequest("POST", "/email/sync", { body: {}, timeout: 65000 });
+    hasCleanedLegacySeed = true; storeEmails(result.messages);
+    schoolEmailStatus.text = `Đã đồng bộ ${result.syncedCount} thư${result.account ? ' · ' + result.account : ''}.`;
+    return result;
+  } catch (error) { schoolEmailStatus.error = error.message; throw error; }
+  finally { schoolEmailStatus.pending = false; }
+}
+
+export async function readSchoolEmailOnServer(id) {
+  await workspaceRequest("PATCH", `/email/${encodeURIComponent(id)}/read`);
+  markEmailRead(id);
+  return getSchoolEmails().find(mail => mail.id === id);
+}
+
+export async function refreshSchoolEmail(id) {
+  const saved = await workspaceRequest("POST", `/email/${encodeURIComponent(id)}/refresh`, { body: {}, timeout: 65000 });
+  storeEmails(getSchoolEmails().map(mail => mail.id === id ? saved : mail)); return saved;
+}
+
+export async function markAllSchoolEmailsOnServer() {
+  await workspaceRequest("PATCH", "/email/read"); markAllSchoolEmailsAsRead();
+}
+
+export async function processSchoolEmailOnServer(id, kind) {
+  const result = await workspaceRequest("POST", `/email/${encodeURIComponent(id)}/${kind}`, { body: {} });
+  await fetchSchoolEmails();
+  if (kind === 'task') await (await import('../tasks/tasks.service.js')).fetchTasksFromApi();
+  else await (await import('../exams/exams.service.js')).fetchExamsFromApi();
+  return result;
+}
 
 const STORAGE_KEY = "unistudy_school_emails_v2";
 const SEED_EMAIL_IDS = new Set(["mail-1", "mail-2", "mail-3"]);
@@ -148,7 +196,7 @@ export function markAllSchoolEmailsAsRead() {
  */
 export function createTaskFromEmail(emailId) {
   const email = getSchoolEmails().find((m) => m.id === emailId);
-  if (!email || !email.extractedDeadline) return null;
+  if (!email || !email.extractedDeadline || email.isProcessed) return null;
 
   const newTask = addLocalTask({
     title: email.extractedDeadline.title,
@@ -179,7 +227,7 @@ export function createTaskFromEmail(emailId) {
  */
 export function createExamFromEmail(emailId) {
   const email = getSchoolEmails().find((m) => m.id === emailId);
-  if (!email || !email.extractedExam) return null;
+  if (!email || !email.extractedExam || email.isExamProcessed) return null;
 
   const newExam = addLocalExam({
     subject: email.extractedExam.subject,

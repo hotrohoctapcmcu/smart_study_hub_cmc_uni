@@ -290,6 +290,8 @@ async function getPool() {
 
         // Cùng một kết nối và transaction migration, trước khi nhận request.
         await require('../sprint2/sprint2Migration').ensureSprint2Migration(db);
+        require('../sprint2/workspaceMigration').migrateWorkspace(db);
+        require('../sprint3/migration').migrateSprint3(db);
 
         _db = db;
         // Tạo file .db ngay từ lần chạy đầu (không đợi tới lúc tắt app).
@@ -605,11 +607,11 @@ async function executeQuery(queryStr, params = {}) {
 
     const columns = stmt.getColumnNames();
     const rows = [];
-    while (stmt.step()) {
-        rows.push(stmt.getAsObject());
+    try {
+        while (stmt.step()) rows.push(stmt.getAsObject());
+    } finally {
+        stmt.free();
     }
-    stmt.reset();
-    stmt.free();
 
     // Câu lệnh ghi (INSERT/UPDATE/DELETE/REPLACE/DDL) → ghi file .db ngay,
     // để dữ liệu không chỉ nằm trong RAM và file data/unistudy.db luôn tồn tại.

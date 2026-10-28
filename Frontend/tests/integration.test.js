@@ -58,7 +58,7 @@ import { NAVIGATION_SECTIONS } from "../src/app/routes.js";
 assert(NAVIGATION_SECTIONS.length === 5, "G0-Nav: NAVIGATION_SECTIONS có đúng 5 nhóm");
 assert(NAVIGATION_SECTIONS[0].id === "overview" && NAVIGATION_SECTIONS[0].routeIds[0] === "dashboard", "G0-Nav: Tổng quan nằm riêng ở đầu");
 assert(NAVIGATION_SECTIONS[1].title === "HỌC TẬP & LỊCH TRÌNH" && NAVIGATION_SECTIONS[1].routeIds.length === 4, "G0-Nav: Nhóm Học tập & Lịch trình có 4 mục");
-assert(NAVIGATION_SECTIONS[2].title === "CÔNG CỤ" && NAVIGATION_SECTIONS[2].routeIds.length === 5, "G0-Nav: Nhóm Công cụ có 5 mục");
+assert(NAVIGATION_SECTIONS[2].title === "CÔNG CỤ" && ['quiz', 'weaknesses', 'exam-plan-ai', 'leave-letter'].every(id => NAVIGATION_SECTIONS[2].routeIds.includes(id)), "G0-Nav: Nhóm Công cụ có đủ các luồng Sprint 3");
 assert(NAVIGATION_SECTIONS[3].routeIds.includes("progress") && NAVIGATION_SECTIONS[3].routeIds.includes("notifications"), "G0-Nav: Phía cuối danh sách là Tiến độ & Thông báo");
 assert(NAVIGATION_SECTIONS[4].routeIds.includes("sync") && NAVIGATION_SECTIONS[4].routeIds.includes("profile"), "G0-Nav: Footer cố định là Đồng bộ dữ liệu & Hồ sơ cá nhân");
 

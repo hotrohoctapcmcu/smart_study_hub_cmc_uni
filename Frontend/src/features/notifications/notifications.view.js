@@ -1,3 +1,4 @@
+import { escapeHtml } from "../../shared/utils/validation.js";
 /**
  * UniStudy CMC - Unified Notifications & School Email View
  * Gộp thông báo hệ thống, nhắc deadline và hòm thư sinh viên CMC vào một giao diện duy nhất
@@ -6,7 +7,7 @@ import { state } from "../../app/state.js";
 import { getActiveTab } from "../../app/workspace.js";
 import { formatDateTimeVN } from "../../shared/utils/date.js";
 import { renderEmptyState } from "../../shared/components/empty-state.js";
-import { getSchoolEmails } from "../school-email/school-email.service.js";
+import { getSchoolEmails, schoolEmailStatus } from "../school-email/school-email.service.js";
 
 export function renderNotificationsView() {
   const activeTab = getActiveTab();
@@ -85,6 +86,12 @@ export function renderNotificationsView() {
         }
       </div>
 
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:16px 0;">
+        <button type="button" class="button secondary" id="connectOutlookBtn" ${schoolEmailStatus.pending ? 'disabled' : ''}>Kết nối Outlook</button>
+        <button type="button" class="button primary" id="syncEmailNowBtn" ${schoolEmailStatus.pending ? 'disabled' : ''}>Đồng bộ hòm thư</button>
+        <button type="button" class="button ghost" id="disconnectOutlookBtn">Ngắt kết nối</button>
+        <span role="status">${escapeHtml(schoolEmailStatus.pending ? 'Đang kết nối / đồng bộ...' : schoolEmailStatus.error || schoolEmailStatus.text)}</span>
+      </div>
       <!-- Dải bộ lọc tích hợp -->
       <div class="notif-filter-bar">
         <div class="notif-filter-group" style="flex-wrap:wrap;">
@@ -113,7 +120,7 @@ export function renderNotificationsView() {
                 <div class="notif-content-wrap">
                   <div class="notif-title-row">
                     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                      <strong style="color:var(--ink-950);font-size:0.98rem;">${item.title}</strong>
+                      <strong style="color:var(--ink-950);font-size:0.98rem;">${escapeHtml(item.title)}</strong>
                       <span class="badge-draft" style="font-size:0.72rem;${isEmail ? "background:#ede9fe;color:#5b21b6;" : ""}">
                         ${isEmail ? "📧 Email trường CMC" : item.type === "deadline" ? "⏰ Nhắc deadline" : "🔔 Thông báo hệ thống"}
                       </span>
@@ -124,12 +131,12 @@ export function renderNotificationsView() {
                   ${
                     isEmail
                       ? `<div style="font-size:0.8rem;color:var(--ink-600);margin:2px 0 6px;">
-                           Từ: <strong>${item.senderName}</strong> &lt;${item.sender}&gt;
+                           Từ: <strong>${escapeHtml(item.senderName)}</strong> &lt;${escapeHtml(item.sender)}&gt;
                          </div>`
                       : ""
                   }
 
-                  <p class="notif-body-text">${item.body}</p>
+                  <p class="notif-body-text">${escapeHtml(item.body)}</p>
 
                   <!-- Khối Trích xuất Deadline / Lịch thi từ Email -->
                   ${
@@ -139,7 +146,7 @@ export function renderNotificationsView() {
                       <div style="display:flex;align-items:center;gap:8px;">
                         <svg style="color:var(--red-600);width:18px;height:18px;"><use href="#i-clock"></use></svg>
                         <span style="font-size:0.85rem;color:var(--ink-900);">
-                          <strong>Hạn nộp bài:</strong> ${item.extractedDeadline.title} · Hạn: ${item.extractedDeadline.due?.replace("T", " ")}
+                          <strong>Hạn nộp bài:</strong> ${escapeHtml(item.extractedDeadline.title)} · Hạn: ${escapeHtml(item.extractedDeadline.due?.replace("T", " "))}
                         </span>
                       </div>
                       ${
@@ -161,7 +168,7 @@ export function renderNotificationsView() {
                       <div style="display:flex;align-items:center;gap:8px;">
                         <svg style="color:var(--amber-600);width:18px;height:18px;"><use href="#i-exam"></use></svg>
                         <span style="font-size:0.85rem;color:var(--ink-900);">
-                          <strong>Lịch thi:</strong> ${item.extractedExam.subject} (${item.extractedExam.code}) · Ngày ${item.extractedExam.date} lúc ${item.extractedExam.start}
+                          <strong>Lịch thi:</strong> ${escapeHtml(item.extractedExam.subject)} (${escapeHtml(item.extractedExam.code)}) · Ngày ${escapeHtml(item.extractedExam.date)} lúc ${escapeHtml(item.extractedExam.start)}
                         </span>
                       </div>
                       ${

@@ -35,43 +35,32 @@ function createProgressService({ getDb }) {
         const nowUtc = now.toISOString();
 
         const rows = await db.executeQuery(`
-            SELECT
-                s.subject_id AS subjectId,
-                s.subject_code AS subjectCode,
-                s.subject_name AS subjectName,
-                COUNT(a.assignment_id) AS totalAssignments,
-                COALESCE(SUM(CASE WHEN a.status = 'COMPLETED' THEN 1 ELSE 0 END), 0)
-                    AS completedAssignments,
-                COALESCE(SUM(CASE
-                    WHEN a.assignment_id IS NOT NULL
-                     AND a.status <> 'COMPLETED'
-                     AND (
-                        a.status = 'OVERDUE'
-                        OR (length(a.deadline) <= 10 AND date(a.deadline) < date(@today))
-                        OR (length(a.deadline) > 10
-                            AND datetime(a.deadline) < datetime(@nowUtc))
-                     )
-                    THEN 1 ELSE 0
-                END), 0) AS overdueAssignments
-            FROM Subjects s
-            LEFT JOIN Assignments a
-                ON a.subject_id = s.subject_id
-               AND a.student_id = @studentId
-            WHERE EXISTS (
-                    SELECT 1
-                    FROM StudentSubjects enrolled_subject
-                    WHERE enrolled_subject.subject_id = s.subject_id
-                      AND enrolled_subject.student_id = @studentId
-                      AND enrolled_subject.status <> 'DROPPED'
-               ) OR EXISTS (
-                    SELECT 1
-                    FROM Assignments owned_assignment
-                    WHERE owned_assignment.subject_id = s.subject_id
-                      AND owned_assignment.student_id = @studentId
-               )
-            GROUP BY s.subject_id, s.subject_code, s.subject_name
-            ORDER BY s.subject_name COLLATE NOCASE ASC
-        `, { studentId: profile.student_id, today, nowUtc });
+            WITH task_sources AS (
+                SELECT a.subject_id, s.subject_name, s.subject_code, a.title, a.deadline,
+                       CASE WHEN a.status='COMPLETED' THEN 1 ELSE 0 END AS completed,
+                       CASE WHEN a.status='OVERDUE' THEN 1 ELSE 0 END AS overdue
+                FROM Assignments a JOIN Subjects s ON s.subject_id=a.subject_id WHERE a.student_id=@studentId
+                UNION ALL
+                SELECT NULL, COALESCE(e.subject_name,'EDUX'), 'EDUX', e.title, e.deadline,
+                       CASE WHEN e.status IN ('Hoàn thành','COMPLETED') THEN 1 ELSE 0 END, 0
+                FROM EduxAssignments e WHERE e.user_id=@userId AND e.is_hidden=0
+            ), subject_catalog AS (
+                SELECT MIN(subject_id) AS subject_id, MIN(subject_code) AS subject_code, subject_name
+                FROM (
+                    SELECT s.subject_id,s.subject_code,s.subject_name FROM Subjects s
+                    JOIN StudentSubjects enrolled ON enrolled.subject_id=s.subject_id
+                    WHERE enrolled.student_id=@studentId AND enrolled.status<>'DROPPED'
+                    UNION ALL SELECT subject_id,subject_code,subject_name FROM task_sources
+                ) GROUP BY subject_name COLLATE NOCASE
+            )
+            SELECT c.subject_id AS subjectId, c.subject_code AS subjectCode, c.subject_name AS subjectName,
+                   COUNT(t.title) AS totalAssignments, COALESCE(SUM(t.completed),0) AS completedAssignments,
+                   SUM(CASE WHEN t.completed=0 AND (t.overdue=1 OR
+                       (length(t.deadline)<=10 AND date(t.deadline)<date(@today)) OR
+                       (length(t.deadline)>10 AND datetime(t.deadline)<datetime(@nowUtc))) THEN 1 ELSE 0 END) AS overdueAssignments
+            FROM subject_catalog c LEFT JOIN task_sources t ON t.subject_name=c.subject_name COLLATE NOCASE
+            GROUP BY c.subject_name COLLATE NOCASE ORDER BY c.subject_name
+        `, { studentId: profile.student_id, userId: studentId, today, nowUtc });
 
         const subjects = rows.map(row => {
             const totalAssignments = Number(row.totalAssignments) || 0;
@@ -98,36 +87,25 @@ function createProgressService({ getDb }) {
         };
     }
 
-    async function getWeeklyStudyHours(studentId) {
+    async function getWeeklyStudyHours(studentId, from, to) {
         const { db, profile } = await getStudentContext(studentId);
-        const week = getCurrentVnWeek();
-
-        const scheduleRows = await db.executeQuery(`
-            SELECT COALESCE(SUM(duration_minutes), 0) AS totalMinutes
-            FROM StudySchedules
-            WHERE student_id = @studentId
-              AND status = 'COMPLETED'
-              AND study_date >= @weekStart
-              AND study_date < @weekEnd
-        `, {
-            studentId: profile.student_id,
-            weekStart: week.startDate,
-            weekEnd: week.endDate
-        });
-        const selfStudyMinutes = Number(scheduleRows[0]?.totalMinutes) || 0;
-        const pomodoro = await getPomodoroMinutes(db, studentId, profile.student_id, week);
-
+        const { sessionSegments, unionMilliseconds, requestedRange } = require('../shared/study-time');
+        const week = requestedRange(from, to) || getCurrentVnWeek();
+        const rangeStart = Date.parse(`${week.startDate}T00:00:00+07:00`);
+        const rangeEnd = Date.parse(`${week.endDate}T00:00:00+07:00`);
+        const schedules = await db.executeQuery(`SELECT study_date,start_time,end_time FROM StudySchedules
+            WHERE student_id=@sid AND status='COMPLETED' AND study_date>=@start AND study_date<@end`,
+            { sid: profile.student_id, start: week.startDate, end: week.endDate });
+        const sessions = await db.executeQuery(`SELECT * FROM PomodoroSessions WHERE student_id=@sid AND status IN ('COMPLETED','CANCELLED')`, { sid: profile.student_id });
+        const self = schedules.map(row => [Date.parse(`${row.study_date}T${row.start_time}+07:00`), Date.parse(`${row.study_date}T${row.end_time}+07:00`)]);
+        const focus = sessions.flatMap(sessionSegments);
+        const pomoMs = unionMilliseconds(focus, rangeStart, rangeEnd);
+        const totalMs = unionMilliseconds([...self, ...focus], rangeStart, rangeEnd);
         return {
-            totalHours: roundHours((selfStudyMinutes + pomodoro.minutes) / 60),
-            selfStudyHours: roundHours(selfStudyMinutes / 60),
-            pomodoroHours: roundHours(pomodoro.minutes / 60),
-            weekStart: week.startDate,
-            weekEnd: week.endDate,
-            sources: {
-                selfStudyAvailable: true,
-                pomodoroAvailable: pomodoro.available
-            },
-            warnings: pomodoro.warning ? [pomodoro.warning] : []
+            totalHours: roundHours(totalMs / 3600000), selfStudyHours: roundHours((totalMs-pomoMs) / 3600000),
+            pomodoroHours: roundHours(pomoMs / 3600000), weekStart: week.startDate, weekEnd: week.endDate,
+            sources: { selfStudyAvailable: true, pomodoroAvailable: true }, warnings: [],
+            overlapPolicy: 'Pomodoro được ưu tiên; khoảng tự học trùng chỉ tính một lần.'
         };
     }
 
@@ -255,10 +233,6 @@ function createProgressService({ getDb }) {
 
 const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const POMODORO_DURATION_COLUMNS = ['actual_study_seconds', 'study_seconds', 'duration_seconds'];
-const POMODORO_START_COLUMNS = ['started_at', 'start_time', 'created_at'];
-const POMODORO_END_COLUMNS = ['ended_at', 'end_time', 'finished_at'];
-const POMODORO_OWNER_COLUMNS = ['student_id', 'user_id'];
 
 function getVnDateString(date) {
     const vnDate = new Date(date.getTime() + VN_OFFSET_MS);
@@ -297,75 +271,6 @@ function daysBetweenVnDates(fromDate, toDate) {
 
 function roundHours(hours) {
     return Math.round(hours * 100) / 100;
-}
-
-async function getPomodoroMinutes(db, userId, studentId, week) {
-    const sessions = await db.executeQuery(
-        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = @tableName LIMIT 1",
-        { tableName: 'PomodoroSessions' }
-    );
-    if (sessions.length) {
-        const rows = await db.executeQuery(`
-            SELECT COALESCE(SUM(total_focus_minutes), 0) AS minutes
-            FROM PomodoroSessions
-            WHERE student_id = @studentId
-              AND status IN ('COMPLETED', 'CANCELLED')
-              AND session_date >= @weekStart AND session_date < @weekEnd
-        `, { studentId, weekStart: week.startDate, weekEnd: week.endDate });
-        return { minutes: Number(rows[0]?.minutes) || 0, available: true, warning: null };
-    }
-    const tables = await db.executeQuery(
-        "SELECT name FROM sqlite_master WHERE type = 'table' AND lower(name) = lower(@tableName) LIMIT 1",
-        { tableName: 'Pomodoros' }
-    );
-    if (!tables.length) {
-        return {
-            minutes: 0,
-            available: false,
-            warning: 'Pomodoro chưa được lưu trong database; tổng giờ hiện chỉ gồm các buổi tự học đã hoàn thành.'
-        };
-    }
-
-    const tableName = tables[0].name;
-    const columns = await db.executeQuery(`PRAGMA table_info("${tableName.replace(/"/g, '""')}")`);
-    const names = columns.map(column => column.name.toLowerCase());
-    const findColumn = candidates => {
-        const index = candidates.find(candidate => names.includes(candidate));
-        return index ? columns.find(column => column.name.toLowerCase() === index).name : null;
-    };
-    const ownerColumn = findColumn(POMODORO_OWNER_COLUMNS);
-    const startColumn = findColumn(POMODORO_START_COLUMNS);
-    const endColumn = findColumn(POMODORO_END_COLUMNS);
-    const durationColumn = findColumn(POMODORO_DURATION_COLUMNS);
-
-    if (!ownerColumn || !startColumn || (!endColumn && !durationColumn)) {
-        return {
-            minutes: 0,
-            available: false,
-            warning: 'Schema Pomodoros chưa có đủ cột chủ sở hữu, thời điểm bắt đầu và thời lượng; tổng giờ chưa bao gồm Pomodoro.'
-        };
-    }
-
-    const quote = identifier => `"${identifier.replace(/"/g, '""')}"`;
-    const ownerId = ownerColumn.toLowerCase() === 'user_id' ? userId : studentId;
-    const timeRange = `datetime(${quote(startColumn)}) >= datetime(@weekStartUtc)
-        AND datetime(${quote(startColumn)}) < datetime(@weekEndUtc)`;
-    const durationExpression = durationColumn
-        ? `COALESCE(SUM(COALESCE(${quote(durationColumn)}, 0)), 0)`
-        : `COALESCE(SUM(MAX(0, (julianday(${quote(endColumn)}) - julianday(${quote(startColumn)})) * 86400)), 0)`;
-    const rows = await db.executeQuery(`
-        SELECT ${durationExpression} AS totalDuration
-        FROM ${quote(tableName)}
-        WHERE ${quote(ownerColumn)} = @ownerId
-          AND ${timeRange}
-    `, {
-        ownerId,
-        weekStartUtc: new Date(Date.parse(`${week.startDate}T00:00:00+07:00`)).toISOString(),
-        weekEndUtc: new Date(Date.parse(`${week.endDate}T00:00:00+07:00`)).toISOString()
-    });
-
-    // Các cột thời lượng Pomodoro đang được hỗ trợ lưu theo giây.
-    return { minutes: (Number(rows[0]?.totalDuration) || 0) / 60, available: true, warning: null };
 }
 
 module.exports = { createProgressService };

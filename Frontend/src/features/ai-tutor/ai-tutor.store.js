@@ -3,7 +3,12 @@
  * Giữ hội thoại của panel trợ lý AI giữa các lần shell re-render
  * (shell dựng lại toàn bộ DOM mỗi khi state đổi).
  */
-import { getAssistantStatus, askAssistant } from "./ai-tutor.service.js";
+import { getAssistantStatus, askAssistant, listConversations, getConversation } from "./ai-tutor.service.js";
+
+const freshId = () => `ai-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+function savedId() { try { return localStorage.getItem('ai-active-conversation'); } catch { return null; } }
+function rememberId(id) { try { localStorage.setItem('ai-active-conversation', id); } catch { /* Storage is optional. */ } }
+let historyPromise = null;
 
 export const aiChatState = {
   // "idle" | "loading" | "ready" | "unavailable"
@@ -13,7 +18,10 @@ export const aiChatState = {
   pending: false,
   error: "",
   draft: "",
-  conversationId: `ai-${Date.now()}`
+  conversationId: savedId() || freshId(),
+  history: [],
+  historyLoaded: false,
+  historyError: ""
 };
 
 export function resetAiChat() {
@@ -23,7 +31,38 @@ export function resetAiChat() {
   aiChatState.pending = false;
   aiChatState.error = "";
   aiChatState.draft = "";
-  aiChatState.conversationId = `ai-${Date.now()}`;
+  aiChatState.conversationId = freshId();
+  aiChatState.history = [];
+  aiChatState.historyLoaded = false;
+  aiChatState.historyError = "";
+  historyPromise = null;
+}
+
+export function newConversation() {
+  if (aiChatState.pending) return;
+  aiChatState.messages = []; aiChatState.error = ''; aiChatState.draft = '';
+  aiChatState.conversationId = freshId(); rememberId(aiChatState.conversationId);
+}
+
+export async function selectConversation(id) {
+  if (aiChatState.pending) return;
+  const item = await getConversation(id);
+  aiChatState.conversationId = item.id; aiChatState.messages = item.messages;
+  aiChatState.error = ''; aiChatState.draft = ''; rememberId(item.id);
+}
+
+export async function loadChatHistory(force = false) {
+  if (historyPromise) return historyPromise;
+  if (aiChatState.historyLoaded && !force) return;
+  historyPromise = (async () => {
+    try {
+      const id = aiChatState.conversationId;
+      aiChatState.history = await listConversations();
+      if (!aiChatState.messages.length && !aiChatState.pending && aiChatState.conversationId === id && aiChatState.history.some(item => item.id === id)) await selectConversation(id);
+      aiChatState.historyLoaded = true; aiChatState.historyError = '';
+    } catch (error) { aiChatState.historyError = error.message; }
+  })();
+  try { await historyPromise; } finally { historyPromise = null; }
 }
 
 /**
@@ -68,7 +107,9 @@ export function beginQuestion(text) {
  * @returns {Promise<{success: boolean}>}
  */
 export async function askCurrentQuestion(question) {
+  const id = aiChatState.conversationId;
   const res = await askAssistant(question, aiChatState.conversationId);
+  if (aiChatState.conversationId !== id) return { success: false };
   aiChatState.pending = false;
 
   if (!res.success) {
@@ -77,6 +118,9 @@ export async function askCurrentQuestion(question) {
   }
 
   aiChatState.messages.push({ role: "assistant", text: res.answer });
+  aiChatState.conversationId = res.conversationId || id; rememberId(aiChatState.conversationId);
+  const entry = aiChatState.history.find(item => item.id === aiChatState.conversationId);
+  if (!entry) aiChatState.history.unshift({ id: aiChatState.conversationId, title: question.slice(0, 100) });
   if (aiChatState.status !== "ready") {
     aiChatState.status = "ready";
     aiChatState.statusMessage = "";

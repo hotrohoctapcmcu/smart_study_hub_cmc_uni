@@ -21,6 +21,7 @@ import {
   setPomodoroSoundEnabled
 } from "./pomodoro.storage.js";
 import { ASSETS } from "../../shared/config/assets.js";
+import { syncPomodoroHistory, clearServerPomodoroHistory, pomodoroSyncStatus, isPomodoroSyncEnabled } from "./pomodoro.sync.js";
 
 export { getTotalPomodoroStudySeconds, getPomodoroStats, isPomodoroSoundEnabled, setPomodoroSoundEnabled };
 
@@ -80,8 +81,27 @@ function createDefaultSession() {
     startTime: null,
     lastResumeTime: null,
     actualStudyMs: 0,
+    focusSegments: [],
     hasRecordedHistory: false
   };
+}
+
+function closeFocusSegment(end = Date.now()) {
+  if (!currentSession?.lastResumeTime) return;
+  const start = currentSession.lastResumeTime;
+  end = Math.min(end, currentSession.targetEndTime || end);
+  if (!currentSession.focusSegments) {
+    const previousEnd = Math.min(start, currentSession.startTime + (currentSession.actualStudyMs || 0));
+    currentSession.focusSegments = previousEnd > currentSession.startTime ? [{ start: new Date(currentSession.startTime).toISOString(), end: new Date(previousEnd).toISOString() }] : [];
+  }
+  if (end > start) currentSession.focusSegments.push({ start: new Date(start).toISOString(), end: new Date(end).toISOString() });
+}
+
+function recordHistory(item) {
+  const segments = currentSession.focusSegments || [];
+  saveHistoryItem({ ...item, startTime: item.createdAt,
+    endTime: segments.at(-1)?.end || new Date().toISOString(), focusSegments: segments });
+  syncPomodoroHistory().then(notifyListeners);
 }
 
 /**
@@ -205,7 +225,8 @@ function handleTimeExpired() {
       }
       const actualSeconds = Math.round(studyMs / 1000);
 
-      saveHistoryItem({
+      closeFocusSegment(Math.min(now, currentSession.targetEndTime));
+      recordHistory({
         id: `pomo-${currentSession.startTime || now}`,
         createdAt: new Date(currentSession.startTime || now).toISOString(),
         workDurationMinutes: Math.max(1, Math.round(currentSession.totalWorkSeconds / 60)),
@@ -296,6 +317,7 @@ export function startSession(hours = 0, minutes = 25, seconds = 0, breakMinutes 
     startTime: now,
     lastResumeTime: now,
     actualStudyMs: 0,
+    focusSegments: [],
     hasRecordedHistory: false
   };
 
@@ -382,6 +404,8 @@ export function pauseSession() {
   const now = Date.now();
 
   if (currentSession.state === "running") {
+    if (now >= currentSession.targetEndTime) { handleTimeExpired(); return; }
+    closeFocusSegment(now);
     if (currentSession.lastResumeTime) {
       currentSession.actualStudyMs = (currentSession.actualStudyMs || 0) + (now - currentSession.lastResumeTime);
       currentSession.lastResumeTime = null;
@@ -468,6 +492,7 @@ export function endSession(isEarly = false) {
   const now = Date.now();
 
   if (isEarly && currentSession.mode === "study" && !currentSession.hasRecordedHistory) {
+    if (currentSession.state === "running" && now >= currentSession.targetEndTime) { handleTimeExpired(); endSession(false); return; }
     let studyMs = currentSession.actualStudyMs || 0;
     if (currentSession.state === "running" && currentSession.lastResumeTime) {
       studyMs += Math.max(0, now - currentSession.lastResumeTime);
@@ -475,7 +500,8 @@ export function endSession(isEarly = false) {
     const actualSeconds = Math.round(studyMs / 1000);
 
     if (actualSeconds >= 5) {
-      saveHistoryItem({
+      if (currentSession.state === "running") closeFocusSegment(now);
+      recordHistory({
         id: `pomo-${currentSession.startTime || now}`,
         createdAt: new Date(currentSession.startTime || now).toISOString(),
         workDurationMinutes: Math.max(1, Math.round(currentSession.totalWorkSeconds / 60)),
@@ -563,14 +589,17 @@ export function getState() {
     secondsLeft: time.seconds,
     progress: time.progress,
     history: getHistory(),
-    soundEnabled: isPomodoroSoundEnabled()
+    soundEnabled: isPomodoroSoundEnabled(),
+    syncStatus: { ...pomodoroSyncStatus }
   };
 }
 
 /**
  * Xóa toàn bộ lịch sử học tập
  */
-export function clearAllHistory() {
+export async function clearAllHistory() {
+  if (!isPomodoroSyncEnabled()) { clearHistory(); notifyListeners(); return; }
+  await clearServerPomodoroHistory();
   clearHistory();
   notifyListeners();
 }

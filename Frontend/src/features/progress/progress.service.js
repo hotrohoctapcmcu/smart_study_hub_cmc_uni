@@ -43,15 +43,16 @@ export async function requestProgressAdvice(period, selectedDate, serverMetrics)
   return generateProgressAdvice(progress);
 }
 
-export async function fetchServerProgress() {
-  const response = await apiRequest(ENDPOINTS.progress.get, { queryParams: { advice: false }, silent: true });
+export async function fetchServerProgress(period, selectedDate) {
+  const range = selectedDate ? getPeriodRange(period, selectedDate) : {};
+  const response = await apiRequest(ENDPOINTS.progress.get, { queryParams: { advice: false, ...range }, silent: true });
   if (!response.success) throw new Error(response.error || "Không thể tải tiến độ đã lưu.");
   const data = response.data?.data;
   if (!data?.metrics) throw new Error("Dữ liệu tiến độ trả về không hợp lệ.");
   return data;
 }
 
-export async function fetchServerTimeMap(period, selectedDate) {
+export function getPeriodRange(period, selectedDate) {
   let from = selectedDate;
   let to = selectedDate;
   if (period === "week") {
@@ -63,7 +64,11 @@ export async function fetchServerTimeMap(period, selectedDate) {
     from = `${selectedDate.slice(0, 7)}-01`;
     to = `${selectedDate.slice(0, 7)}-${new Date(year, month, 0).getDate()}`;
   }
-  const response = await apiRequest(ENDPOINTS.timemap.get, { queryParams: { from, to }, silent: true });
+  return { from, to };
+}
+
+export async function fetchServerTimeMap(period, selectedDate) {
+  const response = await apiRequest(ENDPOINTS.timemap.get, { queryParams: getPeriodRange(period, selectedDate), silent: true });
   if (!response.success) throw new Error(response.error || "Không thể tải bản đồ thời gian đã lưu.");
   const data = response.data;
   if (!data?.data || Array.isArray(data.data)) throw new Error("Dữ liệu bản đồ thời gian không hợp lệ.");
@@ -92,7 +97,7 @@ export function allocateSessionToHours(sessionStartMs, sessionEndMs, targetDateS
     const overlapEnd = Math.min(clippedEndMs, slotEndMs);
 
     if (overlapEnd > overlapStart) {
-      const mins = Math.round((overlapEnd - overlapStart) / 60000);
+      const mins = (overlapEnd - overlapStart) / 60000;
       hourlyMinutes[hour] += mins;
     }
   }
@@ -127,6 +132,14 @@ export function extractSessionTimeRange(item) {
   if (startMs > endMs) startMs = endMs - actualSeconds * 1000;
 
   return { startMs, endMs, actualSeconds };
+}
+
+export function extractSessionFocusRanges(item) {
+  if (Array.isArray(item.focusSegments) && item.focusSegments.length) {
+    return item.focusSegments.map(segment => ({ startMs: Date.parse(segment.start), endMs: Date.parse(segment.end) }))
+      .filter(range => Number.isFinite(range.startMs) && range.endMs > range.startMs);
+  }
+  return [extractSessionTimeRange(item)];
 }
 
 /**
@@ -207,17 +220,13 @@ export function getProgressAnalytics(period = "week", selectedDateStr = null) {
     }
 
     // Thời lượng thực học được phân bổ theo khoảng thực tế
-    const overlapStart = Math.max(startMs, rangeStartMs);
-    const overlapEnd = Math.min(endMs, rangeEndMs);
-    if (overlapEnd > overlapStart) {
-      const durSec = Math.round((overlapEnd - overlapStart) / 1000);
-      periodActualSeconds += durSec;
-      validSessionsInPeriod.push({
-        item,
-        startMs,
-        endMs,
-        actualSeconds
-      });
+    for (const range of extractSessionFocusRanges(item)) {
+      const overlapStart = Math.max(range.startMs, rangeStartMs);
+      const overlapEnd = Math.min(range.endMs, rangeEndMs);
+      if (overlapEnd > overlapStart) {
+        periodActualSeconds += (overlapEnd - overlapStart) / 1000;
+        validSessionsInPeriod.push({ item, ...range, actualSeconds });
+      }
     }
   }
 

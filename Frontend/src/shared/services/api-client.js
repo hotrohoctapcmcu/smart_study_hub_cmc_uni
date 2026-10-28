@@ -81,7 +81,9 @@ export async function apiRequest(endpointDef, options = {}) {
       signal: options.signal || (controller ? controller.signal : undefined)
     };
 
-    if (options.body && endpointDef.method !== "GET") {
+    if (options.rawBody !== undefined && endpointDef.method !== "GET") {
+      fetchOptions.body = options.rawBody;
+    } else if (options.body && endpointDef.method !== "GET") {
       fetchOptions.body = JSON.stringify(options.body);
     }
 

@@ -5,6 +5,15 @@
 import { ENDPOINTS } from "../../shared/config/endpoints.js";
 import { apiRequest } from "../../shared/services/api-client.js";
 import { state, notifyStateChange } from "../../app/state.js";
+import { workspaceRequest } from "../../shared/services/workspace-api.js";
+const parseTags = value => { try { return Array.isArray(value) ? value : JSON.parse(value || '[]'); } catch { return []; } };
+
+export async function setTaskTags(task, tags) {
+  const edux = task.source === 'EDUX';
+  const id = edux ? task.id : String(task.id).replace(/^task-/, '');
+  await workspaceRequest('PATCH', `/tags/${edux ? 'edux' : 'tasks'}/${encodeURIComponent(id)}`, { body: { tags } });
+  await fetchTasksFromApi();
+}
 
 /**
  * Lấy danh sách môn học của sinh viên từ backend
@@ -47,6 +56,7 @@ export function mapTaskFromBackend(row, allChecklists = []) {
 
   return {
     id: `task-${assignmentId}`,
+    tags: parseTags(row.tags),
     assignmentId,
     title: row.title || "Công việc học tập",
     subject: row.subject_name || row.subject_code || "Chưa phân loại",
@@ -69,6 +79,7 @@ export function mapTaskFromBackend(row, allChecklists = []) {
 export function mapEduxTaskFromBackend(item, idx = 0) {
   return {
     id: item?.id || `edux-${idx}`,
+    tags: parseTags(item?.tags),
     title: item?.title || "Bài tập EDUX",
     subject: item?.subject || "Học phần EDUX",
     due: null, // EDUX không công bố hạn nộp
@@ -195,6 +206,14 @@ export async function createTaskApi(taskData) {
  * Cập nhật công việc trên Backend API
  */
 export async function updateTaskApi(taskId, updates) {
+  const eduxTask = state.tasks.find(task => task.id === taskId && task.source === 'EDUX');
+  if (eduxTask) {
+    if (updates.status !== undefined) {
+      const result = await apiRequest({ method: 'PATCH', path: `/api/v1/tasks/edux/${encodeURIComponent(taskId)}/status` }, { body: { status: updates.status } });
+      if (!result.success) throw new Error(result.error || 'Không lưu được trạng thái EDUX.');
+    }
+    await fetchTasksFromApi(); return;
+  }
   const numericId = String(taskId).replace(/^task-/, "");
 
   const updateBody = {};

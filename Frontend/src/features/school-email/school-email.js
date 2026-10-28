@@ -3,8 +3,9 @@
  */
 import { renderSchoolEmailView } from "./school-email.view.js";
 import { attachSchoolEmailEvents } from "./school-email.events.js";
+import { fetchSchoolEmails } from "./school-email.service.js";
 
-export function mountSchoolEmail(containerEl) {
+export async function mountSchoolEmail(containerEl) {
   const uiState = {
     filter: "all",
     searchQuery: ""
@@ -16,4 +17,5 @@ export function mountSchoolEmail(containerEl) {
   }
 
   render();
+  try { await fetchSchoolEmails(); if (containerEl.isConnected !== false) render(); } catch { /* Saved local cache stays visible. */ }
 }

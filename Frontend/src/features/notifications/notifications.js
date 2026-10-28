@@ -4,6 +4,7 @@
 import { renderNotificationsView } from "./notifications.view.js";
 import { attachNotificationsEvents } from "./notifications.events.js";
 import { fetchNotificationsFromApi } from "./notifications.service.js";
+import { fetchSchoolEmails } from "../school-email/school-email.service.js";
 
 let notifsLoaded = false;
 
@@ -12,6 +13,9 @@ export async function mountNotifications(containerEl) {
   // trong lúc chờ fetch.
   containerEl.innerHTML = renderNotificationsView();
   attachNotificationsEvents(containerEl);
+  fetchSchoolEmails().then(() => {
+    if (containerEl.isConnected !== false) { containerEl.innerHTML = renderNotificationsView(); attachNotificationsEvents(containerEl); }
+  }).catch(() => {});
   if (!notifsLoaded) {
     try {
       await fetchNotificationsFromApi();

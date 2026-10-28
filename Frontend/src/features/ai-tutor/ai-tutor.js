@@ -7,6 +7,10 @@
  */
 import { renderAiChatPanel } from "./ai-tutor.view.js";
 import { attachAiChatEvents, openAiChat } from "./ai-tutor.events.js";
+import { aiChatState, loadChatHistory, selectConversation, newConversation } from "./ai-tutor.store.js";
+import { notifyStateChange } from "../../app/state.js";
+import { escapeHtml as e } from "../../shared/utils/validation.js";
+import { changeCurrentTabRoute } from "../../app/workspace.js";
 
 /**
  * Mount trang Trợ lý AI vào content pane.
@@ -24,6 +28,18 @@ export async function mountAiTutor(containerEl) {
           nổi ở góc phải màn hình.
         </p>
       </div>
+
+      <div class="ai-chat-history-bar">
+        <label for="aiHistorySelect">Hội thoại đã lưu</label>
+        <select id="aiHistorySelect" ${aiChatState.pending ? 'disabled' : ''}>
+          <option value="">Chọn hội thoại</option>
+          ${aiChatState.history.map(item => `<option value="${e(item.id)}" ${item.id === aiChatState.conversationId ? 'selected' : ''}>${e(item.title)}</option>`).join('')}
+        </select>
+        <button type="button" class="button secondary small" id="aiNewConversation" ${aiChatState.pending ? 'disabled' : ''}>Hội thoại mới</button>
+        <button type="button" class="button ghost small" id="aiHistoryRefresh">Tải lại lịch sử</button>
+      </div>
+      ${aiChatState.historyError ? `<p role="alert">${e(aiChatState.historyError)}</p>` : ''}
+      <div class="ai-study-row"><button class="button ghost small" data-ai-tool="quiz">Kiểm tra kiến thức</button><button class="button ghost small" data-ai-tool="weaknesses">Điểm yếu</button><button class="button ghost small" data-ai-tool="exam-plan-ai">AI ôn thi</button><button class="button ghost small" data-ai-tool="leave-letter">Soạn đơn nghỉ học</button></div>
 
       <div class="ai-tutor-panel-host" id="aiTutorPageHost">
         ${renderAiChatPanel()}
@@ -46,6 +62,17 @@ export async function mountAiTutor(containerEl) {
   }
 
   attachAiChatEvents(panel);
+  containerEl.querySelector('#aiNewConversation').addEventListener('click', () => { newConversation(); notifyStateChange(); });
+  containerEl.querySelector('#aiHistorySelect').addEventListener('change', async event => {
+    if (!event.target.value) return;
+    event.target.disabled = true;
+    try { await selectConversation(event.target.value); } catch (error) { aiChatState.error = error.message; }
+    notifyStateChange();
+  });
+  containerEl.querySelector('#aiHistoryRefresh').addEventListener('click', async event => {
+    event.currentTarget.disabled = true; await loadChatHistory(true); notifyStateChange();
+  });
+  containerEl.querySelectorAll('[data-ai-tool]').forEach(button => button.addEventListener('click', () => changeCurrentTabRoute(button.dataset.aiTool)));
 
   // Kiểm tra trạng thái dịch vụ một lần (store tự bỏ qua nếu đã biết).
   await openAiChat();

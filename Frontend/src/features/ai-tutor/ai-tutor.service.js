@@ -76,5 +76,17 @@ export async function askAssistant(question, conversationId) {
     return { success: false, error: "Trợ lý AI không trả về nội dung." };
   }
 
-  return { success: true, answer };
+  return { success: true, answer, conversationId: res.data?.data?.conversationId };
+}
+
+export async function listConversations() {
+  const res = await apiRequest({ method: 'GET', path: '/api/v1/ai/conversations' });
+  if (!res.success) throw new Error(res.error || FALLBACK_ERROR);
+  return res.data?.data || [];
+}
+
+export async function getConversation(id) {
+  const res = await apiRequest({ method: 'GET', path: '/api/v1/ai/conversations/:id' }, { params: { id } });
+  if (!res.success) throw new Error(res.error || FALLBACK_ERROR);
+  return res.data?.data;
 }

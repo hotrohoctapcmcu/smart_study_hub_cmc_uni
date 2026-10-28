@@ -22,7 +22,13 @@ import { mountPomodoro } from "../features/pomodoro/pomodoro.js?v=4";
 import { mountDocuments } from "../features/documents/documents.js";
 import { mountProgress } from "../features/progress/progress.js";
 import { mountAiTutor } from "../features/ai-tutor/ai-tutor.js";
+import { mountQuiz } from "../features/ai-study/quiz.js";
+import { mountWeaknesses } from "../features/ai-study/weaknesses.js";
+import { mountExamPlan } from "../features/ai-study/exam-plan.js";
+import { mountLeaveLetter } from "../features/ai-study/leave-letter.js";
 import { renderEmptyState } from "../shared/components/empty-state.js";
+import { renderTopbar, attachTopbarEvents } from "../shared/components/topbar.js";
+import { mountSchoolEmail } from "../features/school-email/school-email.js";
 
 export function renderShell(appEl) {
   // Không gian làm việc Workspace (vào thẳng trang chủ)
@@ -31,6 +37,8 @@ export function renderShell(appEl) {
 
   // Lưu vị trí cuộn của tab hiện tại vào tabState
   const oldContentPane = appEl.querySelector("#workspaceContentPane");
+  const preserveEditor = ['documents', 'quiz', 'weaknesses', 'exam-plan-ai', 'leave-letter'].includes(currentRouteId) && oldContentPane?.dataset.route === currentRouteId &&
+    oldContentPane.dataset.workspaceTab === String(activeTab?.id) && !activeTab?.tabState?.searchTarget;
   if (oldContentPane) {
     saveActiveTabScroll(oldContentPane.scrollTop, oldContentPane.scrollLeft);
   }
@@ -44,6 +52,7 @@ export function renderShell(appEl) {
       <main class="workspace-main">
         <!-- Thanh Tab nối liền phía trên -->
         ${renderWorkspaceTabs()}
+        ${renderTopbar()}
 
         <!-- Vùng chèn nội dung tính năng ngay dưới thanh Tab -->
         <div class="workspace-content-pane" id="workspaceContentPane" role="region" aria-label="Nội dung trang"></div>
@@ -61,6 +70,7 @@ export function renderShell(appEl) {
 
   // Gắn sự kiện các thành phần dùng chung
   attachSidebarEvents(appEl);
+  attachTopbarEvents(appEl);
   attachWorkspaceTabsEvents(appEl);
   attachFloatingActionsEvents(appEl);
 
@@ -70,9 +80,12 @@ export function renderShell(appEl) {
   }
 
   // Mount Feature View vào Content Pane và khôi phục vị trí cuộn
-  const contentPane = appEl.querySelector("#workspaceContentPane");
+  let contentPane = appEl.querySelector("#workspaceContentPane");
+  if (preserveEditor) { contentPane.replaceWith(oldContentPane); contentPane = oldContentPane; }
   if (contentPane) {
-    mountCurrentFeature(currentRouteId, contentPane);
+    contentPane.dataset.route = currentRouteId;
+    contentPane.dataset.workspaceTab = String(activeTab?.id);
+    if (!preserveEditor) mountCurrentFeature(currentRouteId, contentPane);
     const targetScrollTop = activeTab?.tabState?.scrollTop || 0;
     const targetScrollLeft = activeTab?.tabState?.scrollLeft || 0;
     if (targetScrollTop || targetScrollLeft) {
@@ -146,8 +159,12 @@ function mountCurrentFeature(routeId, contentPane) {
     case "ai-tutor":
       safe(mountAiTutor);
       break;
+    case "quiz": safe(mountQuiz); break;
+    case "weaknesses": safe(mountWeaknesses); break;
+    case "exam-plan-ai": safe(mountExamPlan); break;
+    case "leave-letter": safe(mountLeaveLetter); break;
     case "school-email":
-      safe(mountNotifications);
+      safe(mountSchoolEmail);
       break;
     default: {
       const routeDef = getRouteById(routeId);

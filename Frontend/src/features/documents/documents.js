@@ -4,6 +4,8 @@
  */
 import { renderDocumentsView } from "./documents.view.js";
 import { attachDocumentsEvents } from "./documents.events.js";
+import { refreshLearningLibrary } from "./documents.service.js";
+import { getActiveTab } from "../../app/workspace.js";
 
 let currentUiState = {
   docTab: "docs",
@@ -13,7 +15,10 @@ let currentUiState = {
   activeNoteId: null
 };
 
-export function mountDocuments(containerEl) {
+export async function mountDocuments(containerEl) {
+  const requested = getActiveTab()?.tabState?.searchTarget;
+  if (requested) currentUiState = { ...currentUiState, docTab: requested.docTab || 'docs', activeNoteId: requested.id, selectedCategory: 'Tất cả', selectedSubject: 'Tất cả', searchQuery: requested.type === 'document' ? requested.title : '' };
+  if (requested) delete getActiveTab().tabState.searchTarget;
   const render = () => {
     containerEl.innerHTML = renderDocumentsView(currentUiState);
     attachDocumentsEvents(containerEl, currentUiState, (newState) => {
@@ -22,7 +27,10 @@ export function mountDocuments(containerEl) {
     });
   };
 
+  const loading = refreshLearningLibrary();
   render();
+  await loading;
+  if (containerEl.isConnected !== false) render();
 }
 
 export function unmountDocuments() {

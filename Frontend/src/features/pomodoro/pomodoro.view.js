@@ -7,6 +7,7 @@ import { getState } from "./pomodoro.service.js";
 import { ASSETS } from "../../shared/config/assets.js";
 import { formatDateTimeVN } from "../../shared/utils/date.js";
 import { renderEmptyState } from "../../shared/components/empty-state.js";
+import { escapeHtml } from "../../shared/utils/validation.js";
 
 export function renderPomodoroView() {
   const pState = getState();
@@ -340,6 +341,8 @@ export function renderPomodoroView() {
 
       <!-- Khu vực lịch sử phiên học -->
       <div class="pomo-history-card">
+        <p role="status">${escapeHtml(pState.syncStatus.pending ? 'Đang lưu lịch sử...' : pState.syncStatus.error || 'Lịch sử đã sẵn sàng.')}</p>
+        <button type="button" class="button ghost small" id="retryPomodoroSyncBtn">Đồng bộ lịch sử</button>
         <div class="pomo-history-header">
           <div>
             <h3><svg><use href="#i-calendar"></use></svg> Lịch sử phiên học</h3>

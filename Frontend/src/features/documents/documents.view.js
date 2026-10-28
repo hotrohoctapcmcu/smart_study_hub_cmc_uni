@@ -3,7 +3,7 @@
  * 1. Kho tài liệu: Bộ lọc danh mục, khoảng cách chuẩn, không chạm viền
  * 2. Sổ tay ghi chú: Trang giấy soạn thảo bên TRÁI, danh sách trang bên PHẢI
  */
-import { getDocuments, getNotes } from "./documents.service.js";
+import { getDocuments, getNotes, getNotebooks, learningLibraryStatus, documentFileUrl, noteExportUrl, notebookExportUrl } from "./documents.service.js";
 import { formatDateTimeVN } from "../../shared/utils/date.js";
 import { renderEmptyState } from "../../shared/components/empty-state.js";
 import { renderModal } from "../../shared/components/modal.js";
@@ -51,6 +51,7 @@ export function renderDocumentsView(uiState = {}) {
         }
       </div>
 
+      <p role="status" id="learningLibraryStatus">${escapeHtml(learningLibraryStatus.loading ? 'Đang tải học liệu...' : learningLibraryStatus.error)}</p>
       <!-- 2. Hai tab Kho tài liệu / Ghi chú & Sổ tay -->
       <div class="documents-tabs-bar" role="tablist">
         <button type="button" class="doc-tab-btn ${currentTab === "docs" ? "active" : ""}" data-doc-tab="docs">
@@ -95,7 +96,7 @@ function renderRepositoryTab(allDocs, selectedCategory, selectedSubject, searchQ
       (d) =>
         d.title.toLowerCase().includes(searchQuery) ||
         d.subject.toLowerCase().includes(searchQuery) ||
-        d.category.toLowerCase().includes(searchQuery)
+        d.category.toLowerCase().includes(searchQuery) || (d.tags || []).some(tag => tag.toLowerCase().includes(searchQuery.replace(/^#/, "")))
     );
   }
 
@@ -108,11 +109,11 @@ function renderRepositoryTab(allDocs, selectedCategory, selectedSubject, searchQ
       <div class="doc-filter-toolbar">
         <div class="doc-search-box">
           <svg class="doc-search-icon"><use href="#i-search"></use></svg>
-          <input 
-            type="search" 
-            id="docSearchInput" 
-            placeholder="Tìm theo tên bài giảng, đề cương, môn học..." 
-            value="${searchQuery}" 
+          <input
+            type="search"
+            id="docSearchInput"
+            placeholder="Tìm theo tên bài giảng, đề cương, môn học..."
+            value="${escapeHtml(searchQuery)}"
             aria-label="Tìm kiếm tài liệu"
           />
         </div>
@@ -131,7 +132,7 @@ function renderRepositoryTab(allDocs, selectedCategory, selectedSubject, searchQ
             <label for="docSubjectSelect" class="doc-select-label">Môn học:</label>
             <select id="docSubjectSelect" class="doc-select">
               ${subjectsList.map(
-                (subj) => `<option value="${subj}" ${subj === selectedSubject ? "selected" : ""}>${subj}</option>`
+                (subj) => `<option value="${escapeHtml(subj)}" ${subj === selectedSubject ? "selected" : ""}>${escapeHtml(subj)}</option>`
               ).join("")}
             </select>
           </div>
@@ -142,8 +143,8 @@ function renderRepositoryTab(allDocs, selectedCategory, selectedSubject, searchQ
       <div class="doc-quick-category-bar">
         ${DOCUMENT_CATEGORIES.map(
           (cat) => `
-          <button type="button" 
-            class="doc-quick-chip ${cat === selectedCategory ? "active" : ""}" 
+          <button type="button"
+            class="doc-quick-chip ${cat === selectedCategory ? "active" : ""}"
             data-select-category="${cat}">
             ${cat}
           </button>
@@ -174,23 +175,24 @@ function renderRepositoryTab(allDocs, selectedCategory, selectedSubject, searchQ
                       doc.fileType === "PDF" ? "badge-pdf" : doc.fileType === "DOCX" ? "badge-doc" : "badge-ppt";
 
                     return `
-                      <tr class="doc-table-row" data-doc-id="${doc.id}">
+                      <tr class="doc-table-row" data-doc-id="${escapeHtml(doc.id)}">
                         <td class="doc-title-cell">
-                          <strong class="doc-title-text" title="${doc.title}">${doc.title}</strong>
-                          <span class="doc-subject-tag">${doc.subject}</span>
+                          <strong class="doc-title-text" title="${escapeHtml(doc.title)}">${escapeHtml(doc.title)}</strong>
+                          <span class="doc-subject-tag">${escapeHtml(doc.subject)}</span><span class="small">${escapeHtml((doc.tags || []).map(tag => "#" + tag).join(" "))}${doc.isTextbook ? " · Textbook" : ""}</span>
                         </td>
                         <td>
-                          <span class="doc-category-badge">${doc.category}</span>
+                          <span class="doc-category-badge">${escapeHtml(doc.category)}</span>
                         </td>
                         <td>
-                          <span class="file-type-pill ${badgeClass}">${doc.fileType}</span>
+                          <span class="file-type-pill ${badgeClass}">${escapeHtml(doc.fileType)}</span>
                           <span class="small muted">${doc.sizeStr}</span>
                         </td>
                         <td>
                           <span class="small muted">${formatDateTimeVN(doc.uploadedAt).slice(0, 10)}</span>
                         </td>
                         <td style="text-align:right;">
-                          <button type="button" class="icon-button doc-delete-btn" data-delete-doc-id="${doc.id}" aria-label="Xóa tài liệu" title="Xóa tài liệu" style="color:var(--red-600);width:32px;height:32px;display:inline-grid;">
+                          ${doc.hasFile ? `<a class="button ghost small" target="_blank" rel="noopener" href="${documentFileUrl(doc.id)}">Mở</a><a class="button ghost small" href="${documentFileUrl(doc.id, true)}">Tải xuống</a><button type="button" class="button ghost small" data-edit-doc-tags="${escapeHtml(doc.id)}">Tag</button>` : '<span class="small muted">Cần tải tệp gốc</span>'}
+                          <button type="button" class="icon-button doc-delete-btn" data-delete-doc-id="${escapeHtml(doc.id)}" aria-label="Xóa tài liệu" title="Xóa tài liệu" style="color:var(--red-600);width:32px;height:32px;display:inline-grid;">
                             <svg style="width:14px;height:14px;"><use href="#i-trash"></use></svg>
                           </button>
                         </td>
@@ -259,11 +261,19 @@ function renderNotebookTab(allNotes, activeNoteId, searchQuery) {
         ${
           currentNote
             ? `
+          <div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px;">
+            <select id="noteNotebookSelect" aria-label="Sổ tay">${getNotebooks().map(book => `<option value="${book.notebook_id}" ${book.notebook_id === currentNote.notebookId ? 'selected' : ''}>${escapeHtml(book.title)}</option>`).join('')}</select>
+            <button class="button ghost small" id="createNotebookBtn">Sổ mới</button>
+            <button class="button ghost small" id="renameNotebookBtn">Đổi tên sổ</button>
+            <button class="button ghost small" id="deleteNotebookBtn">Xóa sổ</button>
+            <a class="button ghost small" href="${noteExportUrl(currentNote.id)}">Xuất trang DOCX</a>
+            <a class="button ghost small" href="${notebookExportUrl(currentNote.notebookId)}">Xuất sổ DOCX</a>
+          </div>
           <!-- Thanh trạng thái và nút thao tác trên đầu trang giấy -->
           <div class="paper-top-toolbar">
             <div class="paper-save-status" id="paperSaveStatus">
               <span class="status-indicator-dot"></span>
-              <span id="saveStatusText">Đã lưu lúc ${formatDateTimeVN(currentNote.updatedAt).slice(11, 16)}</span>
+              <span id="saveStatusText">${currentNote.syncPending ? "Bản nháp chưa đồng bộ" : "Đã lưu vào sổ tay"}</span>
             </div>
 
             <div style="display:flex;align-items:center;gap:8px;">
@@ -272,7 +282,7 @@ function renderNotebookTab(allNotes, activeNoteId, searchQuery) {
                 <span>Lưu ghi chú</span>
               </button>
               <button type="button" class="button secondary small" id="analyzeDifficultNotesBtn" ${analysis.pending ? "disabled" : ""}>AI gợi ý ôn ghi chú khó</button>
-              <button type="button" class="button ghost-danger small" id="deleteCurrentNoteBtn" data-note-id="${currentNote.id}" title="Xóa trang ghi chú này">
+              <button type="button" class="button ghost-danger small" id="deleteCurrentNoteBtn" data-note-id="${escapeHtml(currentNote.id)}" title="Xóa trang ghi chú này">
                 <svg style="width:14px;height:14px;"><use href="#i-trash"></use></svg>
                 <span>Xóa</span>
               </button>
@@ -286,29 +296,29 @@ function renderNotebookTab(allNotes, activeNoteId, searchQuery) {
           <div class="paper-meta-header">
             <label><input type="checkbox" id="noteDifficultInput" ${currentNote.isDifficult ? "checked" : ""} /> Đánh dấu khó hiểu / cần ôn</label>
             <div id="difficultNotesResult" role="status" style="white-space:pre-wrap;margin-top:8px;">${escapeHtml(analysis.pending ? "Đang phân tích ghi chú khó..." : analysis.error || analysis.text)}</div>
-            <input 
-              type="text" 
-              id="noteTitleInput" 
-              class="paper-title-input" 
-              value="${currentNote.title}" 
-              placeholder="Tiêu đề trang ghi chú..." 
+            <input
+              type="text"
+              id="noteTitleInput"
+              class="paper-title-input"
+              value="${escapeHtml(currentNote.title)}"
+              placeholder="Tiêu đề trang ghi chú..."
               aria-label="Tiêu đề trang ghi chú"
             />
 
             <div class="paper-meta-subrow">
-              <input 
-                type="text" 
-                id="noteSubjectInput" 
-                class="paper-subject-input" 
-                value="${currentNote.subject || ""}" 
-                placeholder="Môn học / Chủ đề (Ví dụ: Cấu trúc dữ liệu)" 
+              <input
+                type="text"
+                id="noteSubjectInput"
+                class="paper-subject-input"
+                value="${escapeHtml(currentNote.subject || "")}"
+                placeholder="Môn học / Chủ đề (Ví dụ: Cấu trúc dữ liệu)"
               />
-              <input 
-                type="text" 
-                id="noteTagsInput" 
-                class="paper-tags-input" 
-                value="${(currentNote.tags || []).join(", ")}" 
-                placeholder="Tags cách nhau bởi dấu phẩy (Ví dụ: giữa-kỳ, lý-thuyết)" 
+              <input
+                type="text"
+                id="noteTagsInput"
+                class="paper-tags-input"
+                value="${escapeHtml((currentNote.tags || []).join(", "))}"
+                placeholder="Tags cách nhau bởi dấu phẩy (Ví dụ: giữa-kỳ, lý-thuyết)"
               />
               <span class="paper-time-badge">
                 Cập nhật: ${formatDateTimeVN(currentNote.updatedAt)}
@@ -316,14 +326,20 @@ function renderNotebookTab(allNotes, activeNoteId, searchQuery) {
             </div>
           </div>
 
+          <div style="display:flex;gap:8px;padding:12px;flex-wrap:wrap;">
+            <input id="noteChapterInput" aria-label="Chương" placeholder="Chương / phần" value="${escapeHtml(currentNote.chapter || '')}" />
+            <select id="noteDocumentSelect" aria-label="Textbook đính kèm"><option value="">Chọn textbook / tài liệu</option>${getDocuments().filter(doc => doc.hasFile).map(doc => `<option value="${escapeHtml(doc.id)}" ${doc.id === currentNote.documentId ? 'selected' : ''}>${escapeHtml(doc.title)}</option>`).join('')}</select>
+            ${currentNote.documentId ? `<a class="button ghost small" href="${documentFileUrl(currentNote.documentId)}" target="_blank" rel="noopener">Đọc tài liệu</a>` : ''}
+          </div>
+          ${currentNote.documentId && getDocuments().find(doc => doc.id === currentNote.documentId)?.fileType === 'PDF' ? `<iframe title="Textbook PDF" src="${documentFileUrl(currentNote.documentId)}" style="width:100%;height:400px;border:1px solid #ddd;"></iframe>` : ''}
           <!-- Thân trang giấy soạn thảo (Căn trái, rộng rãi, placeholder không lưu thành text thật) -->
           <div class="paper-content-sheet">
-            <textarea 
-              id="noteContentTextarea" 
-              class="paper-textarea" 
+            <textarea
+              id="noteContentTextarea"
+              class="paper-textarea"
               placeholder="Nhập nội dung ghi chú ôn tập tại đây... (Nội dung tự động lưu khi gõ)"
               aria-label="Nội dung trang ghi chú"
-            >${currentNote.content || ""}</textarea>
+            >${escapeHtml(currentNote.content || "")}</textarea>
           </div>
         `
             : `
@@ -350,11 +366,11 @@ function renderNotebookTab(allNotes, activeNoteId, searchQuery) {
           </div>
 
           <div class="notes-search-box">
-            <input 
-              type="search" 
-              id="notesSearchInput" 
-              placeholder="Tìm kiếm trang ghi chú..." 
-              value="${searchQuery}" 
+            <input
+              type="search"
+              id="notesSearchInput"
+              placeholder="Tìm kiếm trang ghi chú..."
+              value="${escapeHtml(searchQuery)}"
               aria-label="Tìm kiếm trang ghi chú"
             />
           </div>
@@ -369,11 +385,11 @@ function renderNotebookTab(allNotes, activeNoteId, searchQuery) {
                     const previewText = (note.content || "").slice(0, 60).replace(/\n/g, " ") || "Chưa có nội dung...";
 
                     return `
-                      <div class="note-item-card ${isActive ? "active" : ""}" data-select-note-id="${note.id}" tabindex="0" role="button">
-                        <strong class="note-item-title">${note.title || "Trang không tên"}</strong>
-                        <p class="note-item-preview">${previewText}</p>
+                      <div class="note-item-card ${isActive ? "active" : ""}" data-select-note-id="${escapeHtml(note.id)}" tabindex="0" role="button">
+                        <strong class="note-item-title">${escapeHtml(note.title || "Trang không tên")}</strong>
+                        <p class="note-item-preview">${escapeHtml(previewText)}</p>
                         <div class="note-item-footer">
-                          <span class="note-item-subject">${note.subject || "Chung"}</span>
+                          <span class="note-item-subject">${escapeHtml(note.subject || "Chung")}</span>
                           <span class="note-item-date">${formatDateTimeVN(note.updatedAt).slice(0, 10)}</span>
                         </div>
                       </div>
@@ -417,18 +433,17 @@ export function renderUploadDocumentModal() {
 
         <label>
           <span class="small" style="font-weight:700;display:block;margin-bottom:4px;">Định dạng tệp</span>
-          <select name="fileType" style="width:100%;border:1px solid var(--ink-200);border-radius:8px;padding:9px 12px;background:white;">
-            <option value="PDF">PDF</option>
-            <option value="PPTX">PowerPoint (PPTX)</option>
-            <option value="DOCX">Word (DOCX)</option>
-          </select>
+          <span class="small muted">Tự động nhận theo tệp được chọn.</span>
         </label>
       </div>
 
       <div style="padding:16px;border:2px dashed var(--violet-300);background:#fcfaff;border-radius:10px;text-align:center;">
         <svg style="width:28px;height:28px;color:var(--violet-600);margin-bottom:6px;"><use href="#i-folder"></use></svg>
         <p style="margin:0;font-size:0.86rem;color:var(--ink-700);">Chọn tệp từ máy tính để lưu trữ vào kho học tập cục bộ</p>
-        <span class="tiny muted">Hỗ trợ PDF, PPTX, DOCX tối đa 25MB</span>
+        <span class="tiny muted">Hỗ trợ PDF, PPTX, DOCX, TXT, MD, PNG, JPG tối đa 25MB</span>
+        <input type="file" id="documentFileInput" name="file" accept=".pdf,.pptx,.docx,.txt,.md,.png,.jpg,.jpeg" required aria-label="Tệp tài liệu" />
+        <label>Tags <input type="text" name="tags" placeholder="Cách nhau bởi dấu phẩy" /></label>
+        <label><input type="checkbox" name="isTextbook" /> Dùng làm Textbook</label>
       </div>
     </form>
   `;

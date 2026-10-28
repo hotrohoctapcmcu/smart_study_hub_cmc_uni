@@ -87,6 +87,10 @@ export function attachPomodoroEvents(containerEl) {
 }
 
 function bindDomEvents(containerEl) {
+  containerEl.querySelector('#retryPomodoroSyncBtn')?.addEventListener('click', async () => {
+    await (await import('./pomodoro.sync.js')).enablePomodoroSync();
+    containerEl.innerHTML = renderPomodoroView(); bindDomEvents(containerEl);
+  });
   // 1. Nút chọn nhanh: 15, 25, 45 phút
   const quickBtns = containerEl.querySelectorAll("[data-quick-work]");
   quickBtns.forEach((btn) => {
@@ -198,7 +202,7 @@ function bindDomEvents(containerEl) {
     clearBtn.addEventListener("click", () => {
       const ok = window.confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử phiên Pomodoro?");
       if (ok) {
-        clearAllHistory();
+        clearAllHistory().catch(error => alert(error.message));
       }
     });
   }

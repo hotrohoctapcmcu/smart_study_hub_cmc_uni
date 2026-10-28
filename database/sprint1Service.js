@@ -952,7 +952,7 @@ async function layDanhSachDeadline(studentId, trangThai = null) {
                    sub.subject_code, sub.subject_name,
                    a.title, a.description, a.assigned_at, a.deadline,
                    a.status, a.priority, a.submission_url, a.source, a.external_id,
-                   a.completed_at, a.created_at
+                   a.completed_at, a.created_at, a.tags
             FROM Assignments a
             INNER JOIN Subjects sub ON a.subject_id = sub.subject_id
             WHERE a.student_id = @sid AND a.status = @st
@@ -965,7 +965,7 @@ async function layDanhSachDeadline(studentId, trangThai = null) {
                sub.subject_code, sub.subject_name,
                a.title, a.description, a.assigned_at, a.deadline,
                a.status, a.priority, a.submission_url, a.source, a.external_id,
-               a.completed_at, a.created_at
+               a.completed_at, a.created_at, a.tags
         FROM Assignments a
         INNER JOIN Subjects sub ON a.subject_id = sub.subject_id
         WHERE a.student_id = @sid
@@ -1835,6 +1835,7 @@ async function layBaiTapEDUX(userId, opts = {}) {
 
     return rows.map(row => ({
         id: row.external_id,
+        tags: JSON.parse(row.tags || '[]'),
         title: row.title,
         subject: row.subject_name || 'Học phần EDUX',
         subjectId: row.subject_ext_id,

@@ -15,7 +15,7 @@ import {
 } from "./schedule.view.js";
 import { attachModalEvents } from "../../shared/components/modal.js";
 import { areEventsConflicting, findScheduleConflicts } from "./schedule.conflicts.js";
-import { createSelfStudy, updateSelfStudy, deleteSelfStudy, fetchStudySchedules } from "./schedule.service.js";
+import { createSelfStudy, updateSelfStudy, deleteSelfStudy, fetchStudySchedules, completeSelfStudy } from "./schedule.service.js";
 import { ENDPOINTS } from "../../shared/config/endpoints.js";
 import { requestAssistant, getLocalStudyData } from "../ai-tutor/ai-tutor.service.js";
 
@@ -342,6 +342,9 @@ export function attachScheduleEvents(containerEl) {
 
     // Nút Sửa trong modal chi tiết
     const editBtn = modalEl.querySelector("#editStudyFromDetailBtn");
+    modalEl.querySelector("#completeStudyFromDetailBtn")?.addEventListener("click", async () => {
+      try { await completeSelfStudy(event.id); close(); } catch (error) { alert(error.message); }
+    });
     if (editBtn) {
       editBtn.addEventListener("click", () => {
         close();

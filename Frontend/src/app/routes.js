@@ -80,7 +80,7 @@ export const ROUTES = {
     id: "quiz",
     title: "Quiz AI",
     icon: "i-quiz",
-    isImplemented: false,
+    isImplemented: true,
     inSidebar: true,
     description: "Tự động sinh bộ câu hỏi trắc nghiệm ôn tập"
   },
@@ -91,6 +91,18 @@ export const ROUTES = {
     isImplemented: false,
     inSidebar: true,
     description: "Ôn tập kiến thức qua thẻ ghi nhớ thông minh"
+  },
+  weaknesses: {
+    id: "weaknesses", title: "Điểm yếu & gợi ý học", icon: "i-chart", isImplemented: true, inSidebar: true,
+    description: "Phân tích kết quả kiểm tra theo chủ đề và đề xuất nội dung ôn tập"
+  },
+  "exam-plan-ai": {
+    id: "exam-plan-ai", title: "AI ôn thi", icon: "i-plan", isImplemented: true, inSidebar: true,
+    description: "Tạo, chỉnh và xác nhận kế hoạch ôn thi bằng AI"
+  },
+  "leave-letter": {
+    id: "leave-letter", title: "Đơn xin nghỉ học", icon: "i-edit", isImplemented: true, inSidebar: true,
+    description: "Soạn, chỉnh sửa, lưu và xuất đơn xin phép nghỉ học"
   },
   pomodoro: {
     id: "pomodoro",
@@ -162,7 +174,7 @@ export const NAVIGATION_SECTIONS = [
     id: "tools",
     title: "CÔNG CỤ",
     icon: "i-spark",
-    routeIds: ["documents", "pomodoro", "ai-tutor", "quiz", "flashcards"]
+    routeIds: ["documents", "pomodoro", "ai-tutor", "quiz", "weaknesses", "exam-plan-ai", "leave-letter", "flashcards"]
   },
   {
     id: "bottom",

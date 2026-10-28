@@ -554,3 +554,16 @@
     display: inline-flex;
   }
 }
+.documents-page-container #learningLibraryStatus:empty { display: none; }
+.documents-page-container #noteNotebookSelect,
+.documents-page-container #noteDocumentSelect,
+.documents-page-container #noteChapterInput {
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--ink-200);
+  border-radius: 8px;
+  font: inherit;
+  font-size: .85rem;
+  color: var(--ink-800);
+  background: white;
+}

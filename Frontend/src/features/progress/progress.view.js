@@ -127,7 +127,7 @@ function renderServerReport(uiState) {
       ${uiState.serverLoading ? '<p role="status">Đang tải tiến độ và bản đồ thời gian...</p>' : ''}
       ${(uiState.serverErrors || []).map(error => `<p role="status" class="muted">${escapeHtml(error)}</p>`).join('')}
       ${metrics ? `
-        <p>Tuần hiện tại: ${escapeHtml(week.weekStart)} đến trước ${escapeHtml(week.weekEnd)}</p>
+        <p>Khoảng thống kê: ${escapeHtml(week.weekStart)} đến trước ${escapeHtml(week.weekEnd)}</p>
         <p><strong>${week.totalHours} giờ học</strong> · Tự học: ${week.selfStudyHours} giờ · Pomodoro: ${week.pomodoroHours} giờ · ${metrics.overdueCount} bài quá hạn</p>
         ${metrics.nextExam ? `<p>Kỳ thi gần nhất: ${escapeHtml(metrics.nextExam.examName)} · còn ${metrics.nextExam.daysRemaining} ngày</p>` : '<p>Chưa có kỳ thi sắp tới.</p>'}
         <div class="subject-progress-grid">
@@ -157,7 +157,7 @@ export function renderProgressView(uiState = {}) {
   return `
     <div class="progress-page-container">
       ${renderServerReport(uiState)}
-      <p class="muted small">Biểu đồ bên dưới tổng hợp lịch sử Pomodoro trên thiết bị và công việc trong phiên hiện tại.</p>
+      <p class="muted small">Biểu đồ phân bố thời gian Pomodoro; báo cáo phía trên tổng hợp cả tự học và bài EDUX. Bản nháp chưa đồng bộ được giữ để thử lại.</p>
       <div class="progress-card">
         <button type="button" class="button secondary" id="progressAdviceBtn" ${analysis.pending ? "disabled" : ""}>AI nhận xét & gợi ý ôn tập</button>
         <div id="progressAdviceResult" role="status" style="white-space:pre-wrap;margin-top:12px;">${escapeHtml(analysis.pending ? "Đang phân tích tiến độ..." : analysis.error || analysis.text)}</div>

@@ -43,7 +43,7 @@ export function renderTasksView() {
   if (state.searchQuery) {
     const q = state.searchQuery.toLowerCase();
     filteredTasks = filteredTasks.filter(
-      (t) => t.title.toLowerCase().includes(q) || t.subject.toLowerCase().includes(q)
+      (t) => t.title.toLowerCase().includes(q) || t.subject.toLowerCase().includes(q) || (t.tags || []).some(tag => tag.toLowerCase().includes(q.replace(/^#/, '')))
     );
   }
 
@@ -167,6 +167,7 @@ export function renderTasksView() {
                         }
                       </td>
                       <td style="text-align:right;">
+                        <button type="button" class="button ghost small" data-task-tags-id="${task.id}">Tag</button>
                         <button type="button" class="icon-button" data-edit-task-id="${task.id}" aria-label="Sửa công việc" style="display:inline-grid;width:32px;height:32px;" title="Chỉnh sửa công việc">
                           <svg style="width:14px;height:14px;"><use href="#i-edit"></use></svg>
                         </button>

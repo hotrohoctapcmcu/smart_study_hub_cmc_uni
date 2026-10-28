@@ -1,14 +1,32 @@
 /**
  * UniStudy CMC - Exams Events
  */
-import { state, addLocalExam, updateLocalExam, deleteLocalExam } from "../../app/state.js";
+import { state, updateLocalExam, deleteLocalExam } from "../../app/state.js";
 import { changeCurrentTabRoute, updateActiveTabLocalState } from "../../app/workspace.js";
 import { validateExamInput } from "../../shared/utils/validation.js";
 import { renderExamModal } from "./exams.view.js";
 import { attachModalEvents } from "../../shared/components/modal.js";
-import { createExamApi, updateExamApi, deleteExamApi } from "./exams.service.js";
+import { createExamApi, updateExamApi, deleteExamApi, fetchExamsFromApi } from "./exams.service.js";
+import { workspaceRequest } from "../../shared/services/workspace-api.js";
+import { writeDraft } from "../ai-study/ai-study.service.js";
 
 export function attachExamsEvents(containerEl) {
+  containerEl.querySelector('#examAiPlanBtn')?.addEventListener('click', () => changeCurrentTabRoute('exam-plan-ai'));
+  containerEl.querySelector('#examWeaknessBtn')?.addEventListener('click', () => changeCurrentTabRoute('weaknesses'));
+  containerEl.querySelectorAll('[data-ai-plan-exam]').forEach(button => button.addEventListener('click', () => {
+    writeDraft('ai-exam-seed', button.dataset.aiPlanExam); changeCurrentTabRoute('exam-plan-ai');
+  }));
+  containerEl.querySelectorAll('[data-phase-status]').forEach(button => button.addEventListener('click', async () => {
+    button.disabled = true;
+    try { await workspaceRequest('PATCH', `/exams/study-plans/${encodeURIComponent(button.dataset.phaseStatus)}/status`, { body: { status: button.dataset.status } }); await fetchExamsFromApi(); }
+    catch (error) { alert(error.message); button.disabled = false; }
+  }));
+  containerEl.querySelectorAll('[data-phase-delete]').forEach(button => button.addEventListener('click', async () => {
+    if (!window.confirm('Xóa giai đoạn ôn tập này? Các buổi tự học đã thêm vẫn được quản lý riêng trong Lịch học.')) return;
+    button.disabled = true;
+    try { await workspaceRequest('DELETE', `/exams/study-plans/${encodeURIComponent(button.dataset.phaseDelete)}`); await fetchExamsFromApi(); }
+    catch (error) { alert(error.message); button.disabled = false; }
+  }));
   // Nút Đồng bộ lịch thi
   const syncBtn = containerEl.querySelector("#examSyncBtn");
   if (syncBtn) {
@@ -25,16 +43,19 @@ export function attachExamsEvents(containerEl) {
     modalHost.innerHTML = renderExamModal(initialData);
     const modalEl = modalHost.querySelector("#examDetailModal");
 
+    let cleanup, saving = false;
     const close = () => {
+      cleanup?.();
       modalHost.innerHTML = "";
     };
 
-    attachModalEvents(modalEl, close);
+    cleanup = attachModalEvents(modalEl, close);
 
     const form = modalEl.querySelector("#examModalForm");
     if (form) {
-      form.addEventListener("submit", (e) => {
+      form.addEventListener("submit", async (e) => {
         e.preventDefault();
+        if (saving) return;
         const fd = new FormData(form);
         const data = {
           subject: fd.get("subject"),
@@ -53,23 +74,14 @@ export function attachExamsEvents(containerEl) {
           return;
         }
 
-        if (initialData?.id) {
-          updateLocalExam(initialData.id, data);
-          updateExamApi(initialData).catch((err) =>
-            console.warn("[Exams] Lỗi cập nhật kỳ thi trên máy chủ:", err)
-          );
-        } else {
-          // Tạo mốc lộ trình tự động ban đầu từ phạm vi
-          const milestones = [
-            { title: "Đọc giáo trình & tổng hợp lý thuyết", targetDate: data.date },
-            { title: "Làm bài tập trắc nghiệm và đề cương", targetDate: data.date }
-          ];
-          addLocalExam({ ...data, studyMilestones: milestones });
-          createExamApi(data).catch((err) =>
-            console.warn("[Exams] Lỗi tạo kỳ thi trên máy chủ:", err)
-          );
-        }
-        close();
+        saving = true;
+        const button = modalEl.querySelector('button[type=submit]'); if (button) button.disabled = true;
+        try {
+          if (initialData?.isLocalDraft) updateLocalExam(initialData.id, data);
+          else if (initialData?.id) await updateExamApi({ ...initialData, ...data });
+          else await createExamApi(data);
+          close();
+        } catch (error) { alert(error.message); if (button) button.disabled = false; } finally { saving = false; }
       });
     }
   };

@@ -6,6 +6,7 @@ import { attachProgressEvents } from "./progress.events.js";
 import { getActiveTab } from "../../app/workspace.js";
 import { formatDateISO } from "../../shared/utils/date.js";
 import { fetchServerProgress, fetchServerTimeMap } from "./progress.service.js";
+import { syncPomodoroHistory } from "../pomodoro/pomodoro.sync.js";
 
 export function mountProgress(containerEl) {
   const activeTab = getActiveTab();
@@ -27,8 +28,9 @@ export function mountProgress(containerEl) {
     uiState.serverTimeMap = null;
     uiState.serverErrors = [];
     renderView();
+    await syncPomodoroHistory();
     const results = await Promise.allSettled([
-      fetchServerProgress(), fetchServerTimeMap(uiState.period, uiState.selectedDate)
+      fetchServerProgress(uiState.period, uiState.selectedDate), fetchServerTimeMap(uiState.period, uiState.selectedDate)
     ]);
     if (version !== requestVersion || containerEl.isConnected === false) return;
     uiState.serverLoading = false;

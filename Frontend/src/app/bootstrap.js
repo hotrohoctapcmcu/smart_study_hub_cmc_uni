@@ -52,6 +52,11 @@ export function bootstrap() {
   // Khởi tạo render lần đầu
   renderShell(appEl);
 
+  import("../features/pomodoro/pomodoro.sync.js").then(({ enablePomodoroSync }) => enablePomodoroSync());
+  window.addEventListener("online", () => {
+    import("../features/pomodoro/pomodoro.sync.js").then(({ syncPomodoroHistory }) => syncPomodoroHistory());
+  });
+
   // Tự động nạp dữ liệu ban đầu từ Backend API trong chế độ nền (Non-blocking)
   (async () => {
     try {

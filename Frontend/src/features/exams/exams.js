@@ -5,23 +5,18 @@ import { renderExamsView } from "./exams.view.js";
 import { attachExamsEvents } from "./exams.events.js";
 import { fetchExamsFromApi } from "./exams.service.js";
 
-let examsLoaded = false;
-
 export async function mountExams(containerEl) {
   // Render trước bằng state cache để pane không bao giờ trắng
   // trong lúc chờ fetch.
   containerEl.innerHTML = renderExamsView();
   attachExamsEvents(containerEl);
-  if (!examsLoaded) {
     try {
-      await fetchExamsFromApi();
-      examsLoaded = true;
+      await fetchExamsFromApi({ notify: false });
       if (!containerEl.isConnected) return;
       containerEl.innerHTML = renderExamsView();
       attachExamsEvents(containerEl);
     } catch (e) {
       console.warn("[Exams] Không thể tải kỳ thi từ backend:", e.message);
     }
-  }
 }
 

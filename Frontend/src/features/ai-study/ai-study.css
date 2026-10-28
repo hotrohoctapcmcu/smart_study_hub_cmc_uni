@@ -1,0 +1,34 @@
+.ai-study-page { max-width: 1180px; margin: 0 auto; padding: 28px; display: grid; gap: 22px; }
+.ai-study-page h1 { margin: 6px 0 10px; font-size: 1.8rem; }
+.ai-study-page h2 { margin: 0 0 14px; font-size: 1.15rem; }
+.ai-study-page h3 { margin: 0 0 10px; }
+.ai-study-page p { line-height: 1.6; }
+.ai-study-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 22px; align-items: start; }
+.ai-study-card { background: var(--surface, #fff); border: 1px solid var(--ink-200); border-radius: 16px; padding: 22px; min-width: 0; }
+.ai-study-stack { display: grid; gap: 18px; }
+.ai-study-page form, .ai-study-fields { display: grid; gap: 14px; }
+.ai-study-page label { display: grid; gap: 7px; font-size: .9rem; font-weight: 500; }
+.ai-study-page input:not([type=radio]):not([type=checkbox]), .ai-study-page select, .ai-study-page textarea {
+  width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--ink-200); border-radius: 9px; background: #fff; color: var(--ink-900); font: inherit;
+}
+.ai-study-page textarea { resize: vertical; line-height: 1.65; }
+.ai-study-page fieldset { min-width: 0; border: 0; padding: 0; margin: 0; }
+.ai-study-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.ai-study-row > label { flex: 1; min-width: 140px; }
+.ai-study-status { white-space: pre-wrap; color: var(--violet-700, #6d28d9); line-height: 1.5; }
+.ai-study-status[data-error=true] { color: var(--red-600, #dc2626); }
+.ai-study-history { display: grid; gap: 8px; max-height: 600px; overflow: auto; }
+.ai-study-history button { text-align: left; width: 100%; white-space: normal; height: auto; padding: 12px; }
+.ai-study-question { padding: 18px 0; border-bottom: 1px solid var(--ink-100); }
+.ai-study-question legend { font-weight: 600; line-height: 1.6; padding-top: 12px; }
+.ai-study-question label { display: flex; align-items: baseline; gap: 10px; font-weight: 400; padding: 10px; border: 1px solid var(--ink-200); border-radius: 8px; margin: 8px 0; cursor: pointer; }
+.ai-study-question input { accent-color: var(--violet-700); }
+.ai-study-explanation { background: var(--violet-50, #f5f3ff); padding: 12px; border-radius: 8px; line-height: 1.6; white-space: pre-wrap; }
+.ai-study-score { font-size: 2rem; color: var(--violet-700); font-weight: 700; }
+.ai-study-page table { width: 100%; border-collapse: collapse; }
+.ai-study-page th, .ai-study-page td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--ink-100); }
+.ai-study-table { overflow-x: auto; }
+.ai-study-phase { padding: 16px; border: 1px solid var(--ink-200); border-radius: 10px; display: grid; gap: 12px; }
+.ai-chat-history-bar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.ai-chat-history-bar select { max-width: 500px; padding: 8px; border-radius: 8px; border: 1px solid var(--ink-200); }
+@media(max-width: 850px) { .ai-study-grid { grid-template-columns: 1fr; } .ai-study-page { padding: 18px; } }

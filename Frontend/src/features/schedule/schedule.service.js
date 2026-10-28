@@ -34,9 +34,18 @@ export function mapStudyScheduleFromBackend(s) {
     start: rawStart,
     end: rawEnd,
     note: s.notes || "",
+    status: s.status || "PLANNED",
     source: "Tự thêm",
     isLocalDraft: false
   };
+}
+
+export async function completeSelfStudy(id) {
+  const numericId = String(id).replace(/^study-/, '');
+  if (!/^\d+$/.test(numericId)) throw new Error("Hãy lưu buổi tự học trước khi đánh dấu hoàn thành.");
+  const result = await apiRequest({ method: "PATCH", path: `/api/v1/schedules/study/${numericId}/status` }, { body: { status: "COMPLETED" } });
+  if (!result.success) throw new Error(result.error || "Không lưu được trạng thái buổi học.");
+  await fetchStudySchedules();
 }
 
 /**

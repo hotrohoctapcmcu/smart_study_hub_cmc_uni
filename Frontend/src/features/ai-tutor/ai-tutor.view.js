@@ -73,6 +73,7 @@ function renderError() {
     <div class="ai-chat-error" role="alert">
       <svg><use href="#i-bell"></use></svg>
       <span>${escapeHtml(aiChatState.error)}</span>
+      ${!aiChatState.pending && aiChatState.messages.at(-1)?.role === 'user' ? '<button type="button" class="button ghost small" id="aiQuestionRetryBtn">Gửi lại câu hỏi</button>' : ''}
     </div>
   `;
 }

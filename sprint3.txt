@@ -1,0 +1,6 @@
+Sprint 3:
+7. Trợ lý gia sư AI
+13. Kiểm tra kiến thức bằng AI
+14. Phân tích điểm yếu và đề xuất nội dung học
+15. AI tạo kế hoạch ôn thi
+16. Hỗ trợ viết đơn xin phép nghỉ học

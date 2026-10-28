@@ -211,15 +211,21 @@ async function fetchPomodoroRows(db, userId, studentId) {
     );
     if (sessions.length) {
         const rows = await db.executeQuery(`
-            SELECT session_id, started_at,
-                   total_focus_minutes * 60 AS actual_study_seconds
+            SELECT session_id, started_at, focus_segments,
+                   COALESCE(actual_study_seconds, total_focus_minutes * 60) AS actual_study_seconds
             FROM PomodoroSessions
             WHERE student_id = @studentId
               AND status IN ('COMPLETED', 'CANCELLED')
-              AND total_focus_minutes > 0
+              AND COALESCE(actual_study_seconds, total_focus_minutes * 60) > 0
         `, { studentId });
         return {
-            available: true, rows,
+            available: true, rows: rows.flatMap(row => {
+                const { sessionSegments } = require('../shared/study-time');
+                return sessionSegments(row).map(([start, end], index) => ({
+                    session_id: `${row.session_id}:${index}`, started_at: new Date(start).toISOString(),
+                    actual_study_seconds: (end - start) / 1000
+                }));
+            }),
             columns: ['session_id', 'started_at', 'actual_study_seconds'].map(name => ({ name })),
             warning: null
         };

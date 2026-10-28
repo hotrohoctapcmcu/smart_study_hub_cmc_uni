@@ -1,319 +1,126 @@
-/**
- * UniStudy CMC - Documents & Notebook Events
- * Quản lý tương tác:
- * - Đồng bộ danh mục dropdown và nút chọn nhanh
- * - Tự động lưu ghi chú khi gõ (autosave debounce) bảo toàn con trỏ & bộ gõ tiếng Việt
- * - Đảo bố cục: Soạn thảo bên trái, danh sách trang bên phải
- */
-import {
-  getDocuments,
-  addDocument,
-  deleteDocument,
-  getNotes,
-  createNote,
-  updateNote,
-  deleteNote
-} from "./documents.service.js";
-import { renderDocumentsView, renderUploadDocumentModal } from "./documents.view.js";
+import { getDocuments, getNotes, getNotebooks, uploadDocument, deleteDocumentOnServer,
+  updateDocumentTags, createNoteOnServer, updateNote, updateNoteOnServer, deleteNoteOnServer,
+  createNotebook, renameNotebook, deleteNotebook } from "./documents.service.js";
+import { renderUploadDocumentModal } from "./documents.view.js";
 import { attachModalEvents } from "../../shared/components/modal.js";
 import { analyzeDifficultNotes } from "../ai-tutor/ai-tutor.service.js";
 import { runAIAnalysis } from "../ai-tutor/ai-analysis.store.js";
 
-let debounceTimer = null;
+// Timers belong to individual notes. Switching pages never cancels another
+// page's draft; values are captured before its DOM is detached.
+const pendingSaves = new Map();
 
 export function attachDocumentsEvents(containerEl, uiState, onStateChange) {
-  // 1. Chuyển Tab (Kho tài liệu <-> Ghi chú & Sổ tay)
-  const tabBtns = containerEl.querySelectorAll("[data-doc-tab]");
-  tabBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const tab = btn.getAttribute("data-doc-tab");
-      uiState.docTab = tab;
-      onStateChange(uiState);
-    });
+  const render = () => onStateChange(uiState);
+  const run = fn => async event => {
+    try { await fn(event); } catch (error) { alert(error.message); }
+  };
+  const on = (selector, event, fn) => containerEl.querySelector(selector)?.addEventListener(event, run(fn));
+  const each = (selector, attr, fn) => containerEl.querySelectorAll(selector).forEach(element => element.addEventListener("click", run(() => fn(element.getAttribute(attr), element))));
+
+  each("[data-doc-tab]", "data-doc-tab", tab => { uiState.docTab = tab; uiState.searchQuery = ""; render(); });
+  each("[data-select-category]", "data-select-category", category => { uiState.selectedCategory = category; render(); });
+  on("#docCategorySelect", "change", e => { uiState.selectedCategory = e.target.value; render(); });
+  on("#docSubjectSelect", "change", e => { uiState.selectedSubject = e.target.value; render(); });
+  for (const selector of ["#docSearchInput", "#notesSearchInput"]) {
+    let searchTimer;
+    on(selector, "input", e => { const value = e.target.value; clearTimeout(searchTimer); searchTimer = setTimeout(() => { uiState.searchQuery = value; render(); }, 300); });
+  }
+  on("#resetDocFiltersBtn", "click", () => { uiState.searchQuery = ""; uiState.selectedCategory = uiState.selectedSubject = "Tất cả"; render(); });
+
+  function openUpload() {
+    const host = containerEl.querySelector("#uploadDocModalHost");
+    if (!host) return;
+    host.innerHTML = renderUploadDocumentModal();
+    const modal = host.querySelector("#uploadDocModal");
+    attachModalEvents(modal, () => { host.innerHTML = ""; });
+    modal.querySelector("#uploadDocForm").addEventListener("submit", run(async event => {
+      event.preventDefault();
+      const fd = new FormData(event.target);
+      const button = modal.querySelector('button[type="submit"]');
+      button.disabled = true;
+      try {
+        await uploadDocument(fd.get("file"), { title: fd.get("title"), subject: fd.get("subject"), category: fd.get("category"),
+          tags: String(fd.get("tags") || "").split(","), isTextbook: fd.get("isTextbook") === "on" });
+        host.innerHTML = ""; render();
+      } finally { button.disabled = false; }
+    }));
+  }
+  on("#openUploadDocBtn", "click", openUpload);
+  on("#emptyUploadDocBtn", "click", openUpload);
+  each("[data-delete-doc-id]", "data-delete-doc-id", async id => {
+    if (confirm("Xóa tài liệu và tệp đã lưu?")) { await deleteDocumentOnServer(id); render(); }
   });
+  each("[data-edit-doc-tags]", "data-edit-doc-tags", async id => {
+    const value = prompt("Tags, cách nhau bởi dấu phẩy", (getDocuments().find(doc => doc.id === id)?.tags || []).join(", "));
+    if (value !== null) { await updateDocumentTags(id, value.split(",")); render(); }
+  });
+  each("[data-select-note-id]", "data-select-note-id", id => { uiState.activeNoteId = id; render(); });
+  const create = async () => {
+    const note = await createNoteOnServer({ title: "Trang ghi chú mới", notebookId: getNotes().find(n => n.id === uiState.activeNoteId)?.notebookId });
+    uiState.activeNoteId = note.id; render();
+  };
+  on("#createNewNoteBtn", "click", create);
+  on("#paperEmptyCreateBtn", "click", create);
 
-  // ========== CÁC SỰ KIỆN KHO TÀI LIỆU ==========
-  if (uiState.docTab === "docs" || !uiState.docTab) {
-    // 2. Đồng bộ danh mục: Nút chọn nhanh (quick chips)
-    const quickChips = containerEl.querySelectorAll("[data-select-category]");
-    quickChips.forEach((chip) => {
-      chip.addEventListener("click", () => {
-        const cat = chip.getAttribute("data-select-category");
-        uiState.selectedCategory = cat;
-        onStateChange(uiState);
-      });
-    });
-
-    // 3. Đồng bộ danh mục: Dropdown select
-    const catSelect = containerEl.querySelector("#docCategorySelect");
-    if (catSelect) {
-      catSelect.addEventListener("change", (e) => {
-        uiState.selectedCategory = e.target.value;
-        onStateChange(uiState);
-      });
+  const noteId = uiState.activeNoteId || getNotes()[0]?.id;
+  const value = selector => containerEl.querySelector(selector)?.value || "";
+  const snapshot = () => ({ title: value("#noteTitleInput") || "Trang không tên", subject: value("#noteSubjectInput"),
+    content: value("#noteContentTextarea"), tags: value("#noteTagsInput").split(",").map(tag => tag.trim()).filter(Boolean),
+    isDifficult: Boolean(containerEl.querySelector("#noteDifficultInput")?.checked), chapter: value("#noteChapterInput"),
+    documentId: value("#noteDocumentSelect"), notebookId: Number(value("#noteNotebookSelect")) || undefined });
+  const status = containerEl.querySelector("#saveStatusText");
+  const save = async updates => {
+    if (!noteId) return;
+    clearTimeout(pendingSaves.get(noteId)); pendingSaves.delete(noteId);
+    if (status) status.textContent = "Đang lưu...";
+    try {
+      await updateNoteOnServer(noteId, updates);
+      if (status) status.textContent = "✓ Đã lưu vào sổ tay";
+      const card = [...containerEl.querySelectorAll("[data-select-note-id]")].find(el => el.getAttribute("data-select-note-id") === noteId);
+      if (card?.querySelector(".note-item-title")) card.querySelector(".note-item-title").textContent = updates.title;
+    } catch (error) {
+      if (status) status.textContent = `Chưa lưu được: ${error.message}. Bản nháp vẫn được giữ.`;
+      throw error;
     }
-
-    // 4. Dropdown Môn học
-    const subjSelect = containerEl.querySelector("#docSubjectSelect");
-    if (subjSelect) {
-      subjSelect.addEventListener("change", (e) => {
-        uiState.selectedSubject = e.target.value;
-        onStateChange(uiState);
-      });
-    }
-
-    // 5. Ô tìm kiếm tài liệu
-    const searchInput = containerEl.querySelector("#docSearchInput");
-    if (searchInput) {
-      searchInput.addEventListener("input", (e) => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          uiState.searchQuery = e.target.value;
-          onStateChange(uiState);
-        }, 300);
-      });
-    }
-
-    // 6. Nút Reset bộ lọc từ trạng thái rỗng
-    const resetBtn = containerEl.querySelector("#resetDocFiltersBtn");
-    if (resetBtn) {
-      resetBtn.addEventListener("click", () => {
-        uiState.searchQuery = "";
-        uiState.selectedCategory = "Tất cả";
-        uiState.selectedSubject = "Tất cả";
-        onStateChange(uiState);
-      });
-    }
-
-    // 7. Mở modal Tải lên tài liệu
-    const uploadBtn = containerEl.querySelector("#openUploadDocBtn");
-    const emptyUploadBtn = containerEl.querySelector("#emptyUploadDocBtn");
-    const modalHost = containerEl.querySelector("#uploadDocModalHost");
-
-    const openUploadModal = () => {
-      if (!modalHost) return;
-      modalHost.innerHTML = renderUploadDocumentModal();
-      const modalEl = modalHost.querySelector("#uploadDocModal");
-
-      const close = () => {
-        modalHost.innerHTML = "";
-      };
-
-      attachModalEvents(modalEl, close);
-
-      const form = modalEl.querySelector("#uploadDocForm");
-      if (form) {
-        form.addEventListener("submit", (e) => {
-          e.preventDefault();
-          const fd = new FormData(form);
-          const title = fd.get("title")?.trim();
-          const subject = fd.get("subject")?.trim();
-          const category = fd.get("category");
-          const fileType = fd.get("fileType");
-
-          if (!title || !subject) {
-            alert("Vui lòng nhập đầy đủ tên tài liệu và môn học.");
-            return;
-          }
-
-          addDocument({
-            title,
-            subject,
-            category,
-            fileType,
-            sizeStr: "2.4 MB"
-          });
-
-          close();
-          onStateChange(uiState);
-        });
-      }
-    };
-
-    if (uploadBtn) uploadBtn.addEventListener("click", openUploadModal);
-    if (emptyUploadBtn) emptyUploadBtn.addEventListener("click", openUploadModal);
-
-    // 8. Xóa tài liệu
-    const deleteDocBtns = containerEl.querySelectorAll("[data-delete-doc-id]");
-    deleteDocBtns.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const docId = btn.getAttribute("data-delete-doc-id");
-        const ok = window.confirm("Bạn có chắc chắn muốn xóa tài liệu này khỏi kho học tập?");
-        if (ok) {
-          deleteDocument(docId);
-          onStateChange(uiState);
-        }
-      });
+  };
+  for (const selector of ["#noteTitleInput", "#noteSubjectInput", "#noteTagsInput", "#noteContentTextarea", "#noteChapterInput", "#noteDifficultInput", "#noteNotebookSelect", "#noteDocumentSelect"]) {
+    const change = ["#noteDifficultInput", "#noteNotebookSelect", "#noteDocumentSelect"].includes(selector);
+    on(selector, change ? "change" : "input", () => {
+      if (!noteId) return;
+      const updates = snapshot(); updateNote(noteId, { ...updates, syncPending: true });
+      if (status) status.textContent = "Đang lưu thay đổi...";
+      clearTimeout(pendingSaves.get(noteId));
+      pendingSaves.set(noteId, setTimeout(() => { save(updates).then(() => { if (selector === "#noteDocumentSelect" && containerEl.isConnected) render(); }).catch(() => {}); }, 500));
     });
   }
-
-  // ========== CÁC SỰ KIỆN SỔ TAY GHI CHÚ ==========
-  if (uiState.docTab === "notes") {
-    // 1. Tìm kiếm ghi chú trong sidebar
-    const notesSearch = containerEl.querySelector("#notesSearchInput");
-    if (notesSearch) {
-      notesSearch.addEventListener("input", (e) => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          uiState.searchQuery = e.target.value;
-          onStateChange(uiState);
-        }, 300);
-      });
+  on("#saveNoteManualBtn", "click", () => save(snapshot()));
+  on("#analyzeDifficultNotesBtn", "click", async () => {
+    await save(snapshot());
+    await runAIAnalysis("difficult-notes", analyzeDifficultNotes, data => data.difficultNotesCount
+      ? [...data.topics.map(item => `${item.topic}: ${item.reason || ""}`), ...data.suggestions].join("\n\n") : "Chưa có ghi chú được đánh dấu khó hiểu.");
+  });
+  on("#deleteCurrentNoteBtn", "click", async () => {
+    if (noteId && confirm("Xóa trang ghi chú này?")) {
+      clearTimeout(pendingSaves.get(noteId)); pendingSaves.delete(noteId);
+      await deleteNoteOnServer(noteId); uiState.activeNoteId = null; render();
     }
-
-    // 2. Chọn trang ghi chú trong danh sách
-    const noteCards = containerEl.querySelectorAll("[data-select-note-id]");
-    noteCards.forEach((card) => {
-      card.addEventListener("click", () => {
-        const id = card.getAttribute("data-select-note-id");
-        uiState.activeNoteId = id;
-        onStateChange(uiState);
-      });
-    });
-
-    // 3. Tạo trang ghi chú mới (Giữ 1 nút duy nhất trong cột danh sách)
-    const createNoteBtn = containerEl.querySelector("#createNewNoteBtn");
-    const paperEmptyCreateBtn = containerEl.querySelector("#paperEmptyCreateBtn");
-
-    const handleCreateNote = () => {
-      const newNote = createNote({
-        title: "Trang ghi chú mới",
-        content: ""
-      });
-      uiState.activeNoteId = newNote.id;
-      onStateChange(uiState);
-    };
-
-    if (createNoteBtn) createNoteBtn.addEventListener("click", handleCreateNote);
-    if (paperEmptyCreateBtn) paperEmptyCreateBtn.addEventListener("click", handleCreateNote);
-
-    // 4. Autosave trang soạn thảo:
-    // Tuyệt đối không gọi re-render DOM để giữ nguyên vị trí con trỏ và IME gõ tiếng Việt!
-    const titleInput = containerEl.querySelector("#noteTitleInput");
-    const subjectInput = containerEl.querySelector("#noteSubjectInput");
-    const tagsInput = containerEl.querySelector("#noteTagsInput");
-    const contentTextarea = containerEl.querySelector("#noteContentTextarea");
-    const saveStatusText = containerEl.querySelector("#saveStatusText");
-    const difficultInput = containerEl.querySelector("#noteDifficultInput");
-
-    const getActiveId = () => {
-      return uiState.activeNoteId || (getNotes()[0] && getNotes()[0].id);
-    };
-
-    const triggerAutoSave = () => {
-      const activeId = getActiveId();
-      if (!activeId) return;
-
-      if (saveStatusText) {
-        saveStatusText.textContent = "Đang lưu thay đổi...";
-      }
-
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        const title = titleInput?.value.trim() || "Trang không tên";
-        const subject = subjectInput?.value.trim() || "Ghi chép";
-        const rawTags = tagsInput?.value || "";
-        const tags = rawTags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean);
-        const content = contentTextarea?.value || "";
-
-        updateNote(activeId, { title, subject, tags, content, isDifficult: Boolean(difficultInput?.checked) });
-
-        const now = new Date();
-        const hh = String(now.getHours()).padStart(2, "0");
-        const mm = String(now.getMinutes()).padStart(2, "0");
-
-        if (saveStatusText) {
-          saveStatusText.textContent = `✓ Đã lưu lúc ${hh}:${mm}`;
-        }
-
-        // Cập nhật tiêu đề bên sidebar item trực tiếp trong DOM (không re-render toàn trang)
-        const activeCard = containerEl.querySelector(`.note-item-card[data-select-note-id="${activeId}"]`);
-        if (activeCard) {
-          const tEl = activeCard.querySelector(".note-item-title");
-          if (tEl) tEl.textContent = title;
-          const pEl = activeCard.querySelector(".note-item-preview");
-          if (pEl) pEl.textContent = content.slice(0, 60).replace(/\n/g, " ") || "Chưa có nội dung...";
-        }
-      }, 500);
-    };
-
-    if (titleInput) titleInput.addEventListener("input", triggerAutoSave);
-    if (subjectInput) subjectInput.addEventListener("input", triggerAutoSave);
-    if (tagsInput) tagsInput.addEventListener("input", triggerAutoSave);
-    if (contentTextarea) contentTextarea.addEventListener("input", triggerAutoSave);
-    if (difficultInput) difficultInput.addEventListener("change", triggerAutoSave);
-
-    const analyzeButton = containerEl.querySelector("#analyzeDifficultNotesBtn");
-    analyzeButton?.addEventListener("click", async () => {
-      const activeId = getActiveId();
-      if (activeId) {
-        clearTimeout(debounceTimer);
-        updateNote(activeId, {
-          title: titleInput?.value || "Trang không tên", subject: subjectInput?.value || "",
-          tags: (tagsInput?.value || "").split(",").map(tag => tag.trim()).filter(Boolean),
-          content: contentTextarea?.value || "", isDifficult: Boolean(difficultInput?.checked)
-        });
-      }
-      await runAIAnalysis("difficult-notes", analyzeDifficultNotes, data => data.difficultNotesCount
-        ? [...data.topics.map(item => `${item.topic}: ${item.reason || ""}`), ...data.suggestions].join("\n\n") || "Chưa đủ nội dung để đề xuất chủ đề ôn tập."
-        : "Chưa có ghi chú được đánh dấu khó hiểu.");
-    });
-
-    // 5. Nút Lưu thủ công
-    const manualSaveBtn = containerEl.querySelector("#saveNoteManualBtn");
-    if (manualSaveBtn) {
-      manualSaveBtn.addEventListener("click", () => {
-        clearTimeout(debounceTimer);
-        const activeId = getActiveId();
-        if (!activeId) return;
-
-        const title = titleInput?.value.trim() || "Trang không tên";
-        const subject = subjectInput?.value.trim() || "Ghi chép";
-        const rawTags = tagsInput?.value || "";
-        const tags = rawTags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean);
-        const content = contentTextarea?.value || "";
-
-        updateNote(activeId, { title, subject, tags, content, isDifficult: Boolean(difficultInput?.checked) });
-
-        const now = new Date();
-        const hh = String(now.getHours()).padStart(2, "0");
-        const mm = String(now.getMinutes()).padStart(2, "0");
-
-        if (saveStatusText) {
-          saveStatusText.textContent = `✓ Đã lưu lúc ${hh}:${mm}`;
-        }
-      });
+  });
+  on("#createNotebookBtn", "click", async () => {
+    const title = prompt("Tên sổ tay mới");
+    if (title?.trim()) { await save(snapshot()); const book = await createNotebook(title); const note = await createNoteOnServer({ notebookId: book.notebook_id }); uiState.activeNoteId = note.id; render(); }
+  });
+  on("#renameNotebookBtn", "click", async () => {
+    const id = value("#noteNotebookSelect");
+    const title = prompt("Tên sổ tay", getNotebooks().find(book => String(book.notebook_id) === id)?.title);
+    if (title?.trim()) { await renameNotebook(id, title); render(); }
+  });
+  on("#deleteNotebookBtn", "click", async () => {
+    const id = value("#noteNotebookSelect");
+    if (id && confirm("Xóa sổ tay cùng tất cả trang bên trong?")) {
+      for (const note of getNotes().filter(item => String(item.notebookId) === id)) { clearTimeout(pendingSaves.get(note.id)); pendingSaves.delete(note.id); }
+      await deleteNotebook(id); uiState.activeNoteId = null; render();
     }
-
-    // 6. Nút Xóa ghi chú hiện tại
-    const deleteNoteBtn = containerEl.querySelector("#deleteCurrentNoteBtn");
-    if (deleteNoteBtn) {
-      deleteNoteBtn.addEventListener("click", () => {
-        const activeId = getActiveId();
-        if (!activeId) return;
-
-        const ok = window.confirm("Bạn có chắc chắn muốn xóa trang ghi chú này?");
-        if (ok) {
-          deleteNote(activeId);
-          uiState.activeNoteId = null;
-          onStateChange(uiState);
-        }
-      });
-    }
-
-    // 7. Toggle sidebar trên mobile
-    const toggleSidebarBtn = containerEl.querySelector("#togglePagesSidebarBtn");
-    const sidebarEl = containerEl.querySelector("#notesPagesSidebar");
-    if (toggleSidebarBtn && sidebarEl) {
-      toggleSidebarBtn.addEventListener("click", () => {
-        sidebarEl.classList.toggle("open-mobile");
-      });
-    }
-  }
+  });
+  on("#togglePagesSidebarBtn", "click", () => containerEl.querySelector("#notesPagesSidebar")?.classList.toggle("open-mobile"));
 }

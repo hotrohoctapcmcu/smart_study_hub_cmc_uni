@@ -11,6 +11,15 @@ import {
 } from "./tasks.service.js";
 
 export function attachTasksEvents(containerEl) {
+  containerEl.querySelectorAll('[data-task-tags-id]').forEach(button => button.addEventListener('click', async event => {
+    event.stopPropagation();
+    const task = state.tasks.find(item => item.id === button.getAttribute('data-task-tags-id'));
+    if (!task) return;
+    const value = prompt('Tags công việc, cách nhau bởi dấu phẩy', (task.tags || []).join(', '));
+    if (value === null) return;
+    try { await (await import('./tasks.service.js')).setTaskTags(task, value.split(',').map(tag => tag.trim()).filter(Boolean)); }
+    catch (error) { alert(error.message); }
+  }));
   const modalHost = containerEl.querySelector("#taskModalHost");
   const removeTask = async (taskId) => {
     const task = state.tasks.find(item => item.id === taskId);

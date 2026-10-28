@@ -9,7 +9,8 @@ import {
   aiChatState,
   loadAssistantStatus,
   beginQuestion,
-  askCurrentQuestion
+  askCurrentQuestion,
+  loadChatHistory
 } from "./ai-tutor.store.js";
 
 function scrollBodyToEnd(panelEl) {
@@ -39,6 +40,15 @@ async function submitQuestion(panelEl, text) {
 
 export function attachAiChatEvents(panelEl) {
   if (!panelEl) return;
+
+  panelEl.querySelector('#aiQuestionRetryBtn')?.addEventListener('click', async event => {
+    if (aiChatState.pending) return;
+    event.currentTarget.disabled = true;
+    const last = aiChatState.messages.at(-1);
+    if (last?.role !== 'user') return;
+    aiChatState.pending = true; aiChatState.error = ''; notifyStateChange();
+    await askCurrentQuestion(last.text); notifyStateChange();
+  });
 
   const closeBtn = panelEl.querySelector("#closeMiniChatBtn");
   if (closeBtn) {
@@ -94,7 +104,7 @@ export function attachAiChatEvents(panelEl) {
 export async function openAiChat() {
   if (aiChatState.status !== "idle") return;
 
-  const dangKiemTra = loadAssistantStatus();
+  const dangKiemTra = Promise.all([loadAssistantStatus(), loadChatHistory()]);
   notifyStateChange();
   await dangKiemTra;
   notifyStateChange();

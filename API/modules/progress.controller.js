@@ -11,7 +11,7 @@ function createProgressController({ service, studentId = NGUOI_DUNG_ID } = {}) {
         try {
             const [taskMetrics, weeklyStudyHours, gpaBySemester, nextExam] = await Promise.all([
                 service.getTaskMetrics(studentId),
-                service.getWeeklyStudyHours(studentId),
+                service.getWeeklyStudyHours(studentId, req.query.from, req.query.to),
                 service.getGPA(studentId),
                 service.getDaysToNextExam(studentId)
             ]);

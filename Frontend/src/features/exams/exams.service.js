@@ -44,17 +44,24 @@ export function mapExamFromBackend(e) {
 /**
  * Tải danh sách kỳ thi từ Backend API và cập nhật vào state.exams
  */
-export async function fetchExamsFromApi() {
-  const res = await apiRequest(ENDPOINTS.exams.list);
+export async function fetchExamsFromApi({ notify = true } = {}) {
+  const [res, plans] = await Promise.all([
+    apiRequest(ENDPOINTS.exams.list),
+    apiRequest({ method: 'GET', path: '/api/v1/exams/study-plans' })
+  ]);
   if (!res.success) {
     if (res.unavailable) return state.exams;
     throw new Error(res.error || "Không thể tải danh sách kỳ thi từ máy chủ.");
   }
 
   const rows = res.data?.data ?? res.data ?? [];
+  if (!plans.success) throw new Error(plans.error || 'Không tải được lộ trình ôn thi.');
+  const phases = plans.data?.data || [];
   if (Array.isArray(rows)) {
-    state.exams = rows.map(mapExamFromBackend);
-    notifyStateChange();
+    state.exams = rows.map(row => ({ ...mapExamFromBackend(row), studyMilestones: phases.filter(p => String(p.exam_id) === String(row.exam_id)).map(p => ({
+      id: p.plan_id, title: p.phase_title, target: p.target_description, startDate: p.start_date, targetDate: p.end_date, status: p.status
+    })) }));
+    if (notify) notifyStateChange();
     return state.exams;
   }
   return state.exams;

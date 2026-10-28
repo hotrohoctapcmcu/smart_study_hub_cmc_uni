@@ -684,6 +684,7 @@ export function renderEventDetailModal(event, isConflict = false) {
 
   const footerHtml = isStudy
     ? `
+      <button type="button" class="button secondary" id="completeStudyFromDetailBtn" ${event.status === 'COMPLETED' ? 'disabled' : ''}>${event.status === 'COMPLETED' ? 'Đã hoàn thành' : 'Hoàn thành buổi học'}</button>
       <button type="button" class="button danger" id="deleteStudyFromDetailBtn" data-event-id="${event.id}">Xóa lịch</button>
       <button type="button" class="button primary" id="editStudyFromDetailBtn" data-event-id="${event.id}">Chỉnh sửa</button>
       <button type="button" class="button ghost" data-close-modal="eventDetailModal">Đóng</button>
