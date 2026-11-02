@@ -12,7 +12,7 @@ process.env.API_PORT = '0';
 process.env.NODE_ENV = 'test';
 
 // Giữ kiểm thử độc lập với Gemini và kết nối mạng bên ngoài.
-const gemini = require('../../API/shared/gemini-client');
+const gemini = require('../../API/utils/gemini-client');
 gemini.ask = async () => 'Nhận xét AI thử nghiệm.';
 
 const API_PREFIX = '/api/v1';
@@ -228,7 +228,7 @@ async function main() {
             ) VALUES (@studentId, @subjectId, '1', '2030-2031', 3, 8.5, 'A', 11.4, 1)
         `, { studentId, subjectId });
 
-        const progress = await request('GET', '/progress');
+        const progress = await request('GET', '/progress?advice=true');
         const metrics = progress.body?.data?.metrics;
         assertPass(progress.status === 200 && progress.body.success, 'trả phân tích tiến độ');
         assertPass(metrics?.overdueCount >= 1, 'tính số bài quá hạn');

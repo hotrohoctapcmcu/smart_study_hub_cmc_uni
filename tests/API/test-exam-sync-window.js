@@ -5,10 +5,10 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
-const { pathToFileURL } = require("node:url");
-const { getExamWindow, collectExamSchedule, normalizeDate, addDays } = require("../../CRWEB/IU/exam-calendar");
-const { mapLichThi } = require("../../CRWEB/IU/data/maps");
-const { mapSangDataIU } = require("../../API/shared/iu-client");
+const vm = require("node:vm");
+const { getExamWindow, collectExamSchedule, normalizeDate, addDays } = require("../../CRWEB/modules/IU/exam-calendar");
+const { mapLichThi } = require("../../CRWEB/modules/IU/data/maps");
+const { mapSangDataIU } = require("../../API/utils/iu-client");
 const rawExam = date => ({ MAHOCPHAN: "M1", TENHOCPHAN: "Môn học", NGAYTHI: date, GIOBATDAU: 9, PHUTBATDAU: 0 });
 
 test("70-day window starts on Vietnam's current day and crosses the year", () => {
@@ -87,30 +87,32 @@ test("expired IU sessions stop the scan without attempting another endpoint", as
     assert.ok(endpoints.length <= 3);
 });
 
-test("frontend delegates timetable defaults and forwards the exam horizon over HTTP and Electron", async () => {
-    const { pullIuData } = await import(pathToFileURL(path.resolve("Frontend/src/features/sync/sync.service.js")).href);
-    const previousFetch = global.fetch;
-    const previousWindow = global.window;
+test("Electron forwards the exam horizon and leaves timetable defaults to the API", async () => {
+    // The React HTTP adapter is covered by portal-connections.test.jsx; exercise
+    // the actual main-process IPC path here without a browser or live account.
+    const handlers = new Map();
     let captured;
-    try {
-        global.fetch = async (_url, options) => {
+    const sandbox = {
+        module: { exports: {} }, process: { env: {} },
+        require: id => id === 'electron' ? {
+            BrowserWindow() {}, ipcMain: { handle: (name, handler) => handlers.set(name, handler) }
+        } : {},
+        fetch: async (url, options) => {
+            assert.match(url, /\/api\/v1\/sync\/iu\/pull$/);
             captured = JSON.parse(options.body);
             return { ok: true, json: async () => ({ success: true, savedDb: {}, thatBai: [] }) };
-        };
-        await pullIuData();
-        assert.equal(captured.soNgayLichThi, 70);
-        assert.equal(Object.hasOwn(captured, "ngayBatDau"), false);
-        assert.equal(Object.hasOwn(captured, "ngayKetThuc"), false);
-        global.window = { __uniStudyIU: {
-            isAvailable: true, loginIU() {}, pullIU: async options => { captured = options; return { ok: true }; }
-        } };
-        await pullIuData({ soNgayLichThi: 60 });
-        assert.equal(captured.soNgayLichThi, 60);
-    } finally {
-        global.fetch = previousFetch;
-        if (previousWindow === undefined) delete global.window;
-        else global.window = previousWindow;
-    }
+        }
+    };
+    vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../../electron/bridges/iu.js'), 'utf8'), sandbox);
+    assert.equal(sandbox.module.exports.registerIuBridge(), true);
+    const pull = handlers.get('iu:pull');
+    await pull({});
+    assert.equal(Object.hasOwn(captured, 'ngayBatDau'), false);
+    assert.equal(Object.hasOwn(captured, 'ngayKetThuc'), false);
+    assert.equal(getExamWindow(captured.soNgayLichThi).days, 70);
+    await pull({}, { soNgayLichThi: 60, luuDb: false });
+    assert.equal(captured.soNgayLichThi, 60);
+    assert.equal(captured.luuDb, false);
 });
 
 test("database refresh clears stale IU rows on a successful empty result and preserves manual exams", async t => {

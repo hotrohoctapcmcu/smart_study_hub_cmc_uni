@@ -23,7 +23,7 @@ test('Sprint 2 complete API flows persist real data', async t => {
         return { status: response.status, ...(await response.json()) };
     };
     let document, notebook, note;
-    const outlook = require('../../CRWEB/OUTLOOK');
+    const outlook = require('../../CRWEB/modules/OUTLOOK');
     const originalList = outlook.listMessages;
     t.after(async () => {
         outlook.listMessages = originalList;
@@ -35,7 +35,7 @@ test('Sprint 2 complete API flows persist real data', async t => {
     });
     await t.test('migration is additive and repeatable', async () => {
         const pool = await db.getPool();
-        require('../../database/sprint2/workspaceMigration').migrateWorkspace(pool);
+        require('../../database/migrations/workspaceMigration').migrateWorkspace(pool);
         assert.equal((await q('SELECT * FROM Students')).length, 2);
         assert.ok((await q('PRAGMA table_info(Notes)')).some(column => column.name === 'document_id'));
     });
@@ -145,7 +145,7 @@ test('Sprint 2 complete API flows persist real data', async t => {
 });
 
 test('Outlook Graph adapter follows pagination, normalizes bodies and reports expired access', async () => {
-    const { createOutlookClient } = require('../../CRWEB/OUTLOOK');
+    const { createOutlookClient } = require('../../CRWEB/modules/OUTLOOK');
     const calls = [];
     const client = createOutlookClient({ tokenProvider: () => 'server-only-token', fetchImpl: async (url, options) => {
         calls.push({ url, headers: options.headers });
@@ -158,7 +158,7 @@ test('Outlook Graph adapter follows pagination, normalizes bodies and reports ex
     assert.match(calls[1].url, /\$skip=1/);
     const expired = createOutlookClient({ tokenProvider: () => 'expired', fetchImpl: async () => ({ ok: false, status: 401 }) });
     await assert.rejects(expired.listMessages(), error => error.statusCode === 401);
-    const { analyzeMessage } = require('../../CRWEB/OUTLOOK/analysis');
+    const { analyzeMessage } = require('../../CRWEB/modules/OUTLOOK/analysis');
     assert.equal(analyzeMessage({ body: 'Hạn nộp: 31/02/2026 08:00' }).extractedDeadline, null);
     assert.equal(analyzeMessage({ body: 'Hạn nộp: 30/10/2026' }).extractedDeadline, null);
     const announcement = analyzeMessage({ subject: 'Nhắc hạn nộp Bài tập lớn Lập trình Web',

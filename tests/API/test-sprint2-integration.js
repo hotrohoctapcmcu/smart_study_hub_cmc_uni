@@ -28,7 +28,7 @@ test('integration of Sprint 2 database and API branches', async t => {
     legacy.close();
 
     const connect = require('../../database');
-    const migrations = require('../../database/sprint2/sprint2Migration');
+    const migrations = require('../../database/migrations/studyMigration');
     let db;
     let server;
     try {
@@ -66,7 +66,7 @@ test('integration of Sprint 2 database and API branches', async t => {
             await db.batDauPomodoro(5);
         });
 
-        const gemini = require('../../API/shared/gemini-client');
+        const gemini = require('../../API/utils/gemini-client');
         const previousAsk = gemini.ask;
         let aiCalls = 0;
         gemini.ask = async () => { aiCalls++; return 'Integration advice'; };
@@ -98,7 +98,7 @@ test('integration of Sprint 2 database and API branches', async t => {
             const notebook = await db.taoSoTay(5, { title: 'Integration notebook', subjectId: 1 });
             await db.themGhiChu(5, notebook.notebook_id, { title: 'Hard topic', content: 'Actual difficult note', isHard: true });
             await db.dongBoEdux(5, [{ externalId: 'doc1', title: 'Original document', description: 'Actual document text' }]);
-            const context = await require('../../API/shared/study-context').buildStudyContext(1);
+            const context = await require('../../API/services/study-context.service').buildStudyContext(1);
             assert.equal(context.notes.length, 1);
             assert.equal(context.notes[0].isDifficult, true);
             assert.equal(context.documents[0].title, 'Original document');

@@ -1,0 +1,112 @@
+.dashboard-page {
+  max-width: 100%;
+}
+
+.hero {
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-hover) 100%
+  );
+  color: white;
+}
+
+.hero-image img {
+  filter: drop-shadow(0 8px 24px rgba(117, 87, 255, 0.35));
+}
+
+.stats-grid {
+  display: grid;
+}
+
+.main-grid {
+  display: grid;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.error-card {
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-soft);
+}
+
+.schedule-item {
+  cursor: pointer;
+}
+
+.task-checkbox {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+}
+
+.task-checkbox:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.task-checkbox:checked::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.time-chip {
+  color: var(--primary);
+}
+
+.progress-grid {
+  display: grid;
+}
+
+@media (max-width: 768px) {
+  .dashboard-page {
+    padding: 1rem;
+  }
+  .hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.5rem;
+  }
+  .hero-image {
+    margin-top: 1rem;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .hero-image img {
+    width: 80px;
+    height: 80px;
+  }
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    padding: 1.25rem;
+  }
+  .hero-image img {
+    width: 64px;
+    height: 64px;
+  }
+}

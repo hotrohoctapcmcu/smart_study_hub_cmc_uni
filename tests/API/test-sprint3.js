@@ -37,7 +37,7 @@ test('Sprint 3: real HTTP provider contract, API, SQLite persistence and failure
     const quizInput = { subject: 'CSDL', topic: 'JOIN', count: 3, difficulty: 'medium', sourceText: 'JOIN kết hợp các dòng.' };
 
     await t.test('additive migration can be rerun without changing existing records', async () => {
-        require('../../database/sprint3/migration').migrateSprint3(await db.getPool());
+        require('../../database/migrations/aiMigration').migrateSprint3(await db.getPool());
         assert.equal((await query('SELECT * FROM Students')).length, 2);
         assert.equal((await query('SELECT * FROM Exams')).length, 2);
     });
@@ -141,7 +141,7 @@ test('Sprint 3: real HTTP provider contract, API, SQLite persistence and failure
         assert.equal((await call('POST', '/exam-plan/confirm', { ...confirmation, phases: [{ ...confirmation.phases[0], title: 'Different' }] })).status, 409);
     });
     await t.test('records cannot be read or overwritten through another user scope', async () => {
-        const other = require('../../API/modules/sprint3.service').createSprint3Service({ getDb: () => db, userId: 2 });
+        const other = require('../../API/services/hoctapai.service').createHocTapAiService({ getDb: () => db, userId: 2 });
         await assert.rejects(other.quiz(quiz.id), e => e.statusCode === 404);
         await assert.rejects(other.conversation('sprint3-chat'), e => e.statusCode === 404);
         await assert.rejects(other.saveLeave(draft.id, { fields: { date: tomorrow, reason: 'Other' }, content: 'Other' }), e => e.statusCode === 404);

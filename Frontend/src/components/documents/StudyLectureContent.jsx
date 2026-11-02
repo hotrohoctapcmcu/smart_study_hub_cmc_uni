@@ -1,0 +1,21 @@
+import { Link } from 'react-router-dom';
+import { BookOpen, ChevronRight, Layers, Search } from 'lucide-react';
+import { Button, EmptyState } from '../common/ui';
+import { SubjectCard, SubjectHeader, ChapterCard, SlideCard, ContinueLearning, RecentLearning } from './StudyCards';
+
+export default function StudyLectureContent({ courses, filteredCourses, records, recent, selected, chapter, slide, params, navigateTo, resume, filters, scope }) {
+  if (params.has('subject') && !selected) return <EmptyState icon={<Search size={30} />} title="Không tìm thấy môn học" description="Môn học có thể không còn trong học kỳ hiện tại." action={<Button onClick={() => navigateTo()}>Về môn học của tôi</Button>} />;
+  if (!selected) return <>
+    <ContinueLearning item={recent[0]} records={records} onResume={resume} />
+    <section className="study-subjects"><div className="study-section-heading"><div><span className="study-kicker">THƯ VIỆN BÀI GIẢNG</span><h2>Môn học của tôi <span className="study-count-badge">{filteredCourses.length}</span></h2></div><span>Một nơi cho từng bước tiến bộ</span></div>{filteredCourses.length ? <div className="study-subject-grid">{filteredCourses.map(course => <SubjectCard key={course.id} course={course} records={records} onSelect={navigateTo} />)}</div> : <EmptyState title={courses.length ? 'Chưa có môn học phù hợp' : 'Thư viện đang chờ bài giảng đầu tiên'} description={courses.length ? 'Thử thay đổi bộ lọc để xem các môn học khác.' : scope?.message || 'Đồng bộ EDUX hoặc tải tài liệu để sắp xếp bài giảng theo môn và chương.'} action={<Link className="btn btn-outline" to="/sync">Kết nối dữ liệu học tập</Link>} />}</section>
+    <RecentLearning items={recent} onResume={resume} />
+  </>;
+  const current = recent.find(item => item.chapter.id === chapter?.id && item.course.id === selected.id);
+  return <>
+    <nav className="study-breadcrumb" aria-label="Đường dẫn bài giảng"><button onClick={() => navigateTo()}>Tài liệu</button><ChevronRight size={14} /><button aria-current={!chapter ? 'page' : undefined} onClick={() => navigateTo(selected)}>{selected.title}</button>{chapter && <><ChevronRight size={14} /><span aria-current="page">Chương {chapter.number} · {chapter.title}</span></>}</nav>
+    <SubjectHeader course={selected} records={records} />
+    {params.has('chapter') && !chapter ? <EmptyState title="Không tìm thấy chương" action={<Button onClick={() => navigateTo(selected)}>Về môn học</Button>} />
+      : chapter ? <section className="study-chapter-detail"><div className="study-section-heading"><div><span className="study-kicker">CHƯƠNG {String(chapter.number).padStart(2, '0')}</span><h2>{chapter.title}</h2><p>{chapter.slides.length} slide · khoảng {chapter.slides.length * 2} phút <small>(ước tính 2 phút/slide)</small></p></div>{chapter.slides.length > 0 && <Button onClick={() => resume(current || { course: selected, chapter, slide: chapter.slides.find(s => !records[s.key]?.learned) || chapter.slides[0] })}>{current ? 'Tiếp tục học' : 'Bắt đầu học'}<ChevronRight size={16} /></Button>}</div>{chapter.error && <p className="study-data-warning">{chapter.error}</p>}{params.has('slide') && !slide && <p role="alert" className="study-data-warning">Slide được liên kết không còn trong chương này. Hãy chọn một slide bên dưới.</p>}{chapter.slides.length ? <div className="study-slide-grid">{chapter.slides.filter(s => !filters.category || s.category === filters.category).map(s => <SlideCard key={s.key} slide={s} record={records[s.key]} current={current?.slide.id === s.id} onSelect={s => navigateTo(selected, chapter, s)} />)}</div> : <EmptyState title="Chương chưa có slide" description="Đồng bộ tài liệu để tải nội dung bài giảng từ EDUX." />}</section>
+      : <section><div className="study-section-heading"><h2><Layers size={19} />Các chương trong môn</h2><span>{selected.chapters.length} chương</span></div>{selected.chapters.length ? <div className="study-chapter-list">{selected.chapters.map(c => <ChapterCard key={c.id} chapter={c} records={records} onSelect={c => navigateTo(selected, c)} />)}</div> : <EmptyState icon={<BookOpen size={32} />} title="Môn học chưa có bài giảng" description="Đồng bộ tài liệu từ EDUX hoặc tải tài liệu của môn này lên." />}</section>}
+  </>;
+}

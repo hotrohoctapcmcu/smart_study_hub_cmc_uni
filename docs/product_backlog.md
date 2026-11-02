@@ -1,643 +1,198 @@
-================================================================================
-PRODUCT BACKLOG — UNISTUDY CMC
-Ngày lập: 18/10/2026
-Nguồn: 6 báo cáo phân tích + Sprint1-4
-================================================================================
-
-BƯỚC 1. MỤC TIÊU DỰ ÁN
---------------------------------------------------------------------------------
-UniStudy CMC là hệ thống trợ lý học tập thông minh dành cho sinh viên Trường
-Đại học CMC. Hệ thống tự động lấy dữ liệu học tập từ cổng IU, tổ chức lại
-thành thời khóa biểu, lịch thi, deadline và kế hoạch ôn thi, đồng thời hỗ trợ
-sinh viên lập kế hoạch tự học và theo dõi tiến độ.
-
-Đối tượng phục vụ: sinh viên CMC; phụ huynh/giảng viên không thuộc phạm vi.
-
-BƯỚC 2. DANH SÁCH 18 CHỨC NĂNG
---------------------------------------------------------------------------------
-1. Thời khóa biểu thông minh
-2. AI xếp lịch tự học và cảnh báo trùng
-3. Quản lý Deadline và Checklist
-4. Nhắc nhở thông minh đa tầng
-5. Kho tài liệu môn học tập trung
-6. Tìm kiếm nhanh và gắn thẻ Tag
-7. Trợ lý gia sư AI
-8. Đồng hồ Pomodoro chống xao lãng
-9. Quản lý lịch thi và kế hoạch ôn thi
-10. Bản đồ thời gian học tập
-11. Phân tích tiến độ học tập
-12. Textbook và sổ tay học tập
-13. Kiểm tra kiến thức bằng AI
-14. Phân tích điểm yếu và đề xuất nội dung học
-15. AI tạo kế hoạch ôn thi
-16. Hỗ trợ viết đơn xin phép nghỉ học
-17. Đồng bộ và phân tích Email trường
-18. Hồ sơ học tập cá nhân
-
-BƯỚC 3-4. USER STORY VÀ THÔNG TIN TỪNG CÔNG VIỆC
---------------------------------------------------------------------------------
-Quy ước:
-- ID: PB-xx
-- Priority theo MoSCoW: Must / Should / Could / Won't (Won't = chưa làm trong
-  phiên bản này)
-- Story Point: 1, 2, 3, 5, 8 (ước lượng tương đối, không phải thời gian)
-- Status: Done / In Progress / Backlog
-- Sprint: 1, 2, 3, 4
-
-================================================================================
-EPIC A. HẠ TẦNG VÀ ĐỒNG BỘ DỮ LIỆU
-================================================================================
-
-PB-01 | Epic: Hạ tầng | Sprint 1 | Must | 5 | Done
-User Story: Là thành viên phát triển, tôi muốn có khung ứng dụng Electron +
-API + SQLite chạy được để các chức năng có nơi hoạt động.
-Hiện trạng: electron-main.js, index.js, API Express, SQLite sql.js đã có.
-Acceptance Criteria:
-  - `npm start` mở được cửa sổ app và nạp Frontend từ cổng 8080.
-  - `npm run start:headless` chạy API cổng 3001.
-  - data/unistudy.db được tạo và có 12 bảng.
-Phụ thuộc: không.
-
-PB-02 | Epic: Hạ tầng | Sprint 1 | Must | 8 | Done
-User Story: Là thành viên phát triển, tôi muốn có tầng mã hoá/giải mã cổng IU
-để gọi được API của trường.
-Hiện trạng: crypto/encode.js, decode.js, endpoint_map.txt 109 endpoint.
-Acceptance Criteria:
-  - Giải mã được response mẫu của IU.
-  - Chọn đúng cụm API theo tiền tố module.
-Phụ thuộc: PB-01.
-
-PB-03 | Epic: Đồng bộ | Sprint 1 | Must | 8 | Done
-User Story: Là sinh viên, tôi muốn đăng nhập cổng IU bằng tài khoản Microsoft
-của trường để hệ thống tự lấy dữ liệu mà tôi không phải nhập tay.
-Hiện trạng: loginIU() hoàn chỉnh, đã có dữ liệu thật trong DB (87 tiết TKB,
-2 kỳ thi, 10 đầu điểm).
-Acceptance Criteria:
-  - Đăng nhập xong đọc được cookie và phiên từ portal.
-  - Cookie không đi qua renderer.
-  - Phiên còn hạn thì lần sau không phải đăng nhập lại.
-Phụ thuộc: PB-02.
-
-PB-04 | Epic: Đồng bộ | Sprint 1 | Must | 5 | Done
-User Story: Là sinh viên, tôi muốn dữ liệu IU được lưu vào máy để mở app
-không cần mạng vẫn xem được.
-Hiện trạng: saveIUData ghi vào SQLite, có persist ra file.
-Acceptance Criteria:
-  - Tắt app, mở lại vẫn còn TKB, lịch thi, bảng điểm.
-Phụ thuộc: PB-03.
-
-PB-05 | Epic: Đồng bộ | Sprint 2 | Must | 5 | Backlog
-User Story: Là sinh viên, tôi muốn dữ liệu đồng bộ không bị mất khi có lỗi
-giữa chừng để tôi không phải đồng bộ lại từ đầu.
-Hiện trạng: saveIUData chạy nhiều lệnh rời rạc, không transaction; có nhiều
-giá trị fallback cứng.
-Acceptance Criteria:
-  - Lỗi giữa chừng -> DB giữ nguyên trạng thái trước.
-  - Không sinh kỳ thi/tiết học giả khi thiếu field.
-Phụ thuộc: PB-16, PB-17.
-
-PB-06 | Epic: Đồng bộ | Sprint 3 | Should | 8 | Backlog
-User Story: Là sinh viên, tôi muốn lấy tài liệu môn học từ EDUX để có slide
-và chương bài giảng ngay trong app.
-Hiện trạng: KHÔNG CÓ CODE. Chỉ có metadata nguồn EDUX trong dongBo.js.
-Acceptance Criteria:
-  - Đăng nhập EDUX, lấy được danh sách môn và chương.
-Phụ thuộc: PB-09, PB-20.
-
-PB-07 | Epic: Đồng bộ | Sprint 3 | Should | 5 | Backlog
-User Story: Là sinh viên, tôi muốn bài tập và deadline từ LMS được tự động
-đưa vào danh sách công việc.
-Hiện trạng: KHÔNG CÓ CODE. báo_báo.txt có liệt kê dữ liệu cần nhưng chưa làm.
-Acceptance Criteria:
-  - Đồng bộ LMS tạo Assignments với deadline thật.
-Phụ thuộc: PB-23.
-
-PB-08 | Epic: Đồng bộ | Sprint 3 | Could | 5 | Backlog
-User Story: Là sinh viên, tôi muốn xem tiến độ bài học theo tuần từ eLearning.
-Hiện trạng: KHÔNG CÓ CODE.
-Acceptance Criteria:
-  - Hiển thị bài đã học / chưa học theo tuần.
-Phụ thuộc: PB-09.
-
-================================================================================
-EPIC B. TÀI KHOẢN VÀ PHIÊN NGƯỜI DÙNG
-================================================================================
-
-PB-09 | Epic: Tài khoản | Sprint 2 | Must | 8 | Backlog
-User Story: Là sinh viên, tôi muốn đăng nhập vào ứng dụng bằng tài khoản của
-mình để dữ liệu của tôi không lẫn với người khác.
-Hiện trạng: không có màn hình đăng nhập; API mặc định req.user.id = 1 khi
-thiếu token (auth.js:21-24); tài khoản trong DB có password_hash rỗng.
-Acceptance Criteria:
-  - Đăng nhập sai -> 401 có message.
-  - Không token -> 401, không tự dùng user id 1.
-  - Hai tài khoản thấy dữ liệu khác nhau.
-  - Đăng xuất xoá token và quay về màn hình đăng nhập.
-Phụ thuộc: không. Chặn PB-10, PB-23, PB-24, PB-25, PB-26, PB-27.
-
-PB-10 | Epic: Tài khoản | Sprint 2 | Must | 3 | Backlog
-User Story: Là sinh viên, tôi muốn chỉ sửa/xoá được dữ liệu của chính mình
-để an toàn khi dùng chung máy.
-Hiện trạng: các hàm xoá/sửa chỉ nhận id, không nhận userId.
-Acceptance Criteria:
-  - Dùng token sinh viên A xoá bản ghi của B -> 403/404.
-Phụ thuộc: PB-09.
-
-================================================================================
-EPIC C. THỜI KHÓA BIỂU (CHỨC NĂNG 1)
-================================================================================
-
-PB-11 | Epic: TKB | Sprint 1 | Must | 5 | Done
-User Story: Là sinh viên, tôi muốn xem thời khóa biểu theo ngày và theo tuần
-để chủ động sắp xếp thời gian.
-Hiện trạng: schedule.view.js có 3 chế độ; dữ liệu 87 tiết từ IU.
-Acceptance Criteria:
-  - Chuyển Ngày/Tuần đúng; điều hướng trước/sau đúng.
-  - Hiển thị môn, giờ, phòng, giảng viên.
-Phụ thuộc: PB-03.
-
-PB-12 | Epic: TKB | Sprint 1 | Should | 3 | Done
-User Story: Là sinh viên, tôi muốn thấy lịch trường và lịch tự học trên cùng
-một màn hình để không bỏ sót buổi nào.
-Hiện trạng: state.schoolEvents + state.studyEvents gộp khi render.
-Acceptance Criteria:
-  - Hai loại lịch phân biệt bằng nhãn và màu.
-Phụ thuộc: PB-11.
-
-PB-13 | Epic: TKB | Sprint 2 | Must | 3 | Backlog
-User Story: Là sinh viên, tôi muốn lịch tự học được lưu lại để mở app lần sau
-vẫn còn.
-Hiện trạng: createSelfStudy/updateSelfStudy/deleteSelfStudy chỉ ghi state.
-Acceptance Criteria:
-  - Thêm/sửa/xoá buổi tự học -> tải lại trang vẫn còn.
-Phụ thuộc: PB-09, PB-10.
-
-PB-14 | Epic: TKB | Sprint 2 | Should | 2 | Backlog
-User Story: Là sinh viên, tôi muốn thời khóa biểu tự cập nhật ngay sau khi
-đồng bộ để không phải khởi động lại app.
-Hiện trạng: schedule.js:10 giữ promise ở phạm vi module; lần đầu lỗi thì không
-thử lại.
-Acceptance Criteria:
-  - Đồng bộ xong mở Lịch thấy dữ liệu mới.
-Phụ thuộc: PB-04.
-
-PB-15 | Epic: TKB | Sprint 2 | Could | 2 | Backlog
-User Story: Là sinh viên, tôi muốn xem lịch theo tháng dạng lưới để nhìn tổng
-quan.
-Hiện trạng: renderMonthView chỉ in câu mô tả, không có lưới.
-Acceptance Criteria:
-  - Có lưới tháng hiển thị sự kiện.
-Phụ thuộc: PB-11.
-
-================================================================================
-EPIC D. LỊCH THI VÀ KẾ HOẠCH ÔN THI (CHỨC NĂNG 9, 15)
-================================================================================
-
-PB-16 | Epic: Lịch thi | Sprint 2 | Must | 5 | Backlog
-User Story: Là sinh viên, tôi muốn chỉ thấy lịch thi của học kỳ đang học để
-không bị nhầm với kỳ cũ.
-Hiện trạng: CRWEB luôn lấy hkThi[0]; DB không có cột semester; DB còn 2 kỳ thi
-tháng 9/2026.
-Acceptance Criteria:
-  - App chọn đúng học kỳ đang diễn ra.
-  - Màn hình mặc định không có kỳ thi đã qua.
-  - Đồng bộ lỗi không xoá dữ liệu cũ.
-Phụ thuộc: PB-17.
-
-PB-17 | Epic: Lịch thi | Sprint 2 | Must | 3 | Backlog
-User Story: Là sinh viên, tôi muốn mỗi kỳ thi biết nó thuộc học kỳ nào để lọc
-và đối chiếu.
-Hiện trạng: bảng Exams không có semester / academic_year.
-Acceptance Criteria:
-  - DB cũ mở được sau khi thêm cột, không mất dữ liệu.
-  - Mọi dòng source='IU' có semester khác rỗng.
-Phụ thuộc: không.
-
-PB-18 | Epic: Lịch thi | Sprint 2 | Should | 3 | Backlog
-User Story: Là sinh viên, tôi muốn sửa thông tin kỳ thi khi trường thay đổi
-phòng hoặc giờ.
-Hiện trạng: không có PUT /exams/:id; FE chỉ sửa trong state.
-Acceptance Criteria:
-  - Sửa ngày/giờ/phòng/hình thức lưu bền.
-Phụ thuộc: PB-09, PB-17.
-
-PB-19 | Epic: Ôn thi | Sprint 2 | Must | 5 | Backlog
-User Story: Là sinh viên, tôi muốn lập kế hoạch ôn thi theo từng giai đoạn và
-lưu lại để theo dõi tiến độ.
-Hiện trạng: backend có ExamStudyPlans và 5 endpoint nhưng FE chỉ sinh 2 mốc
-cứng cùng ngày thi; bảng 0 dòng.
-Acceptance Criteria:
-  - Tạo/sửa/xoá giai đoạn, đổi trạng thái; dữ liệu còn sau khi tải lại.
-Phụ thuộc: PB-16, PB-18.
-
-PB-20 | Epic: Ôn thi | Sprint 3 | Should | 8 | Backlog
-User Story: Là sinh viên, tôi muốn hệ thống tự đề xuất lịch ôn thi từ ngày thi
-và phạm vi kiến thức để không phải tự chia.
-Hiện trạng: chưa có.
-Acceptance Criteria:
-  - Sinh giai đoạn ôn có ngày bắt đầu/kết thúc hợp lý, không trùng lịch học.
-Phụ thuộc: PB-19, PB-21.
-
-================================================================================
-EPIC E. LỊCH TỰ HỌC VÀ CẢNH BÁO TRÙNG (CHỨC NĂNG 2)
-================================================================================
-
-PB-21 | Epic: Tự học | Sprint 1 | Must | 5 | Done
-User Story: Là sinh viên, tôi muốn được cảnh báo khi lịch tự học trùng với
-lịch học chính khóa để không bị bỏ buổi.
-Hiện trạng: findScheduleConflicts chạy phía client; banner đỏ + modal giải
-quyết 3 lựa chọn.
-Acceptance Criteria:
-  - Phát hiện đúng cặp trùng; A.end == B.start không tính là trùng.
-Phụ thuộc: PB-12.
-
-PB-22 | Epic: Tự học | Sprint 2 | Should | 3 | Backlog
-User Story: Là sinh viên, tôi muốn server xác nhận trùng lịch thay vì chỉ tin
-vào trình duyệt.
-Hiện trạng: FE không gọi POST /schedules/conflicts/check dù API đã có.
-Acceptance Criteria:
-  - Lưu buổi tự học trùng -> server báo trùng, UI hiện modal.
-Phụ thuộc: PB-13.
-
-PB-23 | Epic: Tự học | Sprint 3 | Should | 5 | Backlog
-User Story: Là sinh viên, tôi muốn hệ thống gợi ý lịch tự học dựa trên khoảng
-trống thật của tôi.
-Hiện trạng: generateMockSessions chia theo khung giờ cố định, không dùng dữ
-liệu thật; backend đã có free-slots.
-Acceptance Criteria:
-  - Kế hoạch sinh ra không trùng lịch chính khóa.
-  - Bấm 'Áp dụng' tạo được buổi học thật.
-Phụ thuộc: PB-13, PB-22.
-
-================================================================================
-EPIC F. DEADLINE, CHECKLIST VÀ NHẮC NHỞ (CHỨC NĂNG 3, 4)
-================================================================================
-
-PB-24 | Epic: Deadline | Sprint 2 | Must | 5 | Backlog
-User Story: Là sinh viên, tôi muốn công việc và checklist được lưu lại để
-không mất khi đóng app.
-Hiện trạng: tasks.events.js dùng state; tasks.service.js có 10 hàm nhưng
-không được import; bảng Assignments/Checklists 0 dòng.
-Acceptance Criteria:
-  - Thêm/sửa/xoá công việc lưu bền.
-  - Checklist con có id và lưu bền.
-  - Tab 'Sắp đến hạn' có dữ liệu.
-Phụ thuộc: PB-09, PB-10, PB-25.
-
-PB-25 | Epic: Deadline | Sprint 2 | Must | 2 | Backlog
-User Story: Là sinh viên, tôi muốn danh sách deadline sắp tới hiển thị đúng
-để không bỏ lỡ việc gần hạn.
-Hiện trạng: layDeadlineSapToi dùng date('now', '+ 3 days') trả NULL nên luôn
-rỗng (sprint1Service.js:705).
-Acceptance Criteria:
-  - Với deadline cách 1/3/7 ngày, gọi n=3 trả đúng bản ghi trong 3 ngày.
-Phụ thuộc: không.
-
-PB-26 | Epic: Nhắc nhở | Sprint 2 | Must | 5 | Backlog
-User Story: Là sinh viên, tôi muốn nhận nhắc nhở theo nhiều mốc (7 ngày,
-3 ngày, 24 giờ, 1 giờ) để không bị động.
-Hiện trạng: backend sinh được nhắc nhở nhưng FE không đọc bảng Reminders;
-notifications.service.js không được import.
-Acceptance Criteria:
-  - Tạo deadline 3 ngày -> thấy nhắc nhở tương ứng.
-  - Đánh dấu tất cả đã đọc không còn 404.
-  - Badge cập nhật đúng.
-Phụ thuộc: PB-09, PB-10, PB-27.
-
-PB-27 | Epic: Nhắc nhở | Sprint 2 | Must | 3 | Backlog
-User Story: Là sinh viên, tôi muốn có nút đánh dấu tất cả thông báo đã đọc
-để dọn danh sách nhanh.
-Hiện trạng: FE khai báo PATCH /notifications/read-all nhưng API không có.
-Acceptance Criteria:
-  - Gọi endpoint -> tất cả is_sent = 1 của đúng sinh viên.
-Phụ thuộc: PB-09.
-
-PB-28 | Epic: Nhắc nhở | Sprint 2 | Should | 2 | Backlog
-User Story: Là sinh viên, tôi muốn không nhận trùng một nhắc nhở hai lần.
-Hiện trạng: themBaiTap sinh 3 mốc, taoNhacNhoDaTang sinh 4 mốc; không UNIQUE.
-Acceptance Criteria:
-  - Gọi cả hai hàm cho cùng deadline -> số nhắc nhở không nhân đôi.
-Phụ thuộc: PB-17.
-
-================================================================================
-EPIC G. HỒ SƠ VÀ KẾT QUẢ HỌC TẬP (CHỨC NĂNG 18, 11, 14)
-================================================================================
-
-PB-29 | Epic: Hồ sơ | Sprint 1 | Must | 5 | Done
-User Story: Là sinh viên, tôi muốn hồ sơ và bảng điểm được lấy tự động từ
-cổng trường.
-Hiện trạng: DB có student_code='BSE250047', 14 môn, 10 đầu điểm.
-Acceptance Criteria:
-  - Hồ sơ và bảng điểm xuất hiện sau khi đồng bộ.
-Phụ thuộc: PB-03.
-
-PB-30 | Epic: Hồ sơ | Sprint 2 | Must | 3 | Backlog
-User Story: Là sinh viên, tôi muốn bảng điểm lưu đúng năm học và điểm thành
-phần để tính GPA chính xác.
-Hiện trạng: academic_year rỗng cho cả 10 dòng; component_score/exam_score
-không bao giờ được ghi; semester dạng '3_2025_2026'.
-Acceptance Criteria:
-  - academic_year khác rỗng.
-  - Một môn học 2 lần có 2 dòng.
-Phụ thuộc: không.
-
-PB-31 | Epic: Hồ sơ | Sprint 2 | Must | 5 | Backlog
-User Story: Là sinh viên, tôi muốn xem hồ sơ đầy đủ và bảng điểm trên giao
-diện thay vì chỉ 3 trường.
-Hiện trạng: profile.view.js chỉ có name / studentId / email;
-profile.service.js không được import.
-Acceptance Criteria:
-  - Hiển thị ngành, lớp, khoá, GPA hệ 10 và hệ 4, tín chỉ, môn đạt/chưa đạt.
-  - Bảng điểm lọc theo học kỳ.
-Phụ thuộc: PB-09, PB-30.
-
-PB-32 | Epic: Hồ sơ | Sprint 2 | Should | 2 | Backlog
-User Story: Là sinh viên, tôi muốn xem danh sách môn nợ để biết môn cần học
-lại.
-Hiện trạng: service có layMonHocChuaDat/layMonHocDaDat nhưng không có endpoint.
-Acceptance Criteria:
-  - GET /student/grades/failed trả đúng danh sách.
-Phụ thuộc: PB-31.
-
-PB-33 | Epic: Tiến độ | Sprint 3 | Should | 5 | Backlog
-User Story: Là sinh viên, tôi muốn xem tiến độ học tập tổng hợp để biết mình
-đang ở đâu.
-Hiện trạng: API backend `GET /api/v1/progress` đã có; route giao diện `progress` vẫn chưa được đánh dấu triển khai. Lịch sử Pomodoro hiện lưu cục bộ nên chưa được tính vào số giờ từ API.
-Acceptance Criteria:
-  - Hiển thị tiến độ công việc, điểm số, thời gian học từ dữ liệu thật.
-Phụ thuộc: PB-24, PB-31.
-
-PB-34 | Epic: Tiến độ | Sprint 3 | Could | 5 | Backlog
-User Story: Là sinh viên, tôi muốn được chỉ ra môn yếu và gợi ý nội dung cần
-ôn.
-Hiện trạng: chưa có.
-Acceptance Criteria:
-  - Chỉ ra môn yếu dựa trên điểm thật và đề xuất nội dung ôn.
-Phụ thuộc: PB-30, PB-39.
-
-================================================================================
-EPIC H. TÀI LIỆU, TÌM KIẾM VÀ SỔ TAY (CHỨC NĂNG 5, 6, 12)
-================================================================================
-
-PB-35 | Epic: Tài liệu | Sprint 3 | Should | 8 | Backlog
-User Story: Là sinh viên, tôi muốn có một kho tài liệu theo môn để không phải
-tìm lại slide rải rác.
-Hiện trạng: route 'documents' isImplemented: false; không có view, service,
-bảng hay API.
-Acceptance Criteria:
-  - Xem danh sách tài liệu theo môn; thêm/xoá lưu bền.
-Phụ thuộc: PB-09, PB-06.
-
-PB-36 | Epic: Tìm kiếm | Sprint 3 | Should | 5 | Backlog
-User Story: Là sinh viên, tôi muốn tìm nhanh công việc, lịch và tài liệu bằng
-một ô tìm kiếm.
-Hiện trạng: state.searchQuery có nhưng topbar.js không được import ở shell.js.
-Acceptance Criteria:
-  - Gõ từ khóa tìm được công việc, tài liệu, lịch.
-Phụ thuộc: PB-24, PB-35.
-
-PB-37 | Epic: Tìm kiếm | Sprint 3 | Could | 3 | Backlog
-User Story: Là sinh viên, tôi muốn gắn thẻ cho công việc và tài liệu để nhóm
-chúng theo chủ đề.
-Hiện trạng: chưa có mô hình tag.
-Acceptance Criteria:
-  - Gắn/bỏ tag lưu bền; lọc theo tag.
-Phụ thuộc: PB-36.
-
-PB-38 | Epic: Textbook | Sprint 3 | Could | 8 | Backlog
-User Story: Là sinh viên, tôi muốn có sổ tay học tập theo môn để ghi chú gắn
-với từng chương.
-Hiện trạng: chưa có code. nhiệm_vụ.txt có nhắc 'phần Textbook' nhưng không có
-mã nguồn.
-Acceptance Criteria:
-  - Tạo sổ tay theo môn; ghi chú lưu bền.
-Phụ thuộc: PB-35.
-
-================================================================================
-EPIC I. CÔNG CỤ AI (CHỨC NĂNG 7, 13)
-================================================================================
-
-PB-39 | Epic: AI | Sprint 3 | Could | 8 | Backlog
-User Story: Là sinh viên, tôi muốn hỏi trợ lý AI về nội dung môn học để được
-giải thích ngay.
-Hiện trạng: route 'ai-tutor' isImplemented: false; panel chat có khung nhưng
-input disabled.
-Acceptance Criteria:
-  - Gửi câu hỏi nhận trả lời; lịch sử hội thoại còn sau khi tải lại.
-Phụ thuộc: PB-09.
-
-PB-40 | Epic: AI | Sprint 3 | Could | 8 | Backlog
-User Story: Là sinh viên, tôi muốn tự tạo bài trắc nghiệm từ nội dung môn để
-tự kiểm tra.
-Hiện trạng: route 'quiz' isImplemented: false; không có code.
-Acceptance Criteria:
-  - Tạo bộ câu hỏi từ nội dung môn; làm bài và lưu kết quả.
-Phụ thuộc: PB-38, PB-39.
-
-================================================================================
-EPIC J. CÔNG CỤ HỖ TRỢ KHÁC (CHỨC NĂNG 8, 10, 16, 17)
-================================================================================
-
-PB-41 | Epic: Pomodoro | Sprint 1 | Should | 3 | Done
-User Story: Là sinh viên, tôi muốn có đồng hồ Pomodoro để tập trung học.
-Hiện trạng: pomodoro.service.js dựa trên timestamp, lưu localStorage, có
-lịch sử phiên.
-Acceptance Criteria:
-  - Chạy/tạm dừng/kết thúc đúng; lịch sử ghi nhận.
-Phụ thuộc: không.
-
-PB-42 | Epic: Pomodoro | Sprint 3 | Could | 3 | Backlog
-User Story: Là sinh viên, tôi muốn lịch sử Pomodoro theo người dùng để xem
-trên máy khác.
-Hiện trạng: chỉ lưu localStorage trên máy hiện tại.
-Acceptance Criteria:
-  - Đăng nhập ở máy khác vẫn xem được lịch sử.
-Phụ thuộc: PB-09.
-
-PB-43 | Epic: Thời gian | Sprint 3 | Could | 5 | Backlog
-User Story: Là sinh viên, tôi muốn thấy bản đồ thời gian học tập để biết mình
-phân bổ thời gian thế nào.
-Hiện trạng: chưa có.
-Acceptance Criteria:
-  - Hiển thị mật độ học tập theo thời gian từ dữ liệu thật.
-Phụ thuộc: PB-13, PB-42.
-
-PB-44 | Epic: Hành chính | Sprint 4 | Could | 5 | Backlog
-User Story: Là sinh viên, tôi muốn tạo đơn xin phép nghỉ học có sẵn thông tin
-của mình.
-Hiện trạng: chưa có.
-Acceptance Criteria:
-  - Tạo được đơn có thông tin điền sẵn và xuất được file.
-Phụ thuộc: PB-09, PB-31.
-
-PB-45 | Epic: Email | Sprint 4 | Won't | 8 | Backlog
-User Story: Là sinh viên, tôi muốn thông báo từ email trường được tổng hợp
-vào app.
-Hiện trạng: chưa có code, không có module email trong CRWEB.
-Ghi chú: chưa nằm trong phạm vi phiên bản hiện tại; cần quyết định của chủ dự
-án trước khi đưa vào.
-Acceptance Criteria: (chưa xác định vì chưa thuộc phạm vi)
-Phụ thuộc: PB-09.
-
-================================================================================
-EPIC K. CHẤT LƯỢNG VÀ BÀN GIAO
-================================================================================
-
-PB-46 | Epic: Chất lượng | Sprint 2 | Must | 3 | Backlog
-User Story: Là người dùng, tôi muốn thấy đúng thông báo lỗi khi thao tác thất
-bại để biết cách sửa.
-Hiện trạng: api-client.js:64-66 bỏ qua body lỗi của server; timeout bị đảo
-điều kiện ở :46-49.
-Acceptance Criteria:
-  - Lỗi nghiệp vụ hiển thị đúng message; request treo bị huỷ sau khoảng 20s.
-Phụ thuộc: không.
-
-PB-47 | Epic: Chất lượng | Sprint 4 | Must | 5 | Backlog
-User Story: Là thành viên nhóm, tôi muốn có bộ test tự động chạy một lệnh để
-biết hệ thống còn đúng không sau mỗi thay đổi.
-Hiện trạng: có 16 bộ test nhưng chưa có test đăng nhập, phân quyền, CRUD qua
-HTTP; chưa có lệnh chạy tất cả.
-Acceptance Criteria:
-  - Một lệnh chạy toàn bộ test; báo cáo pass/fail rõ ràng.
-Phụ thuộc: Sprint 2, Sprint 3.
-
-PB-48 | Epic: Chất lượng | Sprint 4 | Must | 3 | Backlog
-User Story: Là thành viên nhóm, tôi muốn có kịch bản kiểm thử thủ công để
-kiểm tra trước khi bàn giao.
-Hiện trạng: KeHoachSprint2.txt có 8 kịch bản; Sprint4.txt mở rộng thành 10.
-Acceptance Criteria:
-  - 10 kịch bản đạt trên bản đóng gói.
-Phụ thuộc: PB-47.
-
-PB-49 | Epic: Đóng gói | Sprint 4 | Must | 8 | Backlog
-User Story: Là sinh viên, tôi muốn cài app như một phần mềm bình thường mà
-không cần cài Node.js.
-Hiện trạng: KHÔNG CÓ cấu hình đóng gói (không electron-builder/forge/packager,
-không icon, không script build).
-Acceptance Criteria:
-  - Lệnh build sinh tệp cài; cài trên máy sạch mở được app.
-Phụ thuộc: PB-48.
-
-PB-50 | Epic: Đóng gói | Sprint 4 | Must | 5 | Backlog
-User Story: Là sinh viên, tôi muốn app chạy đúng sau khi cài, không lỗi do
-thiếu tài nguyên hoặc không ghi được dữ liệu.
-Hiện trạng: index.js trỏ tới Frontend/; db.js:49-55 tìm wasm ở đường dẫn sai
-('../../../node_modules/...'); DB nằm trong thư mục dự án.
-Acceptance Criteria:
-  - Bản cài tạo được DB, đọc được endpoint_map.txt, tải được Frontend.
-  - Cài vào Program Files vẫn ghi được DB.
-Phụ thuộc: PB-49.
-
-PB-51 | Epic: Bàn giao | Sprint 4 | Must | 3 | Backlog
-User Story: Là người tiếp nhận, tôi muốn có tài liệu để tự chạy và hiểu dự án.
-Hiện trạng: chỉ có README của bản demo UI, không có tài liệu dự án.
-Acceptance Criteria:
-  - Có hướng dẫn cài đặt, kiến trúc, endpoint, database, đóng gói.
-Phụ thuộc: PB-50.
-
-BƯỚC 5. SẮP XẾP THỨ TỰ ƯU TIÊN (MoSCoW)
---------------------------------------------------------------------------------
-MUST HAVE (bắt buộc để sản phẩm dùng được)
-  PB-01, PB-02, PB-03, PB-04, PB-05, PB-09, PB-10, PB-11, PB-13, PB-16,
-  PB-17, PB-19, PB-21, PB-24, PB-25, PB-26, PB-27, PB-29, PB-30, PB-31,
-  PB-46, PB-47, PB-48, PB-49, PB-50, PB-51
-
-SHOULD HAVE (nên có)
-  PB-06, PB-07, PB-12, PB-14, PB-18, PB-20, PB-22, PB-28, PB-32, PB-33,
-  PB-35, PB-36, PB-41
-
-COULD HAVE (có thì tốt)
-  PB-08, PB-15, PB-23, PB-34, PB-37, PB-38, PB-39, PB-40, PB-42, PB-43, PB-44
-
-WON'T HAVE (chưa thực hiện trong phiên bản này)
-  PB-45
-
-BƯỚC 6. CHIA CÔNG VIỆC VÀO SPRINT
---------------------------------------------------------------------------------
-Sprint 1 — Đã hoàn thành (9 việc)
-  PB-01, PB-02, PB-03, PB-04, PB-11, PB-12, PB-21, PB-29, PB-41
-
-Sprint 2 — Hoàn thiện (20 việc)
-  PB-05, PB-09, PB-10, PB-13, PB-14, PB-15, PB-16, PB-17, PB-18, PB-19,
-  PB-22, PB-24, PB-25, PB-26, PB-27, PB-28, PB-30, PB-31, PB-32, PB-46
-
-Sprint 3 — Chức năng mới (15 việc)
-  PB-06, PB-07, PB-08, PB-20, PB-23, PB-33, PB-34, PB-35, PB-36, PB-37,
-  PB-38, PB-39, PB-40, PB-42, PB-43
-
-Sprint 4 — Tích hợp và bàn giao (7 việc)
-  PB-44, PB-45 (Won't), PB-47, PB-48, PB-49, PB-50, PB-51
-
-BẢNG TỔNG HỢP THEO SPRINT
---------------------------------------------------------------------------------
-Sprint 1 (Done):   PB-01, 02, 03, 04, 11, 12, 21, 29, 41           9 việc
-Sprint 2:          PB-05, 09, 10, 13, 14, 15, 16, 17, 18, 19, 22,
-                   24, 25, 26, 27, 28, 30, 31, 32, 46               20 việc
-Sprint 3:          PB-06, 07, 08, 20, 23, 33, 34, 35, 36, 37, 38,
-                   39, 40, 42, 43                                   15 việc
-Sprint 4:          PB-44, 45, 47, 48, 49, 50, 51                    7 việc
-Tổng: 51 việc, trong đó 1 việc Won't (PB-45) -> 50 việc trong phạm vi cam kết.
-
-ĐỐI CHIẾU 18 CHỨC NĂNG VỚI PRODUCT BACKLOG
---------------------------------------------------------------------------------
-CN  Tên chức năng                          PB liên quan
---  -------------------------------------  --------------------------------
-1   Thời khóa biểu thông minh              PB-11, 12, 13, 14, 15
-2   AI xếp lịch tự học, cảnh báo trùng     PB-21, 22, 23
-3   Quản lý Deadline và Checklist          PB-24, 25, 07
-4   Nhắc nhở thông minh đa tầng            PB-26, 27, 28
-5   Kho tài liệu môn học                   PB-35, 06
-6   Tìm kiếm nhanh và gắn thẻ Tag          PB-36, 37
-7   Trợ lý gia sư AI                       PB-39
-8   Đồng hồ Pomodoro                       PB-41, 42
-9   Lịch thi và kế hoạch ôn thi            PB-16, 17, 18, 19
-10  Bản đồ thời gian học tập               PB-43
-11  Phân tích tiến độ học tập              PB-33
-12  Textbook và sổ tay học tập             PB-38
-13  Kiểm tra kiến thức bằng AI             PB-40
-14  Phân tích điểm yếu, đề xuất nội dung   PB-34
-15  AI tạo kế hoạch ôn thi                 PB-20
-16  Hỗ trợ viết đơn xin nghỉ học           PB-44
-17  Đồng bộ và phân tích Email trường      PB-45 (Won't)
-18  Hồ sơ học tập cá nhân                  PB-29, 30, 31, 32
-
-Mọi chức năng 1-18 đều có ít nhất một PB tương ứng. Không bỏ sót chức năng nào.
-
-BẢNG PHỤ THUỘC
---------------------------------------------------------------------------------
-PB-01 -> PB-02 -> PB-03 -> PB-04
-PB-04 -> PB-05
-PB-09 -> PB-10, PB-13, PB-18, PB-24, PB-26, PB-27, PB-31, PB-35, PB-39,
-         PB-42, PB-44
-PB-10 -> PB-13, PB-18, PB-24, PB-26
-PB-13 -> PB-22 -> PB-23
-PB-16 -> PB-19 -> PB-20
-PB-17 -> PB-18, PB-28
-PB-19 -> PB-20
-PB-21 -> PB-22
-PB-24 -> PB-36
-PB-25 -> PB-24
-PB-30 -> PB-31 -> PB-32, PB-34
-PB-31 -> PB-33, PB-44
-PB-35 -> PB-36, PB-38
-PB-36 -> PB-37
-PB-38 -> PB-40
-PB-39 -> PB-40
-PB-41 -> PB-42 -> PB-43
-PB-47 -> PB-48
-PB-49 -> PB-50 -> PB-51
-
-ĐƯỜNG GĂNG
---------------------------------------------------------------------------------
-PB-09 (đăng nhập) -> PB-16/PB-17 (học kỳ lịch thi) -> PB-19 (kế hoạch ôn thi)
--> PB-24 (deadline) -> PB-31 (hồ sơ) -> PB-47 (test) -> PB-49 (đóng gói)
--> PB-50 -> PB-51.
-
-GHI CHÚ VỀ ĐỘ TIN CẬY CỦA TRẠNG THÁI
---------------------------------------------------------------------------------
-- 'Done' chỉ dùng cho PB có bằng chứng dữ liệu thật (PB-01, 03, 04, 11, 29)
-  hoặc bằng chứng code hoàn chỉnh và đã được đối chiếu nhiều tầng (PB-02,
-  PB-12, PB-21, PB-41).
-- Các PB 'Done' về code nhưng chưa chạy lại trong lần rà soát này được ghi rõ
-  trong Sprint1.txt với nhãn [ĐÃ XONG - CÓ CODE, CHƯA CHẠY LẠI].
-- Không có PB nào được đánh 'Done' chỉ vì tồn tại file.
+﻿# Product backlog và kế hoạch nhóm
+
+Tra nhanh: [Phân công Sprint 1–3](#phân-công-nhóm-và-3-sprint) · [Sprint 4 và issue từng thành viên](SPRINT_4.md#phân-công-trên-github) · [Product backlog](#backlog-theo-luồng-sử-dụng) · [Cách nghiệm thu](#cách-đóng-một-hạng-mục).
+
+**Cập nhật bàn giao 02/11/2026:** kế hoạch 3 Sprint gốc được giữ làm lịch sử. Bản tái cấu trúc và mở rộng hiện tại là **Sprint 4**, nhánh `sprint4/comprehensive-update`, theo [milestone Sprint 4](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/3). Phân công đã gán GitHub: Văn Tuấn [#24](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/24), Anh Tuấn [#25](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/25), Long Nhật [#26](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/26), Hồng Thắm [#27](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/27), Huyền Trang [#28](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/28). Mục tiêu/tiêu chí PB bên dưới vẫn cần bằng chứng để đóng, không tự chuyển thành Done khi push nhánh.
+
+Bốn báo cáo tổng hợp: [Sprint 1](SPRINT_1.md) · [Sprint 2](SPRINT_2.md) · [Sprint 3](SPRINT_3.md) · [Sprint 4](SPRINT_4.md).
+
+Smart Study Hub giúp sinh viên CMC mở một ứng dụng để biết hôm nay học gì, việc nào sắp đến hạn, tài liệu nằm ở đâu và nên ôn gì tiếp theo. Giá trị của sản phẩm nằm ở việc những thông tin đó nối được với nhau và vẫn còn sau khi đóng ứng dụng.
+
+Backlog này được viết lại theo mã đang có ngày **30/10/2026**. Các mã PB-01 đến PB-51 được giữ để nhóm tra lại công việc cũ; cách ưu tiên và tiêu chí đã được chỉnh cho phạm vi hiện tại. Không dùng số Story Point hay Sprint cũ để suy ra tiến độ. Việc có màn hình hoặc API chỉ cho biết đã có phần triển khai, chưa đủ để đánh dấu hoàn thành.
+
+## Nhóm nên tập trung vào đâu?
+
+Ưu tiên trước mắt là dùng ổn những luồng đã có: đồng bộ đúng dữ liệu, không mất việc và ghi chú, lưu lịch không trùng, mở lại vẫn thấy kết quả. Sau đó mới mở rộng cá nhân hóa và các nguồn dữ liệu mới.
+
+- **Must:** thiếu mục này thì luồng chính hoặc việc bàn giao không đáng tin cậy. Cần đạt trước khi nghiệm thu bản tương ứng.
+- **Should:** mang lại giá trị rõ ràng, nên hoàn thiện sau các mục Must; có thể dời nếu chưa đủ thời gian.
+- **Could:** phần mở rộng, cần chốt phạm vi và nguồn lực trước khi làm. Không phải điều kiện đóng bản chạy một hồ sơ hiện tại.
+
+Đây là ưu tiên đề xuất cho bản dùng một hồ sơ hiện tại, cần chốt khi chọn việc vào Sprint; không phải nhãn mức độ khó hoặc đánh giá công sức đã bỏ ra.
+
+### Phần đang có và phần chưa thể kết luận
+
+| Đã thấy trong mã hiện tại | Việc còn cần xác minh trước khi đóng |
+| --- | --- |
+| Electron, React/Vite, Express và SQLite; có lệnh chạy ứng dụng, headless và các nhóm test | Bộ cài trên máy sạch, đường dẫn tài nguyên và quyền ghi khi cài vào Program Files. `package.json` gốc chưa có lệnh tạo bộ cài |
+| Module IU/EDUX/Outlook, luồng kết nối và job đồng bộ có tiến trình | Tài khoản trường thật, phiên hết hạn/MFA, nguồn trả thiếu dữ liệu hoặc thay đổi cấu trúc; fixture không chứng minh dịch vụ thật hoạt động |
+| Trang lịch, task, kỳ thi, hồ sơ, học liệu, thống kê và email; API tương ứng đã được tách thành route/service | Đối chiếu thao tác UI → HTTP → SQLite → tải lại, đặc biệt checklist, hạn EDUX, học lại và nhắc đến hạn khi thời gian trôi qua |
+| API và giao diện trợ lý, quiz, điểm yếu, kế hoạch ôn, đơn nghỉ; có bộ kiểm thử riêng | Độ đúng và khả dụng của AI thật, giới hạn context, dữ liệu thiếu, xử lý hủy/lỗi và xác nhận lại lịch trước khi lưu |
+| Sổ tay dùng API; vở ghi canvas có sao lưu và lưu cục bộ | Quota, bản nháp chưa đồng bộ, đổi trình duyệt và nhiều tab; vở cục bộ chưa phải dữ liệu đồng bộ tài khoản |
+
+Mô hình hiện tại dùng `APP_USER_ID` hoặc hồ sơ mặc định 1 (`API/utils/nguoiDung.js`). **Chưa có căn cứ coi đăng nhập nhiều người dùng và đồng bộ sang máy khác là đã hoàn thành.** PB-09, PB-10 và phần liên thiết bị của PB-42 được tách thành mở rộng bên dưới. Kết quả kiểm thử và giới hạn bằng chứng xem [TESTING.md](TESTING.md); tài liệu này không ghi nhận một lượt chạy test mới.
+
+## Backlog theo luồng sử dụng
+
+Mỗi dòng nêu một kết quả người dùng cần và cách kiểm tra đủ cụ thể để nhóm bàn giao. Chỉ đánh dấu hoàn thành khi có bằng chứng cho tiêu chí, kể cả trường hợp lỗi. Các hạng mục cùng nhóm không nhất thiết phải thực hiện theo số PB.
+
+### 1. Mở ứng dụng và lấy đúng dữ liệu trường
+
+Sinh viên không nên phải biết từng nguồn dùng giao thức gì. Họ cần kết nối được, biết nguồn nào lỗi và tiếp tục dùng dữ liệu gần nhất mà không mất thông tin tự nhập.
+
+| Mã | Ưu tiên | Kết quả cần đạt và cách nghiệm thu |
+| --- | --- | --- |
+| PB-01 | Must | Khởi động được bản desktop và headless theo [README](../README.md); frontend gọi đúng API, database được tạo/mở; thiếu cấu hình có thông báo đủ để xử lý |
+| PB-02 | Must | Tầng IU đọc được phản hồi hợp lệ và chọn đúng nhóm endpoint; phản hồi sai/không giải mã được báo lỗi có kiểm soát, không biến thành dữ liệu rỗng thành công |
+| PB-03 | Must | Đăng nhập IU qua tài khoản trường, dùng lại phiên còn hạn; hết phiên có đường đăng nhập lại; cookie/token không đi qua renderer hoặc xuất hiện trong thông báo lỗi |
+| PB-04 | Must | Sau một lần đồng bộ thành công, đóng/mở ứng dụng vẫn xem được hồ sơ, lịch và điểm đã lưu; mất mạng không làm trắng dữ liệu đó |
+| PB-05 | Must | Gây lỗi giữa lần ghi đồng bộ không để lại DB nửa cũ nửa mới; trường thiếu không sinh lịch/điểm giả; nguồn lỗi giữ dữ liệu gần nhất và không xóa lịch tự nhập |
+| PB-06 | Should | Kết nối EDUX lấy được môn, chương và học liệu trong phạm vi nguồn cung cấp; tài liệu chỉ có metadata được ghi rõ, tệp tải được phải mở lại đúng nội dung |
+| PB-07 | Must | Đồng bộ bài tập EDUX đúng môn và hạn thật; phân biệt hạn riêng với hạn học phần; đồng bộ lại không nhân đôi hoặc làm hiện lại bài đã ẩn; lỗi tải hạn không xóa hạn đã lưu |
+| PB-08 | Could | Chỉ thêm tiến độ bài học eLearning khi nguồn thực sự có dữ liệu; hiển thị bài đã/chưa học theo tuần và phân biệt chưa có dữ liệu với chưa hoàn thành |
+
+### 2. Tách tài khoản khi sản phẩm cần hỗ trợ nhiều người
+
+Đây là phạm vi mở rộng. Kiểm tra bản ghi đúng hồ sơ hiện tại vẫn là yêu cầu của mọi API đang chạy; việc đó không thay thế xác thực và phân quyền giữa hai tài khoản.
+
+| Mã | Ưu tiên | Kết quả cần đạt và cách nghiệm thu |
+| --- | --- | --- |
+| PB-09 | Could | Nếu mở bản nhiều tài khoản: đăng nhập sai/thiếu phiên trả 401, không tự dùng hồ sơ 1; logout xóa phiên; hai tài khoản có dữ liệu và bản nháp riêng |
+| PB-10 | Could | Khi PB-09 được đưa vào phạm vi, thử đọc/sửa/xóa ID thuộc tài khoản khác phải bị từ chối 403/404, kể cả gọi HTTP trực tiếp; không chỉ ẩn nút trên UI |
+
+### 3. Nhìn lịch là biết hôm nay phải làm gì
+
+| Mã | Ưu tiên | Kết quả cần đạt và cách nghiệm thu |
+| --- | --- | --- |
+| PB-11 | Must | Lịch ngày/tuần điều hướng đúng, hiển thị môn, giờ, phòng và giảng viên khi nguồn có; lịch lặp được mở thành đúng ngày trong khoảng đang xem |
+| PB-12 | Must | Lịch trường và lịch tự học xuất hiện cùng nhau nhưng có nhãn/màu phân biệt; không gán lịch tự nhập thành dữ liệu trường |
+| PB-13 | Must | Tạo/sửa/xóa và hoàn thành buổi tự học được ghi thật; tải lại thấy kết quả; lỗi lưu giữ nội dung đang nhập và cho thử lại |
+| PB-14 | Must | Đồng bộ xong trang lịch nhận dữ liệu mới mà không cần khởi động lại; một lần tải lỗi không khiến các lần sau mắc lại ở kết quả cũ |
+| PB-15 | Should | Lưới tháng hiển thị sự kiện đúng ngày, chuyển tháng và mở chi tiết được; tháng không có sự kiện có trạng thái trống rõ ràng |
+
+### 4. Biết khi nào thi và chia được việc ôn
+
+| Mã | Ưu tiên | Kết quả cần đạt và cách nghiệm thu |
+| --- | --- | --- |
+| PB-16 | Must | Đồng bộ lịch thi từ ngày hiện tại theo giờ Việt Nam đến 70 ngày sau, gồm hai biên và kỳ tiếp theo khi cần; loại kỳ ngoài cửa sổ; lỗi giữ cache, kết quả rỗng hợp lệ được xử lý riêng |
+| PB-17 | Must | Giữ học kỳ/năm học nguồn cung cấp để lọc/đối chiếu; migration mở được DB cũ; trường nguồn không có phải để thiếu có chủ đích, không điền học kỳ giả |
+| PB-18 | Must | Sửa ngày, giờ, phòng, hình thức và thời lượng thi lưu bền; kiểm tra dữ liệu sai; không làm mất nguồn hoặc các trường không sửa |
+| PB-19 | Must | Tạo/sửa/xóa giai đoạn ôn, hoàn thành rồi mở lại được; tải lại vẫn đúng; xóa hoặc đổi kỳ thi không để kế hoạch mồ côi |
+| PB-20 | Should | AI đề xuất giai đoạn và buổi học trước ngày thi, dựa trên khoảng trống thật; người dùng sửa/chọn rồi xác nhận; kiểm tra lại xung đột và ghi cả nhóm trong transaction; gửi lại không tạo bản sao |
+
+### 5. Xếp buổi tự học mà không làm hỏng lịch
+
+| Mã | Ưu tiên | Kết quả cần đạt và cách nghiệm thu |
+| --- | --- | --- |
+| PB-21 | Must | Cảnh báo đúng cặp lịch giao nhau; hai buổi sát nhau (`A.end = B.start`) không tính trùng; nội dung cảnh báo cho biết lịch nào gây xung đột |
+| PB-22 | Must | Server kiểm tra trước lúc ghi, kể cả lịch đã đổi sau khi UI tải; bị trùng thì không lưu một phần, UI giữ đề xuất để chỉnh |
+| PB-23 | Should | Gợi ý tự học dùng toàn bộ lịch lớp/thi/tự học, tránh thời gian đã qua; preview không tự ghi DB; bấm áp dụng mới tạo các buổi được chọn |
+
+### 6. Không bỏ sót deadline và việc nhỏ bên trong
+
+| Mã | Ưu tiên | Kết quả cần đạt và cách nghiệm thu |
+| --- | --- | --- |
+| PB-24 | Must | CRUD task và checklist con có ID/lưu bền; hoàn thành nhanh rồi tải lại không lệch task/checklist; thao tác EDUX dùng đúng route/trạng thái nguồn |
+| PB-25 | Must | Với hạn cách 1/3/7 ngày, truy vấn ba ngày trả đúng phạm vi và thứ tự; kiểm tra mốc cuối ngày theo giờ Việt Nam và task đã hoàn thành |
+| PB-26 | Must | Nhắc đúng mốc 7 ngày/3 ngày/24 giờ/1 giờ phù hợp với deadline; badge và danh sách nhất quán; để ứng dụng mở qua thời điểm đến hạn vẫn cập nhật, không chỉ kiểm tra lúc mở |
+| PB-27 | Must | Đánh dấu tất cả đã đọc không 404; chỉ tác động hồ sơ đang dùng, badge cập nhật và không trở lại sau tải lại |
+| PB-28 | Must | Tạo nhắc bằng các luồng khác nhau hoặc đồng bộ lại cùng deadline không nhân đôi cùng một mốc |
+
+### 7. Xem được kết quả học và hiểu số liệu
+
+| Mã | Ưu tiên | Kết quả cần đạt và cách nghiệm thu |
+| --- | --- | --- |
+| PB-29 | Must | Sau đồng bộ, hồ sơ/bảng điểm thuộc đúng sinh viên; trường thiếu được hiển thị rõ, không lấy thông tin của hồ sơ khác để lấp vào |
+| PB-30 | Must | Lưu năm học, học kỳ, điểm thành phần/thi/tổng khi nguồn có; hai lần học một môn không ghi đè nhau; thiếu điểm không biến thành 0 |
+| PB-31 | Must | Hồ sơ hiển thị ngành/lớp/khóa, GPA 10/4, tín chỉ và bảng điểm theo học kỳ khi có dữ liệu; công bố cách chọn lần học/tính GPA và không dùng tổng tín chỉ cố định cho mọi hồ sơ |
+| PB-32 | Should | Danh sách môn chưa đạt khớp bảng điểm và quy tắc học lại; dữ liệu thiếu điểm không bị coi là trượt |
+| PB-33 | Must | Báo cáo task, điểm và thời gian học dùng cùng khoảng đã chọn; bỏ task EDUX đã ẩn, không cộng trùng Pomodoro/tự học; không tự sinh số liệu tháng chưa tải |
+| PB-34 | Should | Điểm yếu truy được về quiz đã nộp và môn/chủ đề, phân biệt với nhận xét bảng điểm; có ít nhất hai lần làm mới tính cải thiện theo điểm phần trăm |
+
+### 8. Tìm lại tài liệu và ghi chú mà không lo mất
+
+| Mã | Ưu tiên | Kết quả cần đạt và cách nghiệm thu |
+| --- | --- | --- |
+| PB-35 | Must | Lọc học liệu theo môn, upload/download đúng byte và tên tiếng Việt; thêm/xóa lưu bền; metadata không có tệp gốc được báo rõ để tải lại |
+| PB-36 | Must | Tìm từ khóa trả đúng task, tài liệu, ghi chú và lịch trong phạm vi hỗ trợ; mở kết quả tới đúng đối tượng, không chỉ về trang danh sách |
+| PB-37 | Should | Gắn/bỏ tag lưu bền, lọc đúng; chuẩn hóa khoảng trắng và tag trùng, xóa tag không làm mất đối tượng |
+| PB-38 | Must | Sổ tay/ghi chú theo môn lưu qua API và phục hồi nháp sau lỗi; nội dung cũ còn đọc được. Vở ghi canvas lưu cục bộ phải nói rõ nơi lưu, có xuất/nhập JSON và cảnh báo quota; không gọi đó là đồng bộ máy chủ |
+
+### 9. Hỏi AI rồi tự kiểm tra lại kiến thức
+
+| Mã | Ưu tiên | Kết quả cần đạt và cách nghiệm thu |
+| --- | --- | --- |
+| PB-39 | Should | Chat trả lời với context đúng hồ sơ, lưu hội thoại thành công và tải lại được; lỗi provider có thông báo/thử lại; nội dung dài và phần bị giới hạn được xử lý rõ, không giả vờ đã đọc toàn bộ tệp |
+| PB-40 | Should | Sinh quiz đúng môn/chủ đề/độ khó; chưa nộp không lộ đáp án; server tự chấm, lưu và xem lại kết quả; gửi lại cùng bài không chấm trùng, đáp án đang làm được giữ khi lưu lỗi |
+
+### 10. Tập trung học và xử lý thông tin liên quan
+
+| Mã | Ưu tiên | Kết quả cần đạt và cách nghiệm thu |
+| --- | --- | --- |
+| PB-41 | Must | Pomodoro chạy/pause/resume/kết thúc đúng theo thời điểm thực; chỉ lưu focus segments và thời gian tập trung; reload/ẩn tab không cộng thời gian nghỉ |
+| PB-42 | Should | Lịch sử Pomodoro được lưu SQLite bằng ID ổn định, lỗi giữ phiên để gửi lại, gửi lại không trùng. Xem trên máy khác là phần Could phụ thuộc PB-09 và cơ chế đồng bộ liên thiết bị chưa có |
+| PB-43 | Should | Time Map đúng khoảng ngày và múi giờ, phân loại lớp/thi/tự học/Pomodoro; quy tắc ưu tiên phần giao nhau rõ ràng, tổng không vượt thời gian thực |
+| PB-44 | Should | Đơn nghỉ điền thông tin thật và lớp đúng ngày, cho xem/sửa/lưu bản nháp/xuất TXT hoặc DOCX; thiếu thông tin để trống; không tự gửi email hay nộp lên trường |
+| PB-45 | Should | Đồng bộ email Outlook có phân trang/nội dung khi nguồn cho phép; đọc/refresh lưu đúng; thiếu ngày giờ không tự đoán; tạo task/thi phải xem lại và xác nhận, không tạo hai lần từ cùng thư |
+
+### 11. Bàn giao bản người khác có thể tự dùng
+
+| Mã | Ưu tiên | Kết quả cần đạt và cách nghiệm thu |
+| --- | --- | --- |
+| PB-46 | Must | Lỗi nghiệp vụ hiện đúng message; request treo bị hủy theo timeout của từng luồng; lỗi không chứa cookie/token và không khiến UI mất nội dung đang nhập |
+| PB-47 | Must | Có điểm chạy kiểm thử rõ ràng cho bản bàn giao, báo đạt/lỗi/bỏ qua và thoát thất bại khi test lỗi; các bộ API/DB/frontend/integration có hướng dẫn chạy, không tuyên bố kiểm thử live bằng mock |
+| PB-48 | Must | Chạy 10 kịch bản ở mục dưới trên đúng bản định bàn giao; ghi phiên bản, môi trường, kết quả và lỗi còn lại, có bằng chứng kiểm tra bố cục thật |
+| PB-49 | Must | Có lệnh build tạo bộ cài; cài và mở trên máy sạch không cần cài Node.js; không nhầm `npm start` với bản cài độc lập |
+| PB-50 | Must | Bản cài tìm được frontend, WASM và `endpoint_map.txt`; tạo/ghi/mở lại DB ở thư mục người dùng, kể cả cài vào Program Files; dữ liệu cũ còn sau nâng cấp theo phạm vi hỗ trợ |
+| PB-51 | Must | Người nhận làm theo tài liệu để cài/chạy, cấu hình, kiểm tra và tìm đúng tầng mã; có mô tả API/database, sao lưu, đóng gói và giới hạn đã biết; liên kết nội bộ còn dùng được |
+
+## Cách đóng một hạng mục
+
+Người phụ trách bàn giao luồng chạy được, không chỉ file đã viết. Người nhận kiểm tra đầu vào bình thường, trường hợp rỗng/sai, lỗi nguồn hoặc lỗi lưu; sau đó tải lại hoặc mở lại để kiểm tra dữ liệu. Bằng chứng ghi rõ dùng fixture, provider giả lập, dữ liệu thật đã lưu hay kết nối dịch vụ thật. Nếu một tiêu chí chưa kiểm tra được thì để mở phần đó, không lấy số test đạt của thành phần khác thay thế.
+
+Các phụ thuộc thực tế cần chốt trước khi làm:
+
+- Dữ liệu nguồn và schema thống nhất trước khi nối API/UI; với trường không có ở nguồn, thống nhất cách biểu diễn thiếu thay vì tự điền.
+- Hoàn thiện lưu lịch và kiểm tra xung đột trước khi nghiệm thu planner AI; kiểm tra lại lịch ngay lúc xác nhận, ghi giai đoạn và buổi học trong cùng transaction.
+- Có kết quả quiz đã nộp trước khi đánh giá điểm yếu/cải thiện; có file thật hoặc văn bản đã trích xuất trước khi nói AI dùng nội dung học liệu.
+- PB-09/PB-10 cần thiết kế riêng nếu mở nhiều tài khoản; không buộc việc sửa luồng một hồ sơ phải chờ một hệ thống đăng nhập chưa nằm trong bản hiện tại.
+- Kiểm thử trên bản đóng gói sau khi có bộ cài; đóng gói xong mới nghiệm thu quyền ghi và tài nguyên trên máy sạch.
+
+### 10 kịch bản trước bàn giao
+
+1. Cài/chạy trên máy sạch, mở API/frontend, đóng/mở lại và kiểm tra DB vẫn ghi được.
+2. Kết nối IU/EDUX/Outlook; đồng bộ lại, hết phiên, nguồn lỗi và kết quả rỗng; kiểm tra dữ liệu cũ/tự nhập còn đúng.
+3. Xem lịch ngày/tuần/tháng, CRUD tự học, kiểm tra hai buổi sát nhau và hai buổi trùng; tải lại sau lỗi lưu.
+4. CRUD task/checklist, trạng thái EDUX, hạn sắp tới, bài đã ẩn; giữ ứng dụng mở qua mốc nhắc và kiểm tra read-all.
+5. Đồng bộ/sửa kỳ thi, cửa sổ 70 ngày, giai đoạn ôn; AI preview/xác nhận, gửi lại và phát sinh xung đột trong lúc chờ.
+6. Hồ sơ/điểm/học lại/GPA; đối chiếu thiếu điểm, bộ lọc học kỳ và danh sách môn chưa đạt với dữ liệu nguồn.
+7. Upload/tải lại/xóa học liệu tiếng Việt, tìm kiếm/tag; sổ tay/vở ghi lưu, phục hồi nháp, quota và xuất/nhập sao lưu.
+8. Pomodoro pause/resume/reload/gửi lại; đối chiếu Time Map/progress cùng khoảng ngày và phần thời gian giao nhau.
+9. Chat/quiz/điểm yếu/đơn nghỉ: lỗi AI, giữ nội dung nhập, lưu lịch sử, chấm lại và xuất file; tách kết quả mock khỏi AI thật.
+10. Email thiếu ngày giờ và thư trùng; xem trước rồi tạo task/thi; kiểm tra desktop/tablet/màn hình hẹp, bàn phím và các trạng thái lỗi/trống.
+
+## Phân công nhóm và 3 Sprint
+
+Phân công là trách nhiệm thực hiện và bàn giao, **không phải xác nhận công việc đã xong**. Tên Frontend theo phân công gốc là Huyền Trang; một số báo cáo cũ ghi Kiều Trang cho vai trò này.
+
+| Thành viên | Phụ trách | Bàn giao và phối hợp |
+| --- | --- | --- |
+| **Văn Tuấn** | Trưởng nhóm, kiến trúc/tích hợp, cơ chế kết nối IU/Outlook, Gemini/context/prompt/kiểm tra đầu ra | Chốt hợp đồng và phụ thuộc; bàn giao client/lỗi nguồn cho Anh Tuấn và Long Nhật; tổng hợp bằng chứng và hạn chế từng Sprint |
+| **Anh Tuấn** | Lấy và làm sạch dữ liệu IU/EDUX/Outlook; mã môn/sinh viên, ngày giờ, điểm, trạng thái và nguồn gốc | Bảng ánh xạ nguồn → trường chuẩn → nơi lưu; ca thiếu/trùng/sai và dữ liệu thử riêng; đối soát cùng Hồng Thắm/Long Nhật |
+| **Long Nhật** | API, validation và nghiệp vụ; tích hợp nguồn/AI/database; transaction và chống trùng | Method/request/response/lỗi rõ trước khi Huyền Trang nối UI; test HTTP và bước tái hiện lỗi; không báo thành công khi chưa lưu |
+| **Hồng Thắm** | Schema/migration, CRUD/thống kê, khóa/quan hệ, transaction/rollback/persist | Hợp đồng hàm DB, di trú giữ dữ liệu cũ, test lưu/mở lại và đối soát; dùng `database/` gốc, không sửa bản sao lịch sử |
+| **Huyền Trang** | React/Vite, UI/UX 18 chức năng, nối API; loading/empty/error/retry, responsive/bàn phím | Luồng thao tác dùng được, giữ dữ liệu nhập khi lỗi, kết quả sau reload và bằng chứng UI thật; phản hồi lỗi có bước tái hiện |
+
+| Sprint | 18 chức năng được giao theo kế hoạch nhóm | Trọng tâm phối hợp |
+| --- | --- | --- |
+| **1** | **1** TKB; **2** AI xếp tự học/cảnh báo trùng; **3** Deadline/Checklist; **4** Nhắc nhở; **9** Lịch thi/ôn thi; **18** Hồ sơ | Văn Tuấn chốt nền tảng/IU/context; Anh Tuấn ánh xạ dữ liệu; Hồng Thắm lưu an toàn; Long Nhật nối API; Huyền Trang hoàn thiện thao tác và kiểm tra sau mở lại |
+| **2** | **5** Kho tài liệu; **6** Tìm kiếm/Tag; **8** Pomodoro; **10** Time Map; **11** Tiến độ; **12** Textbook/sổ tay; **17** Email trường | Phân biệt tệp thật/metadata, sổ tay server/vở cục bộ; chuẩn thời gian; không tính trùng; email có xác nhận. Cả nhóm kiểm thử, sửa lỗi và báo cáo |
+| **3** | **7** Gia sư AI; **13** Quiz AI; **14** Điểm yếu; **15** Kế hoạch ôn AI; **16** Đơn nghỉ | Context đúng và đủ trong phạm vi công bố; quiz server chấm; lịch xác nhận có transaction/chống trùng; UI giữ nháp. Tích hợp, kiểm thử tổng thể, sửa lỗi và bàn giao |
+
+Quy ước chung: ngày `YYYY-MM-DD`, giờ `HH:mm`, UTC+7; Thứ Hai = 2 đến Chủ nhật = 8. Lịch sử học lại và dữ liệu thiếu phải giữ đúng ý nghĩa. Bảng Pomodoro chính thức là `PomodoroSessions`. Kiến trúc và vị trí mã hiện tại xem [ARCHITECTURE.md](ARCHITECTURE.md), hợp đồng tích hợp xem [API.md](API.md), giới hạn tính năng xem [FEATURES.md](FEATURES.md).
+
+## Lưu ý khi đối chiếu báo cáo cũ
+
+Backlog 18/10/2026 từng chia **4 Sprint** và gán ưu tiên/trạng thái khác; kế hoạch phân công về sau dùng **3 Sprint** như bảng trên. Không ghép số Sprint của hai bản thành một tiến độ. PB-45 từng là Won't nhưng email đã được đưa vào Sprint 2 và có triển khai; PB-09/PB-10 từng là Must nhưng xác thực nhiều tài khoản chưa phải mô hình hiện tại. Các thay đổi ưu tiên trong bản này được nêu để nhóm biết phạm vi cần chốt.
+
+Báo cáo 27/10 ghi Sprint 2 đã nối 7 chức năng, còn cần nghiệm thu Outlook thật; đánh giá Sprint 3 cùng ngày là trước đợt bổ sung UI/lưu dữ liệu ngày 28/10. Các lượt QA/refactor ngày 29–30/10 có phạm vi riêng. Không giữ nhãn Done/Backlog cũ làm trạng thái hiện hành, không cộng số test từ những snapshot khác nhau, và không coi kết quả provider giả lập là nghiệm thu dịch vụ thật.

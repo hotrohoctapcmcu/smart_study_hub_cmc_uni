@@ -1,0 +1,612 @@
+{
+  "description": "Captured from the unmodified working-tree API before layered refactoring. Ordered effective routes include root aliases, module aliases, nested AI routes and dashboard.",
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/health"
+    },
+    {
+      "method": "GET",
+      "path": "/"
+    },
+    {
+      "method": "GET",
+      "path": "/api"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/student/profile"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/student/profile"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/student/grades"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/student/subjects"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/schedules"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/schedules/today"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/schedules/by-date"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/schedules/by-week"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/schedules"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/schedules/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/schedules/conflicts/check"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/schedules/conflicts/check"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/schedules/study"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/schedules/study"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/schedules/study/:id/status"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/schedules/study/:id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/schedules/study/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/schedules/study/free-slots"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tasks"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tasks/upcoming"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tasks/edux"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tasks/edux/:id"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tasks/edux/:id/status"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tasks"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/tasks/:id"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tasks/:id/status"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tasks/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tasks/checklist"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tasks/:taskId/checklist"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tasks/checklist"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tasks/:taskId/checklist"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/tasks/checklist/:id"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tasks/checklist/:id/done"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tasks/checklist/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/checklist"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/checklist/upcoming"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/checklist/edux"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/checklist/edux/:id"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/checklist/edux/:id/status"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/checklist"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/checklist/:id"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/checklist/:id/status"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/checklist/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/checklist/checklist"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/checklist/:taskId/checklist"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/checklist/checklist"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/checklist/:taskId/checklist"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/checklist/checklist/:id"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/checklist/checklist/:id/done"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/checklist/checklist/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notifications"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notifications/unread-count"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notifications/due"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/notifications"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/notifications/multi-tier"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/notifications/:id/read"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/notifications/:id/sent"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/notifications/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/exams"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/exams/upcoming"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/exams/study-plans"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/exams"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/exams/study-plans"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/exams/:id"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/exams/study-plans/:id/status"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/exams/study-plans/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/exams/:examId/study-plans"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/exams/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sync/sources"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sync"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sync/status"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sync/current-courses"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sync/refresh"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sync/iu/session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sync/iu/status"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sync/iu/session"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sync/iu/pull"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sync/iu/group"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sync/edux/session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sync/edux/status"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sync/edux/session"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sync/edux/pull"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ai/status"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/ask"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/plan"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/plan/confirm"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/exam-plan"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/check"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/summarize"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/draft-leave"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/progress-advice"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/difficult-notes"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ai/conversations"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ai/conversations/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ai/quizzes"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/quizzes"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ai/quizzes/:id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/quizzes/:id/submit"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ai/weaknesses"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/weaknesses/analyze"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/exam-plan/confirm"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ai/leave-drafts"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai/leave-drafts"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/ai/leave-drafts/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ai/leave-drafts/:id/docx"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/timemap"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/progress"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/learning/courses"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/learning/courses/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/learning/courses/:id/source"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/learning/courses/:id/summary"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/learning/sync"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/learning/courses/:id/summarize"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/learning/jobs/:id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/learning/cards/:id/review"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/documents"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/documents"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/documents/:id/tags"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/documents/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/documents/:id/file"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notebooks"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/notebooks"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/notebooks/:id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/notebooks/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notes"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/notes"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/notes/:id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/notes/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notes/:id/export"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notebooks/:id/export"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/pomodoro"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/pomodoro"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/pomodoro"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/search"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tags/tasks/:id"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tags/edux/:id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/email"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/email/status"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/email/sync"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/email/session"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/email/read"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/email/:id/read"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/email/:id/refresh"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/email/:id/task"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/email/:id/exam"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboard"
+    }
+  ],
+  "deleteIuSession": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Đã xoá phiên IU."
+    }
+  }
+}

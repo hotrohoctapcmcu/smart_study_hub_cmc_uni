@@ -30,7 +30,7 @@ async function main() {
     const report = { testedAt: new Date().toISOString(), checks: [], remoteGemini: "pending" };
     try {
         db = await require("../../database")();
-        const contextModule = require("../../API/shared/study-context");
+        const contextModule = require("../../API/services/study-context.service");
         contextModule.setDb(db);
         const studentId = Number(process.env.APP_USER_ID) || 1;
         const context = await contextModule.buildStudyContext(studentId);
@@ -39,13 +39,13 @@ async function main() {
         report.contextChars = JSON.stringify(context).length;
         report.sources = Object.fromEntries(Object.entries(context.sources).map(([name, info]) =>
             [name, { available: info.available, total: info.total ?? null, included: info.included ?? null, truncated: info.truncated ?? false }]));
-        const gemini = require("../../API/shared/gemini-client");
+        const gemini = require("../../API/utils/gemini-client");
         report.mode = gemini.getStatus().mode;
         assert.equal(report.mode, "web-guest");
         const express = require("express");
         const api = express();
         api.use(express.json());
-        const { setDbForAll, registerModules } = require("../../API/modules");
+        const { setDbForAll, registerModules } = require("../../API/routes");
         setDbForAll(db);
         registerModules(api, "/api/v1");
         server = api.listen(0, "127.0.0.1");
@@ -185,7 +185,8 @@ async function main() {
         assert.equal(report.originalDatabaseUnchanged, true);
         report.remoteGemini = report.checks.every(item => item.passed) ? "passed" : "failed";
         if (report.remoteGemini === "failed") process.exitCode = 1;
-        const reportPath = path.resolve(process.env.AI_LIVE_REPORT_PATH || "docs/ai_live_result.json");
+        const reportPath = path.resolve(process.env.AI_LIVE_REPORT_PATH || "tests/artifacts/ai_live_result.json");
+        fs.mkdirSync(path.dirname(reportPath), { recursive: true });
         fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + "\n");
         console.log(JSON.stringify(report, null, 2));
     } finally {

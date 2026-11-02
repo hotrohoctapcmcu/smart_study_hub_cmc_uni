@@ -1,0 +1,3 @@
+.badge {
+  transition: all var(--transition);
+}

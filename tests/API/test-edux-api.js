@@ -1,7 +1,7 @@
 /**
  * API EDUX branch test — chạy bằng node, KHÔNG gọi EDUX thật.
  *
- * Dựng một HTTP server giả lập EDUX, trỏ API_BASE của cụm CRWEB/EDUX vào đó
+ * Dựng một HTTP server giả lập EDUX, trỏ API_BASE của cụm CRWEB/modules/EDUX vào đó
  * rồi chạy toàn bộ luồng qua Express thật:
  *
  *   đăng nhập sai  -> 401, không tạo phiên
@@ -16,20 +16,18 @@
 "use strict";
 
 const http = require("http");
-
-const EDUX_PORT = 4599;
-const EDUX_ORIGIN = `http://127.0.0.1:${EDUX_PORT}`;
-
-// Cụm CRWEB/EDUX đọc ORIGIN/API_BASE lúc require -> phải set trước khi nạp API.
-// Tuyệt đối không để test chạm tới edux.cmcu.edu.vn thật.
-process.env.EDUX_ORIGIN = EDUX_ORIGIN;
-process.env.EDUX_API_BASE = `${EDUX_ORIGIN}/api`;
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+let EDUX_ORIGIN;
 
 // DB riêng cho test: không đụng data/unistudy.db thật, và mỗi lần chạy
 // là một file mới nên kết quả không phụ thuộc dữ liệu còn sót lại.
-const TEST_DB = require('path').resolve(__dirname, '../../data/test-edux.db');
-try { require('fs').unlinkSync(TEST_DB); } catch {}
-process.env.DB_PATH = TEST_DB;
+const testDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'unistudy-edux-api-'));
+process.env.DB_PATH = path.join(testDirectory, 'test.db');
+process.env.DOCUMENTS_PATH = path.join(testDirectory, 'documents');
+process.env.API_PORT = '0';
+process.env.APP_USER_ID = '1';
 
 let pass = 0;
 let fail = 0;
@@ -103,11 +101,30 @@ const server = http.createServer((req, res) => {
 
 // ─── API thật ────────────────────────────────────────────────────────────
 async function main() {
-    await new Promise((resolve) => server.listen(EDUX_PORT, "127.0.0.1", resolve));
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    EDUX_ORIGIN = `http://127.0.0.1:${server.address().port}`;
+    // Configure the mock before loading the crawler or API.
+    process.env.EDUX_ORIGIN = EDUX_ORIGIN;
+    process.env.EDUX_API_BASE = `${EDUX_ORIGIN}/api`;
+    const edux = require('../../CRWEB/modules/EDUX');
+    const originalLogout = edux.logoutEdux;
+    // This HTTP test owns RAM sessions and its temporary DB, not cookie.txt.
+    edux.logoutEdux = () => true;
 
     const apiModule = require("../../API/index");
     const apiServer = await apiModule.start();
     const API = `http://127.0.0.1:${apiServer.address().port}/api/v1`;
+    let learningJobId;
+    async function waitForLearningJob() {
+        if (!learningJobId) return;
+        const service = require('../../API/routes/learning').service;
+        const deadline = Date.now() + 5000;
+        while (Date.now() < deadline) {
+            if (['completed', 'failed'].includes(service.job(learningJobId).status)) return;
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        throw new Error('Background learning sync did not finish before test cleanup.');
+    }
 
     const goi = async (method, route, body) => {
         const res = await fetch(`${API}${route}`, {
@@ -129,7 +146,8 @@ async function main() {
         ok(!("cookie" in r.json), "status không lộ cookie");
 
         r = await goi("GET", "/tasks/edux");
-        ok(r.status === 401, "chưa có phiên -> GET /tasks/edux trả 401");
+        ok(r.status === 200 && r.json.data.assignments.length === 0, "chưa có lịch IU -> GET /tasks/edux trả danh sách rỗng");
+        ok(requests.length === 0, "chưa có phạm vi môn IU -> không gọi EDUX");
 
         r = await goi("POST", "/sync/edux/pull", {});
         ok(r.status === 401, "chưa có phiên -> POST /sync/edux/pull trả 401");
@@ -153,22 +171,47 @@ async function main() {
         ok(!JSON.stringify(r.json).includes(DUNG_MAT_KHAU), "response không chứa mật khẩu");
         ok(!JSON.stringify(r.json).includes(COOKIE_HOP_LE), "response không chứa cookie");
 
-        const eduxKho = require("../../API/shared/edux-session");
+        const eduxKho = require("../../API/utils/edux-session");
         const phien = eduxKho.getSession(1);
         ok(!!phien && phien.cookie === COOKIE_HOP_LE, "phiên lưu cookie trong RAM");
         ok(JSON.stringify(phien).indexOf(DUNG_MAT_KHAU) === -1, "phiên KHÔNG lưu mật khẩu");
+        const rememberedFile = path.join(testDirectory, 'edux-accounts', '1.json');
+        ok(JSON.parse(fs.readFileSync(rememberedFile, 'utf8')).password === DUNG_MAT_KHAU, 'tài khoản được lưu trong thư mục dữ liệu cục bộ');
+        eduxKho.clearSession(1);
+        r = await goi('GET', '/sync/edux/status');
+        ok(r.json.connected === true, 'tự đăng nhập lại bằng tài khoản đã lưu khi mất phiên RAM');
+        ok(!JSON.stringify(r.json).includes(DUNG_MAT_KHAU), 'khôi phục phiên không trả mật khẩu');
 
-        // 5. Kéo bài tập qua /tasks/edux
+        r = await goi("GET", "/tasks/edux");
+        ok(r.status === 200 && r.json.data.assignments.length === 0, "đã đăng nhập nhưng chưa có lịch IU -> danh sách rỗng");
+        ok(!requests.some(x => x.path === '/api/subjects/joined'), "chưa có lịch IU -> không tải toàn bộ môn EDUX");
+
+        // Seed the current IU semester, which defines the allowed EDUX courses.
+        const db = await require('../../database')();
+        await db.executeQuery("INSERT INTO Students(student_id,student_code,full_name,major) VALUES(1,'EDUX-TEST','EDUX test','IT')");
+        const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+        for (const [index, subject] of subjects.entries()) {
+            await db.executeQuery('INSERT INTO Subjects(subject_id,subject_code,subject_name) VALUES(@id,@code,@name)', {
+                id: index + 1, code: subject.subject_code, name: subject.name
+            });
+            await db.executeQuery(`INSERT INTO Timetables(student_id,subject_id,class_name,room,campus,day_of_week,start_time,end_time,start_date,end_date,semester,academic_year,source)
+                VALUES(1,@id,'EDUX test','A1','CMC',2,'08:00','09:00',@today,@today,'HK-test','test','IU')`, { id: index + 1, today });
+        }
+
+        // 5. Kéo bài tập qua /tasks/edux theo phạm vi IU
         r = await goi("GET", "/tasks/edux");
         ok(r.status === 200 && Array.isArray(r.json.data?.assignments), "GET /tasks/edux trả danh sách bài tập");
         const ds = r.json.data.assignments;
         ok(ds.length === 3, "chỉ lấy chương có bài tập AI (3/4 chương)");
         const bai = ds.find((x) => x.modelId === "m1");
+        if (!bai || !ds.find(x => x.modelId === 'm2') || !ds.find(x => x.modelId === 'm4')) {
+            throw new Error('Thiếu bài tập mẫu; dừng kiểm tra shape để giữ nguyên nguyên nhân lỗi.');
+        }
         ok(!!bai, "có bài tập của chương m1");
         ok(bai.id === "edux-sub-1-m1", "id ổn định theo subject/model");
         ok(bai.title === "Chương 1: Mảng và danh sách", "title lấy từ tên chương");
         ok(bai.subject === "Cấu trúc dữ liệu và giải thuật", "subject lấy từ tên học phần");
-        ok(bai.due === null, "due null vì EDUX không trả hạn nộp");
+        ok(bai.due === null, "due null khi học phần/bài tập không có thời hạn đã lấy được");
         ok(bai.status === "Hoàn thành", "tiến độ 3/3 -> Hoàn thành");
         ok(bai.source === "EDUX", "đánh dấu source EDUX");
         const bai2 = ds.find((x) => x.modelId === "m2");
@@ -192,6 +235,8 @@ async function main() {
         r = await goi("POST", "/sync/edux/pull", {});
         ok(r.status === 200 && r.json.assignments.length === 3, "POST /sync/edux/pull trả bài tập");
         ok(Array.isArray(r.json.thatBai), "pull trả thatBai để FE hiển thị");
+        learningJobId = r.json.learningJob?.jobId;
+        await waitForLearningJob();
 
         // 9. Cookie hết hạn -> 401 + xoá phiên
         eduxKho.saveSession(1, { cookie: "access_token=het-han", email: DUNG_EMAIL });
@@ -204,6 +249,7 @@ async function main() {
         await goi("POST", "/sync/edux/session", { email: DUNG_EMAIL, password: DUNG_MAT_KHAU });
         r = await goi("DELETE", "/sync/edux/session");
         ok(r.status === 200, "DELETE /sync/edux/session -> 200");
+        ok(!fs.existsSync(rememberedFile), 'ngắt kết nối xóa tài khoản đã lưu');
         r = await goi("GET", "/sync/edux/status");
         ok(r.json.connected === false, "sau logout không còn phiên");
 
@@ -232,15 +278,22 @@ async function main() {
         ok(requests.every((x) => x.path.startsWith("/api/")), "mọi request đều đi qua /api của EDUX");
 
     } finally {
+        await waitForLearningJob();
+        apiServer.closeAllConnections();
+        server.closeAllConnections();
         await new Promise((resolve) => apiServer.close(resolve));
         await new Promise((resolve) => server.close(resolve));
+        await require('../../database/connection/db').closePool();
+        if (!path.resolve(testDirectory).startsWith(path.resolve(os.tmpdir()) + path.sep)) throw new Error('Unsafe test directory');
+        fs.rmSync(testDirectory, { recursive: true, force: true });
+        edux.logoutEdux = originalLogout;
     }
 
     console.log(`\n==== EDUX API BRANCH: ${pass} PASS, ${fail} FAIL ====`);
-    process.exit(fail ? 1 : 0);
+    process.exitCode = fail ? 1 : 0;
 }
 
 main().catch((err) => {
     console.error("LỖI TEST:", err);
-    process.exit(1);
+    process.exitCode = 1;
 });

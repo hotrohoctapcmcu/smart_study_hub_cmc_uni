@@ -1,13 +1,3 @@
--- ===================================================================================
--- DỰ ÁN HỖ TRỢ QUẢN LÝ HỌC TẬP - SPRINT 1
--- 00_sqlite_init.sql
--- TẠO TOÀN BỘ CẤU TRÚC BẢNG CHO SQLITE (THAY THẾ SQL SERVER)
--- PHỤC VỤ CÁC CHỨC NĂNG: 1, 2, 3, 4, 9, 18
--- Lưu ý: Bỏ bảng Users và thuộc tính user_id — hệ thống chỉ dùng student_id
--- ===================================================================================
-
--- Chức năng 18: Hồ sơ học tập cá nhân
-
 CREATE TABLE IF NOT EXISTS Students (
     student_id       INTEGER PRIMARY KEY AUTOINCREMENT,
     student_code     TEXT    NOT NULL UNIQUE,
@@ -70,8 +60,6 @@ CREATE TABLE IF NOT EXISTS Grades (
     FOREIGN KEY (subject_id) REFERENCES Subjects(subject_id) ON DELETE CASCADE
 );
 
--- Chức năng 1: Thời khóa biểu thông minh
-
 CREATE TABLE IF NOT EXISTS Timetables (
     timetable_id INTEGER PRIMARY KEY AUTOINCREMENT,
     student_id INTEGER NOT NULL,
@@ -96,8 +84,6 @@ CREATE TABLE IF NOT EXISTS Timetables (
     FOREIGN KEY (subject_id) REFERENCES Subjects(subject_id) ON DELETE CASCADE
 );
 
--- Chức năng 2: AI xếp lịch tự học & cảnh báo trùng
-
 CREATE TABLE IF NOT EXISTS StudySchedules (
     schedule_id INTEGER PRIMARY KEY AUTOINCREMENT,
     student_id INTEGER NOT NULL,
@@ -116,8 +102,6 @@ CREATE TABLE IF NOT EXISTS StudySchedules (
     FOREIGN KEY (student_id) REFERENCES Students(student_id) ON DELETE CASCADE,
     FOREIGN KEY (subject_id) REFERENCES Subjects(subject_id) ON DELETE SET NULL
 );
-
--- Chức năng 3: Quản lý Deadline và Checklist
 
 CREATE TABLE IF NOT EXISTS Assignments (
     assignment_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -157,9 +141,6 @@ CREATE TABLE IF NOT EXISTS Checklists (
     FOREIGN KEY (assignment_id) REFERENCES Assignments(assignment_id) ON DELETE NO ACTION
 );
 
--- Chức năng 4: Nhắc nhở thông minh đa tầng
-
--- UNIQUE (student_id, target_type, target_id, tier) tránh bản ghi nhắc nhở bị trùng
 CREATE TABLE IF NOT EXISTS Reminders (
     reminder_id INTEGER PRIMARY KEY AUTOINCREMENT,
     student_id  INTEGER NOT NULL,
@@ -180,13 +161,9 @@ CREATE TABLE IF NOT EXISTS Reminders (
 CREATE UNIQUE INDEX IF NOT EXISTS UX_Reminders_Student_Target_Tier
     ON Reminders (student_id, target_type, target_id, tier);
 
--- Bài tập AI lấy từ EDUX (đồng bộ qua API, lưu xuống DB để mở lại app vẫn còn).
--- Dùng khóa tự nhiên external_id (id ổn định `edux-<subjectId>-<modelId>`) để
--- upsert không tạo bản ghi trùng sau mỗi lần đồng bộ.
 CREATE TABLE IF NOT EXISTS EduxAssignments (
     edux_id        INTEGER PRIMARY KEY AUTOINCREMENT,
-    -- Khóa theo NGƯỜI DÙNG ỨNG DỤNG (NGUOI_DUNG_ID), không phải student_id:
-    -- EDUX là nguồn độc lập, người dùng có thể đồng bộ EDUX trước khi có hồ sơ IU.
+
     user_id        INTEGER NOT NULL,
     external_id    TEXT    NOT NULL,
     title          TEXT    NOT NULL,
@@ -207,8 +184,6 @@ CREATE TABLE IF NOT EXISTS EduxAssignments (
     updated_at     TEXT    NOT NULL DEFAULT (datetime('now')),
     UNIQUE (user_id, external_id)
 );
-
--- Chức năng 9: Quản lý lịch thi và kế hoạch ôn thi
 
 CREATE TABLE IF NOT EXISTS Exams (
     exam_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -250,7 +225,6 @@ CREATE TABLE IF NOT EXISTS ExamStudyPlans (
     FOREIGN KEY (subject_id) REFERENCES Subjects(subject_id) ON DELETE NO ACTION
 );
 
--- Index cho hiệu năng truy vấn
 CREATE INDEX IF NOT EXISTS IX_Students_StudentCode ON Students(student_code);
 CREATE INDEX IF NOT EXISTS IX_Grades_Student_Semester ON Grades(student_id, semester);
 CREATE INDEX IF NOT EXISTS IX_Timetables_Student_Day ON Timetables(student_id, day_of_week, start_time);
@@ -258,6 +232,3 @@ CREATE INDEX IF NOT EXISTS IX_StudySchedules_Student_Date ON StudySchedules(stud
 CREATE INDEX IF NOT EXISTS IX_Assignments_Student_Deadline ON Assignments(student_id, deadline);
 CREATE INDEX IF NOT EXISTS IX_Reminders_Pending ON Reminders(student_id, is_sent, remind_time);
 CREATE INDEX IF NOT EXISTS IX_Exams_Student_Date ON Exams(student_id, exam_date, exam_time);
-
--- KẾT THÚC TẠO CẤU TRÚC SQLITE
--- ===================================================================================

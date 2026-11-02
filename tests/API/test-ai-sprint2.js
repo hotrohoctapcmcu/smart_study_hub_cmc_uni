@@ -13,6 +13,7 @@ test("Sprint 2 AI: context, planning, advice and provider failures", async t => 
     let reply = "Câu trả lời thử nghiệm";
     let providerStatus = 200;
     let delay = false;
+    let oversized = false;
     let afterGenerate = null;
     const calls = [];
     const provider = http.createServer((req, res) => {
@@ -27,6 +28,7 @@ test("Sprint 2 AI: context, planning, advice and provider failures", async t => 
             const payload = JSON.parse(JSON.parse(form.get("f.req"))[1]);
             calls.push({ url: req.url, key: req.headers["x-goog-api-key"], cookie: req.headers.cookie || "", prompt: payload[0][0] });
             if (delay) return;
+            if (oversized) { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('x'.repeat(2 * 1024 * 1024 + 1)); }
             if (afterGenerate) { const callback = afterGenerate; afterGenerate = null; await callback(); }
             res.writeHead(providerStatus, { "Content-Type": "text/plain" });
             res.end(providerStatus === 200
@@ -48,10 +50,10 @@ test("Sprint 2 AI: context, planning, advice and provider failures", async t => 
     fs.writeFileSync(path.join(directory, "gemini", "session.json"), JSON.stringify({ cookies: {
         "__Secure-1PSID": "must-be-ignored"
     } }));
-    const gemini = require("../../API/shared/gemini-client");
+    const gemini = require("../../API/utils/gemini-client");
     const db = await require("../../database")();
-    const contextModule = require("../../API/shared/study-context");
-    const ai = require("../../API/modules/troLyAI");
+    const contextModule = require("../../API/services/study-context.service");
+    const ai = require("../../API/routes/trolyai");
     ai.setDb(db);
     const express = require("express");
     const app = express();
@@ -283,6 +285,39 @@ test("Sprint 2 AI: context, planning, advice and provider failures", async t => 
             await assert.rejects(gemini.ask("No retry check", { retry: false }));
             assert.equal(calls.length - before, 1);
         } finally { providerStatus = 200; }
+    });
+    await t.test("upload character limits count system instructions and reject before any provider request", async () => {
+        const before = calls.length;
+        await assert.rejects(gemini.ask('x'.repeat(4000), { maxInputChars: 4000, retry: false }),
+            error => error.code === 'GEMINI_INPUT_SIZE' && error.statusCode === 413);
+        assert.equal(calls.length, before);
+    });
+    await t.test("wire response overflow keeps its size error code for automatic adaptation", async () => {
+        oversized = true;
+        try {
+            await assert.rejects(gemini.ask("Course part", { retry: false }),
+                error => error.code === "GEMINI_RESPONSE_SIZE" && error.statusCode === 502);
+        } finally { oversized = false; }
+    });
+    await t.test("HTTP 200 provider error messages are rejected instead of becoming AI content", async () => {
+        try {
+            for (const value of ["Sorry, something went wrong. Please try your request again.", "Đã xảy ra lỗi. Vui lòng thử lại."]) {
+                reply = value;
+                await assert.rejects(gemini.ask("Summarize the course", { retry: false }),
+                    error => error.code === "GEMINI_RESPONSE_ERROR" && error.statusCode === 502);
+            }
+            reply = "Your input is too long. Please use a shorter message.";
+            await assert.rejects(gemini.ask("Full course", { retry: false }),
+                error => error.code === "GEMINI_INPUT_SIZE" && error.statusCode === 413);
+            for (const status of [413, 414]) {
+                providerStatus = status;
+                await assert.rejects(gemini.ask("Full course", { retry: false }),
+                    error => error.code === "GEMINI_INPUT_SIZE" && error.statusCode === 413);
+            }
+            providerStatus = 200;
+            reply = "Trong kiểm thử, thông báo ‘something went wrong’ cần được xử lý như lỗi từ dịch vụ.";
+            assert.equal(await gemini.ask("Explain error handling"), reply);
+        } finally { providerStatus = 200; reply = "Câu trả lời thử nghiệm"; }
     });
     await t.test("malformed JSON/schema are retried once, then return a structured 502", async () => {
         for (const invalid of ["not JSON", '{"wrong":[]}', "null"]) {

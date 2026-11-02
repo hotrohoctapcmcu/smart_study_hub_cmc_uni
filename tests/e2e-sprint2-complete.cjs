@@ -24,7 +24,10 @@ app.whenReady().then(async () => {
         db = await require('../database')();
         await db.executeQuery("INSERT INTO Students(student_id,student_code,full_name,major) VALUES(1,'S2UI','Sprint 2 UI','IT')");
         await db.executeQuery("INSERT INTO Subjects(subject_id,subject_code,subject_name) VALUES(1,'SQL','SQL')");
-        require('../CRWEB/OUTLOOK').listMessages = async () => ({ source: 'microsoft-graph', account: 'test@cmcu.edu.vn', messages: [
+        const currentDay = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+        await db.executeQuery(`INSERT INTO Timetables(student_id,subject_id,class_name,room,campus,day_of_week,start_time,end_time,start_date,end_date,source)
+            VALUES(1,1,'SQL','A1','CMC',4,'08:00','10:00',@day,@day,'IU')`, { day: currentDay });
+        require('../CRWEB/modules/OUTLOOK').listMessages = async () => ({ source: 'microsoft-graph', account: 'test@cmcu.edu.vn', messages: [
             { id: 'real-shaped-email', sender: 'teacher@cmcu.edu.vn', senderName: 'Teacher <script>bad()</script>', subject: 'Nộp bài SQL', preview: 'Hạn nộp SQL',
                 body: 'Môn học: SQL\nHạn nộp: 23:59 ngày 30/10/2026.', date: '2026-10-27T01:00:00Z', isRead: false }
         ] });
@@ -51,6 +54,7 @@ app.whenReady().then(async () => {
         };
         await window.loadURL(url);
         await waitFor("document.querySelector('#learningLibraryStatus')?.textContent === ''");
+        await evaluate("document.querySelector('[data-doc-tab=docs]').click()");
         await evaluate(`document.querySelector('#openUploadDocBtn').click();
             const form=document.querySelector('#uploadDocForm');
             form.elements.title.value='Textbook <img src=x onerror=alert(1)>';

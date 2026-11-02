@@ -6,7 +6,8 @@
  * PRELOAD CHO CỬA SỔ APP CHÍNH — CẦU NỐI AN TOÀN RA MAIN PROCESS
  * ===================================================================================
  * Chạy trong renderer (FE sandbox: contextIsolation + nodeIntegration=false).
- * Chỉ expose đúng 1 namespace `window.__uniStudyIU`, không lộ cookie:
+ * Expose ba namespace __uniStudySync, __uniStudyOutlook và __uniStudyIU.
+ * Namespace IU không lộ cookie và cung cấp:
  *   - isAvailable: true khi chạy trong Electron (có IPC), false khi mở web thuần.
  *   - loginIU(opts): mở cửa sổ SSO IU riêng, đăng nhập xong lưu phiên lên API.
  *   - pullIU(opts): kéo dữ liệu IU bằng phiên đã lưu, lưu DB qua API.
@@ -20,6 +21,19 @@
 
 const { contextBridge, ipcRenderer } = require("electron");
 
+function subscribeConnectionProgress(callback) {
+    if (typeof callback !== 'function') return () => {};
+    const listener = (_event, snapshot) => callback(snapshot);
+    ipcRenderer.on('sync:connection-progress', listener);
+    return () => ipcRenderer.removeListener('sync:connection-progress', listener);
+}
+
+contextBridge.exposeInMainWorld("__uniStudySync", {
+    onConnectionProgress: subscribeConnectionProgress,
+    onProgress: subscribeConnectionProgress,
+    connectAll: (options) => ipcRenderer.invoke("sync:connect-all", options || {})
+});
+
 contextBridge.exposeInMainWorld("__uniStudyOutlook", {
     connect: () => ipcRenderer.invoke("outlook:connect")
 });
@@ -32,6 +46,8 @@ contextBridge.exposeInMainWorld("__uniStudyIU", {
     pullIU: (opts) => ipcRenderer.invoke("iu:pull", opts || {}),
 
     iuStatus: () => ipcRenderer.invoke("iu:status"),
+
+    restoreIU: () => ipcRenderer.invoke("iu:restore"),
 
     logoutIU: () => ipcRenderer.invoke("iu:logout"),
 });

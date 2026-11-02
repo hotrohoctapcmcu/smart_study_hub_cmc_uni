@@ -1,0 +1,1 @@
+export { mockExams } from "./fixtures";

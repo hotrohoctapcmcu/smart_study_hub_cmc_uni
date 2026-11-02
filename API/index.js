@@ -4,11 +4,11 @@ require('dotenv').config({
 
 const express = require('express');
 const cors = require('cors');
-const ketNoiDatabase = require('../database/index');
+const ketNoiDatabase = require('../database');
 const { API_PREFIX, PORT, CORS_OPTIONS, JSON_LIMIT } = require('./config');
-const { notFound, errorHandler } = require('./shared/errorHandler');
-const { setDbForAll, registerModules } = require('./modules');
-const { NGUOI_DUNG_ID } = require('./shared/nguoiDung');
+const { notFound, errorHandler } = require('./middlewares/error');
+const { setDbForAll, registerModules } = require('./routes');
+const dashboard = require('./routes/dashboard');
 
 const app = express();
 
@@ -16,17 +16,7 @@ app.use(cors(CORS_OPTIONS));
 app.use(express.json({ limit: JSON_LIMIT }));
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/health', (req, res) => {
-    res.json({ success: true, status: 'online' });
-});
-
-app.get(['/', '/api', API_PREFIX], (req, res) => {
-    res.json({
-        success: true,
-        status: 'online',
-        endpoints: API_PREFIX
-    });
-});
+app.use(require('./routes/status'));
 
 async function start() {
     let db;
@@ -41,42 +31,8 @@ async function start() {
 
     registerModules(app, API_PREFIX);
 
-    app.get(`${API_PREFIX}/dashboard`, async (req, res, next) => {
-        if (!db) {
-            return res.status(503).json({
-                success: false,
-                message: 'Database unavailable'
-            });
-        }
-
-        try {
-            const userId = NGUOI_DUNG_ID;
-            const today = new Date().toISOString().slice(0, 10);
-
-            const [profile, schedules, deadlines, exams, reminders] =
-                await Promise.all([
-                    db.layHoSo(userId),
-                    db.layThoiKhoaBieuTheoNgay(userId, today),
-                    db.layDeadlineSapToi(userId, 3),
-                    db.layLichThiSapToi(userId),
-                    db.layDanhSachNhacNho(userId)
-                ]);
-
-            res.json({
-                success: true,
-                data: {
-                    profile,
-                    todaySchedules: schedules,
-                    upcomingDeadlines: deadlines,
-                    upcomingExams: exams,
-                    unreadRemindersCount:
-                        (reminders || []).filter(r => !r.is_sent).length
-                }
-            });
-        } catch (err) {
-            next(err);
-        }
-    });
+    dashboard.setDb(db);
+    app.use(`${API_PREFIX}/dashboard`, dashboard);
 
     app.use(notFound);
     app.use(errorHandler);
@@ -84,6 +40,8 @@ async function start() {
     const server = app.listen(PORT, () => {
         console.log(`[API] http://localhost:${PORT}`);
     });
+    // Restore in the background so an unavailable EDUX cannot delay API boot.
+    void require('./utils/edux-account').restore(require('./utils/nguoiDung').NGUOI_DUNG_ID);
 
     async function shutdown() {
         server.close(async () => {

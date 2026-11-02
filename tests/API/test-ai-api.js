@@ -23,12 +23,11 @@ const testDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "unistudy-ai-web-"))
 process.env.DB_PATH = path.join(testDirectory, "test.db");
 process.env.GEMINI_SESSION_DIR = testDirectory;
 process.env.GEMINI_API_KEY = "";
+process.env.API_PORT = "0";
 
-const GEMINI_PORT = 4598;
-const GEMINI_ORIGIN = `http://127.0.0.1:${GEMINI_PORT}`;
+let GEMINI_ORIGIN;
 
 // gemini-client đọc ORIGIN/COOKIES lúc require -> phải set trước khi nạp API.
-process.env.GEMINI_ORIGIN = GEMINI_ORIGIN;
 // Luồng khách mặc định không dùng key/cookie đăng nhập.
 process.env.GEMINI_COOKIES = "";
 process.env.GEMINI_TIMEOUT_MS = "5000";
@@ -97,9 +96,11 @@ const geminiServer = http.createServer((req, res) => {
 
 // ─── API thật ────────────────────────────────────────────────────────────
 async function main() {
-    await new Promise((resolve) => geminiServer.listen(GEMINI_PORT, "127.0.0.1", resolve));
+    await new Promise((resolve) => geminiServer.listen(0, "127.0.0.1", resolve));
+    GEMINI_ORIGIN = `http://127.0.0.1:${geminiServer.address().port}`;
+    process.env.GEMINI_ORIGIN = GEMINI_ORIGIN;
 
-    require("../../API/shared/gemini-client");
+    require("../../API/utils/gemini-client");
     const apiModule = require("../../API/index");
     const apiServer = await apiModule.start();
     const API = `http://127.0.0.1:${apiServer.address().port}/api/v1`;
@@ -130,8 +131,8 @@ async function main() {
         ok(r.status === 400, "thiếu question -> 400");
         r = await goi("POST", "/ai/ask", { question: "   " });
         ok(r.status === 400, "question chỉ có khoảng trắng -> 400");
-        r = await goi("POST", "/ai/ask", { question: "x".repeat(4001) });
-        ok(r.status === 400, "question quá dài -> 400");
+        r = await goi("POST", "/ai/ask", { question: "x".repeat(32001) });
+        ok(r.status === 413, "question quá dài -> 413");
         ok(lanHoi === 0, "request không hợp lệ không gọi Gemini");
 
         // 3. Hỏi thành công (lượt đầu của hội thoại conv-1)

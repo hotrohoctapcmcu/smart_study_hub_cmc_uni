@@ -1,0 +1,53 @@
+.schedule-page {
+  max-width: 100%;
+}
+
+.tab-btn {
+  transition: all 0.2s ease;
+}
+
+.nav-btn {
+  transition: all 0.2s ease;
+}
+
+.add-btn {
+  box-shadow: 0 4px 12px rgba(117, 87, 255, 0.25);
+}
+
+.timetable {
+  background: var(--surface);
+}
+
+.timetable-header {
+  background: var(--purple-50);
+}
+
+.time-slot {
+  background: transparent;
+}
+
+.event {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.day-column {
+  min-height: 600px;
+}
+
+@media (max-width: 768px) {
+  .timetable-body {
+    overflow-x: auto;
+  }
+  .time-axis {
+    position: sticky;
+    left: 0;
+    background: var(--surface);
+    z-index: 5;
+  }
+  .schedule-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

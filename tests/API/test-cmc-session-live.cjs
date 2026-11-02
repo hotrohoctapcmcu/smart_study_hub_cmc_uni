@@ -4,7 +4,7 @@
 // Chỉ in trạng thái phiên/số lượng, không in cookie, token hay thông tin cá nhân.
 const { app, BrowserWindow, session } = require("electron");
 const path = require("node:path");
-const { IU_URL, CMC_PARTITION } = require("../../CRWEB/IU/login/constants");
+const { IU_URL, CMC_PARTITION } = require("../../CRWEB/modules/IU/login/constants");
 if (!app) {
     console.error("Chạy bằng Electron và bỏ ELECTRON_RUN_AS_NODE khỏi môi trường tiến trình.");
     process.exit(1);
@@ -33,13 +33,13 @@ app.whenReady().then(async () => {
             console.log(JSON.stringify({ cmcSession: "unavailable", reason: "Phiên IU cục bộ chưa đăng nhập hoặc đã hết hạn." }));
             return;
         }
-        const iu = require("../../CRWEB/IU");
+        const iu = require("../../CRWEB/modules/IU");
         const identifiers = await iu.laySession(win);
         const cookieHeader = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join("; ");
         const profile = await iu.layHoSoSinhVien(identifiers, cookieHeader);
         console.log(JSON.stringify({ cmcSession: "authenticated", profileRead: Boolean(profile && Object.keys(profile).length) }));
         if (process.argv.includes("--refresh-exams")) {
-            const { getExamWindow } = require("../../CRWEB/IU/exam-calendar");
+            const { getExamWindow } = require("../../CRWEB/modules/IU/exam-calendar");
             const range = getExamWindow();
             const exams = await iu.layLichThi(identifiers, cookieHeader);
             require("dotenv").config();
@@ -49,7 +49,7 @@ app.whenReady().then(async () => {
                 if (!localProfile || String(profile.ma_sinh_vien) !== String(localProfile.student_code)) {
                     throw new Error("CMC_PROFILE_MISMATCH");
                 }
-                const { mapSangDataIU } = require("../../API/shared/iu-client");
+                const { mapSangDataIU } = require("../../API/utils/iu-client");
                 const mapped = mapSangDataIU({ IU: { lich_thi: { chi_tiet_lich_thi: exams, fetched: true } } });
                 await db.dongBoHoSoIU(localProfile.student_code, {
                     ho_ten: localProfile.full_name, ten_nganh_hoc: localProfile.major,

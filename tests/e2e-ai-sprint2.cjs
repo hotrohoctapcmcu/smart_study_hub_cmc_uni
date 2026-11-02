@@ -37,7 +37,7 @@ app.whenReady().then(async () => {
         const express = require("express");
         const api = express();
         api.use(express.json());
-        const { setDbForAll, registerModules } = require("../API/modules");
+        const { setDbForAll, registerModules } = require("../API/routes");
         setDbForAll(db);
         registerModules(api, "/api/v1");
         api.get("/src/shared/config/app.config.js", (req, res) => {
@@ -122,7 +122,9 @@ app.whenReady().then(async () => {
         if (win && !win.isDestroyed()) win.destroy();
         if (server) { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
         if (db) await db.closePool();
-        fs.writeFileSync(path.join(root, "docs/ai_e2e_result.json"), JSON.stringify(report, null, 2) + "\n");
+        const reportPath = path.join(root, "tests/artifacts/ai_e2e_result.json");
+        fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+        fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + "\n");
         assert.ok(path.resolve(directory).startsWith(path.resolve(os.tmpdir()) + path.sep));
         spawn(process.execPath, [path.join(__dirname, "helpers/cleanup-electron-temp.cjs"), directory, String(process.pid)], {
             env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" }, windowsHide: true, detached: true, stdio: "ignore"

@@ -1,0 +1,8 @@
+# The repository-wide data/ rule must not hide provider source modules.
+!modules/IU/data/
+!modules/IU/data/**
+!modules/EDUX/data/
+!modules/EDUX/data/**
+
+# Session credentials remain local after the module migration.
+modules/EDUX/login/cookie.txt
