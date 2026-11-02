@@ -2,9 +2,9 @@
 
 Ứng dụng hỗ trợ sinh viên CMC quản lý lịch học, deadline, lịch thi, học liệu, ghi chú và hoạt động tự học trong cùng một không gian. Dữ liệu IU, EDUX và Outlook được kết nối với lịch cá nhân, Pomodoro và các công cụ AI.
 
-**Bản cập nhật Sprint 4:** `sprint4/comprehensive-update`, tổng hợp đến **02/11/2026**. Nhánh này kế thừa lịch sử `main` và chứa bản tái cấu trúc, mở rộng toàn diện sau Sprint 1–3. `main` tiếp tục là mốc phiên bản trước cho đến khi nhóm chủ động hợp nhất.
+**Bản cập nhật Sprint 4:** nhánh chính `main`, tổng hợp đến **02/11/2026**, chứa bản tái cấu trúc và mở rộng toàn diện sau Sprint 1–3. Phiên bản `main` cũ được lưu tại nhánh [`before`](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/tree/before).
 
-[Mã nguồn bản cập nhật](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/tree/sprint4/comprehensive-update) · [Milestone Sprint 4](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/3) · [Phân công và nghiệm thu](docs/SPRINT_4.md)
+[Mã nguồn mới nhất — main](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/tree/main) · [Milestone Sprint 4](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/3) · [Phân công và nghiệm thu](docs/SPRINT_4.md)
 
 ## Chức năng
 
@@ -50,7 +50,7 @@ Luồng chính: **React → HTTP API → service → SQLite / nguồn trường 
 Môi trường đã kiểm tra cho bản cập nhật: **Windows, Node.js 24.16.0, npm 11.13.0**. Máy cần truy cập mạng để cài dependency và kết nối các dịch vụ ngoài.
 
 ```powershell
-git clone --branch sprint4/comprehensive-update https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni.git
+git clone --branch main https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni.git
 cd smart_study_hub_cmc_uni
 npm ci
 npm --prefix Frontend ci
@@ -134,4 +134,4 @@ Sprint 1–3 là tổng hợp lịch sử, có dẫn mốc nguồn; Sprint 4 ghi
 
 Một số báo cáo/issue cũ dùng tên **Kiều Trang** cho vai trò frontend; bảng này thống nhất theo tên **Huyền Trang** trong phân công gần nhất, cùng tài khoản `kieudu-dlst`. Phân công Sprint 4 kế thừa vai trò cũ và giao trách nhiệm rà soát, hoàn thiện, bàn giao; lịch sử Git giữ nguyên tác giả thực tế.
 
-Thành viên tạo nhánh `sprint4/<github-login>/<noi-dung>` từ `sprint4/comprehensive-update`, mở PR về nhánh Sprint 4 và dẫn issue tương ứng. Mỗi PR cần nêu thay đổi, cách kiểm tra, kết quả và giới hạn còn lại.
+Thành viên tạo nhánh `feature/<github-login>/<noi-dung>` từ `main`, mở PR về `main` và dẫn issue tương ứng. Mỗi PR cần nêu thay đổi, cách kiểm tra, kết quả và giới hạn còn lại. Nhánh `before` lưu phiên bản trước bản cập nhật.

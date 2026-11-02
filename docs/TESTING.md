@@ -74,7 +74,7 @@ Các artifact ghi lại môi trường tại thời điểm chạy. Khi chạy l
 
 ## Xác minh bản bàn giao Sprint 4 — 02/11/2026
 
-Nhánh `sprint4/comprehensive-update`, nền lịch sử main `faecc05`. Môi trường Windows, Node.js **24.16.0**, npm **11.13.0**; dependency cài bằng `npm ci` và `npm --prefix Frontend ci` từ hai lockfile. Kết quả dưới đây là lượt chạy mới trên mã chuẩn bị push, khác các snapshot lịch sử phía trên.
+Bản mã đã kiểm tra tại commit `1f0be43` hiện được đưa lên nhánh chính `main`; nền main cũ `faecc05` lưu ở nhánh `before`. Môi trường Windows, Node.js **24.16.0**, npm **11.13.0**; dependency cài bằng `npm ci` và `npm --prefix Frontend ci` từ hai lockfile. Kết quả dưới đây thuộc lượt xác minh bản bàn giao, khác các snapshot lịch sử phía trên. Việc chuyển nhánh sau đó chỉ sửa tài liệu/tham chiếu GitHub, không thay đổi mã ứng dụng đã kiểm tra.
 
 | Lệnh | Kết quả | Phạm vi |
 | --- | --- | --- |

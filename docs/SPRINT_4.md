@@ -2,8 +2,8 @@
 
 Tổng hợp bản mã và phân công ngày **02/11/2026** (Asia/Saigon). Sprint 4 kế thừa đủ 18 chức năng của [Sprint 1](SPRINT_1.md), [Sprint 2](SPRINT_2.md), [Sprint 3](SPRINT_3.md), đồng thời ghi nhận các thay đổi sau mốc hoàn thiện 28/10.
 
-- Nhánh bàn giao: [`sprint4/comprehensive-update`](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/tree/sprint4/comprehensive-update).
-- Mốc main trước bản cập nhật: [`faecc05`](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/tree/faecc05). Nhánh mới giữ lịch sử của mốc này; không thay đổi main khi bàn giao.
+- Nhánh chính và bản bàn giao mới nhất: [`main`](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/tree/main).
+- Phiên bản main cũ được lưu ở [`before`](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/tree/before), mốc [`faecc05`](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/tree/faecc05). Bản cập nhật trên `main` giữ đầy đủ lịch sử của mốc này.
 - Theo dõi trên GitHub: [Milestone Sprint 4](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/3), issue #24–#28 đã gán assignee.
 
 Sprint 4 là mốc tổng hợp và bàn giao phiên bản hiện tại. Không gán ngày bắt đầu/kết thúc hay Story Point khi nhóm chưa chốt. Phần có mã triển khai được tách khỏi phần còn cần kiểm chứng; issue mở là nhiệm vụ rà soát/hoàn thiện/nghiệm thu, không khẳng định toàn bộ mã còn chưa làm.
@@ -89,7 +89,7 @@ Tên frontend thống nhất là Huyền Trang theo phân công gần nhất; b�
 
 1. Văn Tuấn chốt kiến trúc/context; Anh Tuấn bàn giao mapping/fixture; Hồng Thắm thống nhất schema và hàm DB.
 2. Long Nhật kiểm tra hợp đồng HTTP/nghiệp vụ; Huyền Trang nối UI và phản hồi lỗi có bước tái hiện.
-3. Thành viên tạo nhánh `sprint4/<github-login>/<noi-dung>` từ `sprint4/comprehensive-update`; PR về nhánh này, dẫn issue phụ trách.
+3. Thành viên tạo nhánh `feature/<github-login>/<noi-dung>` từ `main`; PR về `main`, dẫn issue phụ trách. Nhánh `before` lưu bản cũ để đối chiếu.
 4. PR ghi vấn đề/hành vi sau sửa, lệnh và kết quả test, mock/live, ảnh khi đổi UI và hạn chế còn lại. Review chéo tầng liên quan.
 5. Chỉ tick checklist/đóng issue khi có bằng chứng đạt. Không đóng issue cũ hoặc toàn milestone chỉ vì đã push source.
 
