@@ -28,6 +28,6 @@ export default function SlidePreview({ slide, full = false, onText, onDimensions
       : slide?.pdf && !error ? <span className="slide-preview-loading" role="status">Đang tải trang PDF…</span>
       : full && error ? <div className="slide-preview-missing"><FileImage size={28} /><span>{error.message}</span><button onClick={() => { setImageIndex(0); setError(null); setAttempt(n => n + 1); }}><RefreshCw size={14} /> Thử lại</button>{slide?.text && <AIContent text={slide.text} />}</div>
       : slide?.text ? <div className="slide-text-preview"><span className="slide-source-label">NỘI DUNG BÀI GIẢNG{error ? ' · Ảnh chưa tải được' : ''}</span><h4>{slide.title}</h4>{full ? <AIContent text={slide.text} /> : <p>{slide.text}</p>}</div>
-      : <div className="slide-preview-missing"><FileImage size={24} /><span>{error ? 'Ảnh chưa tải được' : slide ? 'Chưa có ảnh hoặc nội dung gốc' : 'Chưa có slide'}</span></div>}
+      : <div className="slide-preview-missing"><FileImage size={24} /><span>{error ? 'Ảnh chưa tải được' : slide ? 'Chưa có nội dung văn bản' : 'Chưa có slide'}</span></div>}
   </div>;
 }

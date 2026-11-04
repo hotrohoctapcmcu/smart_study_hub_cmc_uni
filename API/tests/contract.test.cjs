@@ -54,13 +54,12 @@ test('every effective endpoint retains its HTTP method, path, aliases and regist
     // New unified sync is additive; all pre-existing routes keep their order.
     const unified = actual.filter(endpoint => endpoint.path === '/api/v1/sync/all');
     assert.deepEqual(unified, [{ method: 'POST', path: '/api/v1/sync/all' }]);
-    assert.deepEqual(actual.filter(endpoint => endpoint.path === '/api/v1/learning/images/:file'), [
-        { method: 'GET', path: '/api/v1/learning/images/:file' }
-    ]);
+    assert.deepEqual(actual.filter(endpoint => endpoint.path === '/api/v1/learning/images/:file'), []);
     assert.deepEqual(actual.filter(endpoint => endpoint.path === '/api/v1/ai/summary-jobs/:id'), [
         { method: 'GET', path: '/api/v1/ai/summary-jobs/:id' }, { method: 'DELETE', path: '/api/v1/ai/summary-jobs/:id' }
     ]);
-    const previous = actual.filter(endpoint => !['/api/v1/sync/all', '/api/v1/learning/images/:file', '/api/v1/ai/summary-jobs/:id'].includes(endpoint.path));
+    assert.deepEqual(actual.filter(endpoint => endpoint.path === '/api/v1/ai/pomodoro-goals'), [{ method: 'POST', path: '/api/v1/ai/pomodoro-goals' }]);
+    const previous = actual.filter(endpoint => !['/api/v1/sync/all', '/api/v1/ai/summary-jobs/:id', '/api/v1/ai/pomodoro-goals'].includes(endpoint.path));
     assert.equal(previous.length, fixture.endpoints.length);
     assert.deepEqual(previous, fixture.endpoints);
 });

@@ -22,7 +22,7 @@ function createHocTapAiService({ getDb, userId = NGUOI_DUNG_ID, loadFreeSlots, v
     }
     const { ask, conversations, conversation } = createHoiThoaiService({ q, one, userId });
 
-    const { quizzes, quiz, generateQuiz, submitQuiz, weaknesses, analyzeWeaknesses } = createQuizService({ q, one, userId, mutate });
+    const { quizzes, quiz, generateQuiz, submitQuiz, weaknesses, analyzeWeaknesses } = createQuizService({ q, one, userId, mutate, getDb });
 
     const { leaveDrafts, saveLeave, exportLeave } = createDonNghiService({ q, one });
 
@@ -69,7 +69,7 @@ function createHocTapAiService({ getDb, userId = NGUOI_DUNG_ID, loadFreeSlots, v
                 const savedSessions = [];
                 for (const s of validated.sessions) savedSessions.push(await db().xepLichTuHoc(userId, { title: s.title, studyDate: s.date,
                     startTime: s.start, endTime: s.end, subjectId: exams.find(e => String(e.exam_id) === String(s.examId)).subject_id,
-                    isAiSuggested: true, notes: s.reason || 'Ôn thi AI đã xác nhận.' }));
+                    isAiSuggested: true, notes: [s.reason, s.objective && `Mục tiêu: ${s.objective}`, s.selfTest && `Tự kiểm tra: ${s.selfTest}`].filter(Boolean).join('\n') || 'Ôn thi AI đã xác nhận.' }));
                 const result = { persisted: true, phases: savedPhases, sessions: savedSessions };
                 await q('INSERT INTO AiExamConfirmations(user_id,request_id,payload_hash,result_json) VALUES(@uid,@id,@hash,@result)',
                     { id: requestId, hash: payloadHash, result: JSON.stringify(result) });

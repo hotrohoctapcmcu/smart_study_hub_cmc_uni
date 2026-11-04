@@ -136,8 +136,10 @@ export const ENDPOINTS = {
   ai: {
     status: "/ai/status",
     ask: "/ai/ask",
+    conversations: "/ai/conversations",
     plan: "/ai/plan",
     planConfirm: "/ai/plan/confirm",
+    pomodoroGoals: "/ai/pomodoro-goals",
     examPlan: "/ai/exam-plan",
     examPlanConfirm: "/ai/exam-plan/confirm",
     check: "/ai/check",
@@ -149,15 +151,14 @@ export const ENDPOINTS = {
 
   // Quizzes
   quizzes: {
-    list: "/quizzes",
-    detail: "/quizzes",
-    submit: "/quizzes",
+    list: "/ai/quizzes",
+    detail: "/ai/quizzes",
+    submit: "/ai/quizzes",
   },
-  aiResourcesPrefix: "/ai",
 
   // Weaknesses
   weaknesses: {
-    list: "/weaknesses",
-    analyze: "/weaknesses/analyze",
+    list: "/ai/weaknesses",
+    analyze: "/ai/weaknesses/analyze",
   },
 };

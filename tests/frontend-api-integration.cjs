@@ -90,8 +90,38 @@ test('frontend services connect to the existing backend over real HTTP', async t
             assert.ok(Array.isArray(unwrap(await api.emailApi.list())));
             assert.ok(unwrap(await api.emailApi.status()));
             assert.ok(unwrap(await api.aiApi.status()));
-            assert.ok(Array.isArray(unwrap(await api.quizApi.list())));
-            assert.ok(Array.isArray(unwrap(await api.weaknessApi.list()).topics));
+        });
+        await t.test('quiz and weakness requests reach AI routes once, including real 404 errors', async () => {
+            const requests = [];
+            const record = req => requests.push(`${req.method} ${req.originalUrl || req.url}`);
+            server.on('request', record);
+            try {
+                assert.ok(Array.isArray(unwrap(await api.quizApi.list())));
+                assert.ok(Array.isArray(unwrap(await api.weaknessApi.list()).topics));
+                assert.equal(unwrap(await api.weaknessApi.analyze({})).quizCount, 0);
+                await assert.rejects(api.quizApi.detail('missing-quiz'), error => error.response?.status === 404);
+                await assert.rejects(api.quizApi.submit('missing-quiz', { answers: {} }), error => error.response?.status === 404);
+                await assert.rejects(api.quizApi.create({}), error => error.response?.status === 400);
+                assert.deepEqual(requests, [
+                    'GET /api/v1/ai/quizzes',
+                    'GET /api/v1/ai/weaknesses',
+                    'POST /api/v1/ai/weaknesses/analyze',
+                    'GET /api/v1/ai/quizzes/missing-quiz',
+                    'POST /api/v1/ai/quizzes/missing-quiz/submit',
+                    'POST /api/v1/ai/quizzes'
+                ]);
+            } finally {
+                server.off('request', record);
+            }
+        });
+        await t.test('saved AI conversations can be listed and reopened through frontend wrappers', async () => {
+            const messages = [{ role: 'user', text: 'What is JOIN?', createdAt: '2026-11-04T16:00:00Z' }, { role: 'assistant', text: 'JOIN combines matching rows.', createdAt: '2026-11-04T16:00:01Z' }];
+            await db.executeQuery('INSERT INTO AiConversations(user_id,conversation_id,title,messages_json,created_at,updated_at) VALUES(1,@id,@title,@messages,@created,@created)', {
+                id: 'http-history', title: 'JOIN history', messages: JSON.stringify(messages), created: '2026-11-04T16:00:00Z'
+            });
+            assert.ok(unwrap(await api.aiApi.conversations()).some(row => row.id === 'http-history' && row.title === 'JOIN history'));
+            assert.deepEqual(unwrap(await api.aiApi.conversation('http-history')).messages, messages);
+            await assert.rejects(api.aiApi.conversation('missing-history'), error => error.response?.status === 404);
         });
         await t.test('backend validation failures are not converted into mock success', async () => {
             await assert.rejects(api.taskApi.create({ title: 'Missing required fields' }), error => error.response?.status === 400);

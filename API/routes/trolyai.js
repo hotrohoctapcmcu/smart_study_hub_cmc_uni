@@ -16,6 +16,7 @@ router.get('/status', controller.status);
 router.post('/ask', controller.ask);
 router.post('/plan', controller.plan);
 router.post('/plan/confirm', controller.confirmPlan);
+router.post('/pomodoro-goals', controller.pomodoroGoals);
 router.post('/exam-plan', controller.examPlan);
 router.post('/check', controller.check);
 router.post('/summarize', controller.summarize);

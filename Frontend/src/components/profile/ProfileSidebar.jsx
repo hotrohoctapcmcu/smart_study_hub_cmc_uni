@@ -25,6 +25,8 @@ export default function ProfileSidebar({ profile, stats, goal, onEdit, onEditGoa
     [MapPin, "Địa chỉ", present(profile.address)],
   ];
   const goalPercent = Math.min(100, Math.max(0, Math.round((stats.gpa / goal) * 100) || 0));
+  const hasCreditTotal = stats.totalCredits > 0;
+  const hasCreditProgress = stats.creditPercent !== null;
 
   return (
     <aside className="profile-side" aria-label="Thông tin bổ sung">
@@ -49,23 +51,25 @@ export default function ProfileSidebar({ profile, stats, goal, onEdit, onEditGoa
           <div><span>LỘ TRÌNH</span><h2>Tiến độ học tập</h2></div>
         </div>
         <div className="study-progress-visual">
-          <div className="study-donut" role="img" aria-label={`Tiến độ tín chỉ: ${stats.creditPercent ?? "chưa có dữ liệu"}${stats.creditPercent === null ? "" : "%"}`} style={{ "--progress": `${(stats.creditPercent || 0) * 3.6}deg` }}>
-            <div><strong>{stats.creditPercent === null ? "—" : `${stats.creditPercent}%`}</strong><span>Hoàn thành</span></div>
-          </div>
+          {hasCreditProgress && <div className="study-donut" role="img" aria-label={`Tiến độ tín chỉ: ${stats.creditPercent}%`} style={{ "--progress": `${stats.creditPercent * 3.6}deg` }}>
+            <div><strong>{stats.creditPercent}%</strong><span>Hoàn thành</span></div>
+          </div>}
           <div className="study-credit-list">
-            <p><i className="credit-done" /><span>Tín chỉ hoàn thành</span><strong>{stats.completedCredits ?? "—"}</strong></p>
-            <p><i className="credit-left" /><span>Tín chỉ còn lại</span><strong>{stats.creditPercent === null ? "—" : Math.max(0, stats.totalCredits - stats.completedCredits)}</strong></p>
-            <p><i className="credit-total" /><span>Tổng tín chỉ</span><strong>{stats.totalCredits ?? "—"}</strong></p>
+            <p><i className="credit-done" /><span>Tín chỉ hoàn thành</span><strong>{stats.completedCredits ?? "Chưa có dữ liệu"}</strong></p>
+            {hasCreditProgress && <p><i className="credit-left" /><span>Tín chỉ còn lại</span><strong>{Math.max(0, stats.totalCredits - stats.completedCredits)}</strong></p>}
+            {hasCreditTotal && <p><i className="credit-total" /><span>Tổng tín chỉ</span><strong>{stats.totalCredits}</strong></p>}
+            {stats.requiredCredits != null && <p><i className="credit-total" /><span>Tín chỉ bắt buộc</span><strong>{stats.requiredCredits}</strong></p>}
           </div>
         </div>
-        <p className="credit-scope-note">Theo {stats.creditScope}</p>
+        <p className="credit-scope-note">{hasCreditTotal ? `Theo ${stats.creditScope}` : "Chưa cập nhật tổng tín chỉ chương trình."}</p>
+        {!hasCreditTotal && <button type="button" className="profile-text-link" onClick={onEditGoal}>Cập nhật tổng tín chỉ</button>}
         <button type="button" className="profile-text-link" onClick={onViewProgress}>Xem chi tiết <ChevronRight size={15} /></button>
       </section>
 
       <section className="profile-panel goal-card">
         <div className="goal-icon"><Target size={20} /></div>
         <span className="goal-kicker">MỤC TIÊU HỌC TẬP</span>
-        <h2>Duy trì GPA ≥ {Number(goal).toFixed(1)} trong kỳ tới</h2>
+        <h2>Duy trì điểm hệ 10 ≥ {Number(goal).toFixed(1)} trong kỳ tới</h2>
         <div className="goal-progress-copy"><span>Tiến độ mục tiêu</span><strong>{goalPercent}%</strong></div>
         <div className="goal-progress"><span style={{ width: `${goalPercent}%` }} /></div>
         <Button variant="outline" className="side-full-button" onClick={onEditGoal}><Pencil size={14} /> Chỉnh sửa mục tiêu</Button>

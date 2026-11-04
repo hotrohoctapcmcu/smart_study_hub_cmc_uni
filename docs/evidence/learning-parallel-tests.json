@@ -1,0 +1,67 @@
+{
+  "checkedAt": "2026-11-04T15:16:20.062086+00:00",
+  "checks": [
+    {
+      "command": "npm run test:ai",
+      "kind": "mock provider/real HTTP/temporary SQLite",
+      "tests": 94,
+      "passed": 94,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run test:api",
+      "kind": "contracts/HTTP/temporary SQLite",
+      "tests": 139,
+      "passed": 139,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm --prefix Frontend test -- --maxWorkers=2 --reporter=dot",
+      "kind": "mock/jsdom",
+      "files": 47,
+      "passed": 428,
+      "failed": 0
+    },
+    {
+      "command": "npm --prefix Frontend run build",
+      "passed": true,
+      "seconds": 27.61,
+      "warnings": [
+        "existing MathJax eval",
+        "large chunks"
+      ]
+    }
+  ],
+  "countsOverlap": true,
+  "behavior": {
+    "manualAiOnly": true,
+    "courseQueue": "FIFO one complete course at a time",
+    "sourceChunkChars": 12000,
+    "defaultConcurrentRequestsPerCourse": 4,
+    "configurableConcurrentRequests": [
+      1,
+      5
+    ],
+    "sharedProviderCap": 5,
+    "merge": "one final request when results fit; parallel intermediate groups only when needed",
+    "resultOrder": "source order even when responses finish out of order",
+    "cache": "v3-compatible; completed parts survive failure/retry",
+    "failure": "wait for all siblings before failing or advancing course queue"
+  },
+  "transportProof": {
+    "kind": "Gemini client against localhost fake provider",
+    "concurrentHttpPostsBeforeFirstReply": 4,
+    "isolatedConversationContexts": true
+  },
+  "benchmarkReport": "learning-parallel-benchmark.json",
+  "newRealProviderCalls": 0,
+  "previousLiveResult": "learning-recovery-live.json",
+  "applicationDatabaseWrites": 0,
+  "limitations": [
+    "Existing app not restarted",
+    "No direct post-build Electron/device acceptance",
+    "Mock benchmark is not a real-provider performance guarantee"
+  ]
+}

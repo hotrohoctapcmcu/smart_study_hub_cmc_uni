@@ -43,6 +43,31 @@ function mountWorkspace({ failedSource, dueMetadata, extraTasks = [] } = {}) {
 }
 
 describe("Tasks workspace", () => {
+  it("includes EDUX active course progress independently of the selected source or status tab", async () => {
+    mountWorkspace({ dueMetadata: { status: "Hoàn thành", subjectStartTime: "2020-01-01", subjectDeadline: "2099-12-31", due: "2099-12-31" } });
+    const progress = within(screen.getByRole("region", { name: "Tiến độ tuần này" }));
+    expect(await progress.findByRole("img", { name: "Tiến độ tuần: 33%" })).toBeTruthy();
+    expect(progress.getByText("1/3 việc hoàn thành · 1 từ EDUX")).toBeTruthy();
+    expect(progress.getByText("1/1 bài")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Lọc theo nguồn"), { target: { value: "PERSONAL" } });
+    fireEvent.click(screen.getByRole("tab", { name: "Đã hoàn thành" }));
+    expect(progress.getByRole("img", { name: "Tiến độ tuần: 33%" })).toBeTruthy();
+  });
+
+  it("requests a fresh EDUX snapshot when refreshing and keeps advanced filters collapsed until needed", async () => {
+    const { adapter, list } = mountWorkspace();
+    await list.findByRole("button", { name: "Mở rộng môn Cấu trúc dữ liệu" });
+    const toggle = screen.getByRole("button", { name: "Bộ lọc" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.change(screen.getByLabelText("Lọc theo ưu tiên"), { target: { value: "HIGH" } });
+    fireEvent.click(toggle);
+    expect(toggle.textContent).toContain("1");
+    fireEvent.click(screen.getByRole("button", { name: "Làm mới công việc" }));
+    await waitFor(() => expect(adapter.mock.calls.some(([config]) => config.url === "/tasks/edux" && config.params?.refresh === "true")).toBe(true));
+  });
+
   it("keeps completed work out of pending across presentations and clears status when changing tabs", async () => {
     const { list } = mountWorkspace({ extraTasks: [{ assignment_id: 103, subject_id: 11, subject_name: "Cấu trúc dữ liệu", title: "Bài đã xong", priority: "HIGH", status: "COMPLETED" }] });
     fireEvent.click(screen.getByRole("tab", { name: "Danh sách" }));

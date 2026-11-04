@@ -38,7 +38,7 @@ Học tập hỗ trợ `/learning?tab=subjects`, `flashcards`, `quiz`, `weakness
 
 Chọn môn → chương → slide. Môn hiện tại lấy từ kỳ/năm học IU; với lịch cũ thiếu thông tin kỳ, ứng dụng dùng khoảng ngày giao với tuần hiện tại theo UTC+7. Không suy đoán kỳ học từ bảng điểm. Môn cũ được ẩn khỏi luồng hiện tại nhưng dữ liệu lịch sử được giữ.
 
-**Đồng bộ học liệu EDUX** tải chương, slide, văn bản và ảnh gốc. Văn bản lưu trong SQLite; ảnh lưu cạnh database, mặc định `data/edux-images`. Học liệu đã tải có thể đọc lại khi không còn phiên EDUX. Tài liệu được tải bằng phiên bản cũ chưa giữ ảnh cần đồng bộ lại một lần. Slide thiếu ảnh gốc được ghi rõ, không tự tạo ảnh thay thế.
+**Đồng bộ học liệu EDUX** tải chương, slide và văn bản, chỉ lưu nội dung văn bản trong SQLite. Ảnh EDUX không được lưu vào database, ghi file hoặc hiển thị trong bài giảng. Hàm crawler vẫn hỗ trợ lấy ảnh khi truyền `includeImages: true`, kết quả chỉ tồn tại trong bộ nhớ của lời gọi. Ảnh nhúng trong HTML, Markdown và JSON được lọc trước khi lưu; dữ liệu ảnh cũ trong học liệu được dọn khi khởi động. Slide chỉ có ảnh được ghi rõ là chưa có nội dung văn bản. Văn bản đã tải có thể đọc lại khi không còn phiên EDUX.
 
 Tiến độ đọc, bookmark và ghi chú riêng của slide lưu trong localStorage theo sinh viên, chưa đồng bộ giữa thiết bị. Sao lưu SQLite không bao gồm phần dữ liệu trình duyệt này.
 
@@ -49,11 +49,17 @@ Tài khoản EDUX được nhớ trong JSON cục bộ tại `data/edux-accounts
 ### Tóm tắt toàn môn và Flashcard
 
 1. Chờ tải đủ nguồn; **Nội dung gốc toàn môn (.txt)** xuất văn bản theo thứ tự chương/slide, kèm ID và số slide.
-2. Ứng dụng chia nguồn toàn môn thành hai phần A/B, tóm tắt từng phần rồi tổng hợp kiến thức toàn môn. Phần quá dài tiếp tục được chia nhỏ; các phần đã hoàn tất được lưu để thử lại. Ảnh base64 không được đưa vào văn bản yêu cầu AI.
+2. Mở môn rồi bấm **Tạo / cập nhật tóm tắt** khi muốn dùng AI. Đồng bộ slide và đồng bộ nền từ IU/EDUX không tự tóm tắt. Sau nút bấm, ứng dụng chia nguồn toàn môn thành **n phần nhỏ**, mặc định mỗi phần tối đa 12.000 ký tự, chạy tối đa **4 lượt AI đồng thời** rồi tổng hợp kết quả đúng thứ tự. Chỉ tổng hợp qua nhiều tầng khi các kết quả trung gian quá lớn. Các phần đã hoàn tất được lưu để thử lại; ảnh base64 không được đưa vào văn bản yêu cầu AI.
 3. Bản tóm tắt được lưu trước khi tạo thẻ. Nếu tạo thẻ lỗi, vẫn có thể tải TXT tóm tắt và chọn **Tạo Flashcard từ tóm tắt** để thử lại. Có thể chạy lại **Tóm tắt toàn môn** khi nguồn thay đổi.
 4. Vào **Học tập → Flashcard**, chọn môn, ôn thẻ đến hạn hoặc toàn bộ. Xem đáp án trước rồi chọn **Chưa nhớ / Khó / Nhớ / Dễ**. Khi vùng ôn có tiêu điểm: Space lật thẻ, phím 1–4 đánh giá.
 
-Hàng đợi giới hạn tối đa năm yêu cầu AI đồng thời. Mặc định mỗi yêu cầu học liệu tối đa 60.000 ký tự cả chỉ dẫn/dữ liệu, tóm tắt phần 4.000 và bản cuối 8.000; cấu hình kỹ thuật ở [API](API.md). Lỗi tải slide chặn tạo bản tổng hợp mới; dữ liệu và tóm tắt cũ được giữ. Thẻ gắn phiên bản tóm tắt; mỗi lần đánh giá có `requestId` để thử lại không ghi trùng. AI có thể sai kiến thức, cần đối chiếu bài giảng.
+Đồng bộ slide và tóm tắt toàn môn dùng chung một hàng đợi FIFO: hoàn tất yêu cầu đang chạy rồi mới đến yêu cầu tiếp theo. Quét nhiều môn cũng lưu xong từng môn trước khi chuyển môn khác. Yêu cầu trùng đang chạy/chờ được gộp; lỗi một yêu cầu không chặn các yêu cầu còn lại. Màn hình Học tập/Tài liệu hiển thị môn, vị trí chờ, tiến trình và lỗi; số chương/slide tự cập nhật khi quét xong từng môn. Môn IU chưa có nguồn EDUX hiển thị lý do thay vì chỉ hiện “0 chương”.
+
+Khối hàng đợi hiển thị dạng danh sách gọn, tách tên môn, loại yêu cầu và trạng thái. Có **Thu gọn hàng đợi**, **Xem chi tiết** để đọc thông báo đầy đủ và **Làm mới**; kết quả gần đây nằm trong mục riêng, lỗi được mở sẵn để kiểm tra. Thu gọn hoặc xem chi tiết không dừng/chạy lại AI.
+
+Hàng đợi nhận tối đa 50 yêu cầu hoạt động. Nó nằm trong RAM: khởi động lại backend sẽ mất các yêu cầu đang chờ; dữ liệu slide và kết quả AI đã lưu trong SQLite vẫn được giữ, muốn tóm tắt tiếp cần bấm lại. Giới hạn pool provider chung của ứng dụng không khiến nhiều môn trong hàng đợi học liệu chạy đồng thời.
+
+Mặc định mỗi yêu cầu học liệu tối đa 60.000 ký tự cả chỉ dẫn/dữ liệu; 4.000 ký tự/phần và 8.000 ký tự/toàn môn là mục tiêu trình bày. Bản hợp lệ còn dài được ghi rõ dạng dài hoặc theo phần, không bị loại chỉ vì vượt mục tiêu; trần lưu mặc định 120.000 ký tự. Cấu hình kỹ thuật ở [API](API.md). Lỗi tải slide chặn tạo bản tổng hợp mới; dữ liệu và tóm tắt cũ được giữ. Thẻ gắn phiên bản tóm tắt; mỗi lần đánh giá có `requestId` để thử lại không ghi trùng. AI có thể sai kiến thức, cần đối chiếu bài giảng.
 
 ### Tệp tải lên và ghi chú cũ
 
@@ -128,9 +134,43 @@ Công cụ soạn đơn dùng ngày/môn/buổi/người nhận/lý do, cho xem/
 
 Pomodoro hỗ trợ bắt đầu, tạm dừng, reset, nghỉ ngắn và chuông. Phiên đang chạy phục hồi trong cùng tab bằng sessionStorage khi chuyển trang/reload; trình duyệt chặn sessionStorage thì không phục hồi được. Chọn **Lưu phiên học** để ghi lịch sử backend, gồm thời gian bắt đầu/kết thúc, giây tập trung thực tế và các khoảng tập trung; thời gian pause/nghỉ không cộng thành giờ học.
 
+Xác nhận lưu mở trong hộp thoại; nếu lỗi kết nối, phiên vẫn được giữ để thử lại. Đổi chế độ hoặc đặt lại khi có thời gian chưa lưu sẽ hỏi giữ, lưu hay bỏ phiên. Thống kê hôm nay chỉ tính phần tập trung thuộc ngày hiện tại theo UTC+7, kể cả phiên qua nửa đêm. Lịch sử phân biệt phiên hoàn thành và kết thúc sớm.
+
+Trước phiên, chọn môn/công việc cá nhân hoặc bài tập EDUX, đặt một mục tiêu nhỏ và chọn nhịp 15/3, 25/5 hoặc 50/10 phút tập trung/nghỉ. Danh sách chỉ có môn kỳ hiện tại theo thời khóa biểu IU; chưa xác định kỳ thì cần đồng bộ IU và vẫn có thể tự học chưa phân loại. Việc gợi ý cũng được lọc theo các môn hiện tại. Có gợi ý việc gần hạn và cảnh báo trùng giờ lớp/thi; lịch thiếu được thông báo để người dùng quyết định. EDUX tải chậm không cản phiên tự học. Mục tiêu và nhịp học được giữ cùng bản nháp trong tab.
+
+Khi nhập mục tiêu đủ rõ và dừng một chút, AI tự chia thành 2–5 bước vừa với thời lượng phiên, kèm thời gian ước tính và dấu hiệu hoàn thành. Chọn **Dùng các bước này** để nhận checklist rồi đánh dấu khi học. Sửa mục tiêu/môn/thời lượng sẽ làm mới gợi ý; phản hồi cũ không thay vào nội dung mới. Nếu AI chưa sẵn sàng, vẫn giữ mục tiêu để tự học hoặc thử lại. Checklist và tiến độ được lưu cùng phiên; các bước chưa xong có thể đưa vào phần cần làm tiếp.
+
+Khi lưu, ghi điều đã làm được, chọn đã đạt mục tiêu/cần học tiếp/chưa đánh giá và ghi phần còn lại. Checkbox hoàn thành công việc chỉ xuất hiện khi đã đạt mục tiêu, mặc định không chọn. Việc đánh dấu EDUX chỉ theo dõi trong ứng dụng; vẫn cần nộp bài trên EDUX. Lưu phiên và cập nhật công việc được thực hiện cùng transaction; thử lại không tạo bản ghi trùng.
+
+Lịch sử có lọc theo môn, ghi chú/kết quả và nút học tiếp. Thống kê tuần hiện tại (thứ Hai–Chủ Nhật, UTC+7) tổng hợp phút thực học và mục tiêu đã đạt theo môn. Sau lưu có thể chuyển sang flashcard đúng môn hoặc quiz điền sẵn môn/chủ đề; không tự gọi AI hay tự đánh giá đã hiểu bài.
+
 Thống kê lấy báo cáo database theo khoảng ngày/tuần/tháng đã chọn, gồm công việc nội bộ/EDUX, tự học và Pomodoro; tránh cộng trùng thời gian. Time Map cắt ngày theo UTC+7, ưu tiên lịch thi/lớp/Pomodoro/tự học. Bộ lọc nhật ký chỉ lọc hoạt động; không suy diễn số liệu tháng chưa tải. Thiếu dữ liệu hiển thị dấu “—” hoặc trạng thái rỗng. Mở thống kê dùng `advice=false` để không tự gọi AI.
 
 Email hỗ trợ tất cả/chưa đọc/đã đọc, tìm tiêu đề/người gửi, đọc, đánh dấu, đồng bộ/làm mới và ngắt phiên. Nguồn Outlook Web đôi khi chỉ có preview; thử **Tải nội dung đầy đủ** hoặc mở thư gốc. Bộ trích xuất nhận ngày rõ `DD/MM/YYYY` (cả `.`/`-`) và giờ `HH:mm`/`HHhmm`; không tự suy ra deadline từ mô tả mơ hồ. Kiểm tra thông tin rồi xác nhận tạo công việc/kỳ thi; tác vụ có chống tạo trùng.
+
+## Các luồng học tập liên kết
+
+Khi tạo công việc, lịch học, kỳ thi hoặc sổ tay, danh sách môn mặc định là môn kỳ hiện tại từ IU, cùng nguồn với Pomodoro. Khi sửa bản ghi cũ, môn đã lưu vẫn có trong lựa chọn. Chưa xác định được kỳ thì dùng **Tải lại môn học** hoặc đồng bộ thời khóa biểu IU; ứng dụng không lấy toàn bộ môn lịch sử thay thế. Sổ tay các kỳ trước vẫn xem/lọc được trong danh sách.
+
+Trong Pomodoro, nhập **Chương/chủ đề ôn lại** để giữ đúng phạm vi khi mở flashcard/quiz sau phiên; nếu bỏ trống sẽ dùng mục tiêu phiên. Flashcard lọc theo môn và tên chương/chủ đề thực trên thẻ; không có thẻ phù hợp thì báo rõ để cập nhật bộ thẻ. Thẻ đến hạn và thẻ từng chọn học lại được ưu tiên. **Ôn 5 phút** có đồng hồ và nút dừng; chỉ khi bạn chọn mức ghi nhớ mới lưu một lượt ôn.
+
+Upload tài liệu có danh sách chọn môn, hiển thị học kỳ từ IU và cho tải file **Chưa phân loại**. Bộ lọc học kỳ dùng metadata của file, không tự gán kỳ cho tài liệu cũ. Trạng thái học file dùng những trang đã mở/đánh dấu trên thiết bị hiện tại; không đọc hoặc không đánh dấu thì không tự coi là hoàn thành.
+
+Mở chi tiết công việc cá nhân đã lưu và chọn **AI chia nhỏ công việc**. AI đọc tên, mô tả và deadline, trả các bước có đầu ra/thời lượng. Sửa/bỏ từng bước rồi chọn **Xác nhận thêm các bước**. Bạn cũng có thể nhập bước, đầu ra và thời lượng thủ công khi AI lỗi. Nút **Pomodoro** trên từng bước điền sẵn mục tiêu/thời lượng; cần bấm bắt đầu phiên và tự xác nhận kết quả. Phiên đang học trước đó được giữ để bạn xử lý trước.
+
+Quiz cho chọn môn kỳ hiện tại, chương/chủ đề, tài liệu nguồn, **5/10/15 câu** và độ khó. Không chọn tài liệu thì giao diện ghi kiến thức chung. Nguồn bài giảng phải có văn bản đầy đủ; file tải lên hiện hỗ trợ TXT/Markdown làm nguồn quiz, còn PDF/DOCX/PPTX/ảnh cần chuyển sang văn bản hoặc chọn nguồn khác. Nguồn không đọc được sẽ báo lỗi thay vì giả nhận đã sử dụng. Khi làm xong có **Luyện lại phần sai**; các chủ đề cần cải thiện có **Luyện 5 câu**, **Học lại 15 phút**, **Mở tài liệu**. Điểm trước/sau lấy từ hai lượt nộp quiz thật gần nhất; thiếu lượt đo được ghi rõ.
+
+Trong kỳ thi sắp tới, **Lên lịch ôn → AI chia buổi ôn thi** dùng nội dung bạn nhập để đề xuất các buổi có mục tiêu, thời lượng và bài tự kiểm tra. Sửa/bỏ từng buổi trước khi xác nhận; lịch được kiểm tra lại để chỉ lưu giờ tương lai, trước giờ thi và không trùng. Kế hoạch thủ công vẫn có bên dưới khi AI lỗi. AI Tutor cũng chọn kỳ thi từ danh sách sắp tới; có nút mở Tutor kèm ngữ cảnh tại slide/công việc và cho sửa câu hỏi trước khi gửi.
+
+Các bản nháp AI không tự nhận vào checklist/lịch hoặc tự đánh dấu công việc hoàn thành. Lỗi provider giữ như lỗi, có thể thử lại hoặc tiếp tục thao tác thủ công. Kiểm thử mock và AI thật được tách riêng ở [TESTING](TESTING.md#các-luồng-học-tập--04112026); lần thử provider thật ngày 04/11 bị timeout, chưa nghiệm thu chất lượng đầu ra live.
+
+## Tóm tắt dài và tạo tiếp Flashcard
+
+Quét slide chỉ đồng bộ học liệu. Vào môn và bấm **Tạo / cập nhật tóm tắt** để yêu cầu AI; nhiều môn xếp hàng, xong môn trước mới đến môn sau. Trong một môn, nhiều phần được tóm tắt song song, có số phần đã lưu và số lượt AI đang chạy. Bản tóm tắt hợp lệ dài hơn mục tiêu được giữ và ghi rõ **dạng dài**. Nếu AI chưa gộp được, hiển thị các phần đã tóm tắt và thông báo chưa có bản tổng hợp ngắn; không cắt mất nội dung để ép đạt độ dài.
+
+Tạo thẻ lỗi không có nghĩa là mất bản tóm tắt. Ứng dụng tạo/lưu từng lô nhỏ, hiển thị số lô đã xong; có thể ôn thẻ đã có. Bấm **Tạo tiếp Flashcard** để thử phần còn thiếu, kể cả sau khi mở lại ứng dụng. Kết quả chưa hợp lệ không được lưu thành thẻ. Mạng/provider lỗi vẫn báo lỗi và giữ kết quả đã tạo được.
+
+Sau cập nhật cần khởi động lại ứng dụng để nạp backend/migration. Hàng đợi chờ không sống qua restart; slide, tóm tắt và checkpoint thẻ đã lưu được giữ. Lần gọi AI thật mới nhất vẫn timeout; kết quả kiểm thử và giới hạn tại [TESTING](TESTING.md#khôi-phục-tóm-tắt-dài-và-json-flashcard--04112026).
 
 ## Sao lưu và giới hạn vận hành
 

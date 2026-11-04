@@ -14,6 +14,7 @@ const validate = require('../validators/dongbo.validator');
 
 let db;
 let iuPullInFlight = null;
+let curriculumPullInFlight = null;
 let lastScheduleRefreshAt = 0;
 const allSyncJobs = new Map();
 const jobHistory = new Map();
@@ -100,7 +101,7 @@ function rememberSync(source, partial = false) {
 
 function safeCounts(source, response) {
     const input = source === 'IU' ? response?.savedDb : response;
-    const allowed = source === 'IU' ? ['timetableCount', 'examsCount', 'gradesCount', 'subjectsCount']
+    const allowed = source === 'IU' ? ['timetableCount', 'examsCount', 'gradesCount', 'subjectsCount', 'curriculumCount']
         : source === 'EDUX' ? ['saved', 'removed'] : ['syncedCount'];
     return Object.fromEntries(allowed.filter(key => Number.isFinite(input?.[key]) && input[key] >= 0)
         .map(key => [key, input[key]]));
@@ -375,6 +376,12 @@ async function clearIuSession() {
 }
 
 async function pullIuGroup(body) {
+    if (body?.nhom === 'chuongtrinh' && body.luuDb === true) {
+        if (curriculumPullInFlight) return curriculumPullInFlight;
+        curriculumPullInFlight = refreshIuCurriculum();
+        try { return await curriculumPullInFlight; }
+        finally { curriculumPullInFlight = null; }
+    }
     const saved = iuKho.getSession(NGUOI_DUNG_ID);
     if (!saved) throw loi('Chưa có phiên IU.', 401);
 
@@ -382,6 +389,39 @@ async function pullIuGroup(body) {
     const data = await keoNhomIU(saved.session, saved.cookie, nhom, opts);
 
     return { nhom, data };
+}
+
+async function refreshIuCurriculum() {
+    const saved = iuKho.getSession(NGUOI_DUNG_ID);
+    if (!saved) throw loi('Chưa có phiên IU. Hãy kết nối IU để cập nhật tín chỉ.', 401);
+    const profile = await db.layHoSo(NGUOI_DUNG_ID);
+    if (!profile) throw loi('Chưa có hồ sơ sinh viên. Hãy đồng bộ IU trước.', 409);
+    let pulled;
+    try { pulled = await keoNhomIU(saved.session, saved.cookie, 'chuongtrinh'); }
+    catch (error) {
+        if ([401, 403].includes(Number(error.statusCode || error.status))) {
+            iuKho.clearSession(NGUOI_DUNG_ID);
+            throw loi('Phiên IU đã hết hạn. Hãy kết nối IU lại để cập nhật tín chỉ.', 401);
+        }
+        throw error;
+    }
+    const mapped = mapSangDataIU(pulled.data);
+    if (!mapped.MSV || mapped.MSV.trim().toUpperCase() !== profile.student_code.trim().toUpperCase()) {
+        throw loi('Tài khoản IU không khớp hồ sơ đang mở. Hãy kết nối đúng tài khoản sinh viên.', 409);
+    }
+    if (!mapped.chuong_trinh?.ma) throw loi('IU chưa trả chương trình học hợp lệ.', 502);
+    const savedDb = await db.dongBoHoSoIU(profile.student_code, {
+        ho_ten: profile.full_name, ten_nganh_hoc: profile.major,
+        chuong_trinh: mapped.chuong_trinh,
+        ...(Array.isArray(mapped.khoi_kien_thuc) ? { khoi_kien_thuc: mapped.khoi_kien_thuc } : {}),
+        ...(Array.isArray(mapped.hoc_phan_chuong_trinh) ? { hoc_phan_chuong_trinh: mapped.hoc_phan_chuong_trinh } : {}),
+    });
+    const updated = await db.layHoSo(NGUOI_DUNG_ID);
+    return { nhom: 'chuongtrinh', persisted: true, savedDb,
+        totalProgramCredits: updated.total_program_credits,
+        thatBai: pulled.thatBai,
+        message: updated.total_program_credits > 0 ? 'Đã cập nhật tín chỉ từ IU.' : 'IU chưa cung cấp tổng tín chỉ chương trình.',
+    };
 }
 
 async function saveEduxSession(body) {

@@ -1,14 +1,16 @@
 ﻿import { formatDateISO, addDays } from "./date";
+import { planningNow } from "./planning";
 export function defaultAIOptions() {
+  const today = planningNow().date;
   return {
-    startDate: formatDateISO(),
-    endDate: formatDateISO(addDays(new Date(), 6)),
+    startDate: today,
+    endDate: formatDateISO(addDays(today, 6)),
     freeStartTime: "19:00",
     freeEndTime: "22:00",
     durationMinutes: 60,
     subject: "",
     question: "",
-    date: formatDateISO(),
+    date: today,
     recipient: "",
     examId: "",
   };
@@ -20,7 +22,7 @@ export function buildAIRequest(
   conversationId = null,
   progress = {},
 ) {
-  if (tool === "ask") return { question: text, conversationId };
+  if (tool === "ask") return { question: [text, options.subject && `Môn học: ${options.subject}`, options.topic && `Chương/chủ đề: ${options.topic}`, options.context && `Ngữ cảnh từ màn hình nguồn:\n${options.context}`].filter(Boolean).join('\n\n'), conversationId };
   if (tool === "summarize") return { text };
   if (tool === "plan")
     return {

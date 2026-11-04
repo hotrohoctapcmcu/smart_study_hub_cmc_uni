@@ -1,4 +1,5 @@
 const { loi } = require('../utils/error');
+const { planningDate, futureStart } = require('../utils/planning-time');
 const validStatuses = ['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
 
 function date(value) {
@@ -11,6 +12,7 @@ function week(from, to) {
 
 function create(data) {
     if (!data?.subjectId || !data?.className || !data?.room) throw loi('subjectId, className và room là bắt buộc.');
+    futureStart(data.startDate, data.startTime);
 }
 
 function conflicts(studyDate, startTime, endTime) {
@@ -21,6 +23,7 @@ function study(data) {
     if (!data?.title || !data?.studyDate || !data?.startTime || !data?.endTime) {
         throw loi('title, studyDate, startTime và endTime là bắt buộc.');
     }
+    futureStart(data.studyDate, data.startTime);
 }
 
 function studyStatus(body) {
@@ -31,6 +34,7 @@ function studyStatus(body) {
 
 function freeSlots(date, duration) {
     if (!date) throw loi('date là bắt buộc.');
+    planningDate(date, 'Ngày tìm giờ trống');
     const minutes = Number(duration);
     if (!Number.isInteger(minutes) || minutes <= 0) throw loi('duration phải là số nguyên dương.');
     return minutes;

@@ -1,0 +1,558 @@
+{
+  "date": "2026-11-05",
+  "timezone": "Asia/Saigon",
+  "repository": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni",
+  "sourceBaseline": "3348fcb",
+  "deadlineConvention": "Vietnam end-of-day 23:59:59; report meeting time not supplied",
+  "issuesCreated": 0,
+  "issueStatesAndAssigneesPreserved": true,
+  "sprint1to3OriginalBodiesPreservedAsPrefix": true,
+  "sprint4AcceptanceUnchecked": true,
+  "milestones": [
+    {
+      "sprint": 1,
+      "number": 1,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/1",
+      "startDate": "25/09/2026",
+      "endDate": "15/10/2026",
+      "reportWeekday": "Thursday",
+      "dueOnUtc": "2026-10-15T00:00:00Z",
+      "githubDateOnly": true,
+      "state": "open",
+      "readbackVerified": true
+    },
+    {
+      "sprint": 2,
+      "number": 2,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/2",
+      "startDate": "16/10/2026",
+      "endDate": "22/10/2026",
+      "reportWeekday": "Thursday",
+      "dueOnUtc": "2026-10-22T00:00:00Z",
+      "githubDateOnly": true,
+      "state": "closed",
+      "readbackVerified": true
+    },
+    {
+      "sprint": 3,
+      "number": 4,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/4",
+      "startDate": "23/10/2026",
+      "endDate": "29/10/2026",
+      "reportWeekday": "Thursday",
+      "dueOnUtc": "2026-10-29T00:00:00Z",
+      "githubDateOnly": true,
+      "state": "open",
+      "readbackVerified": true
+    },
+    {
+      "sprint": 4,
+      "number": 3,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/3",
+      "startDate": "30/10/2026",
+      "endDate": "05/11/2026",
+      "reportWeekday": "Thursday",
+      "dueOnUtc": "2026-11-05T00:00:00Z",
+      "githubDateOnly": true,
+      "state": "open",
+      "readbackVerified": true
+    }
+  ],
+  "issues": [
+    {
+      "number": 1,
+      "sprint": 1,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/1",
+      "state": "closed",
+      "assignees": [],
+      "milestone": 1,
+      "deadlineVietnam": "15/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "7aed5274af6955480501562b630d61c4ad47063b88f7c51c18c99b4f642b9800",
+      "updatedBodySha256": "cd0dc5e9cff4b3bbae95c21b9dbaf44e284fd8f91d61083afcaee02666e24c30",
+      "originalState": "closed",
+      "originalAssignees": []
+    },
+    {
+      "number": 2,
+      "sprint": 1,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/2",
+      "state": "closed",
+      "assignees": [],
+      "milestone": 1,
+      "deadlineVietnam": "15/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "cd6bb69d09adff0afa5f9c77f02bf3a7760538819733a71ba2fa7d6d98ce9236",
+      "updatedBodySha256": "6aaa37e039a85b4bf5e7992af3153b65030adf12b7f9f2e25779d6694dbf4a13",
+      "originalState": "closed",
+      "originalAssignees": []
+    },
+    {
+      "number": 3,
+      "sprint": 1,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/3",
+      "state": "closed",
+      "assignees": [],
+      "milestone": 1,
+      "deadlineVietnam": "15/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "79d7c052f6b3999c29dc177225795ae2b36eb22b7afe9427dc8f0c78f484d606",
+      "updatedBodySha256": "d60b1ef19b741a175a6420a81a30e9d2bd25ae5e6c841c2195968689b279bcd2",
+      "originalState": "closed",
+      "originalAssignees": []
+    },
+    {
+      "number": 4,
+      "sprint": 1,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/4",
+      "state": "closed",
+      "assignees": [],
+      "milestone": 1,
+      "deadlineVietnam": "15/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "eccd42d9f3e878c497d9dbb0e5bddecb27b8c3077bf8f8219cb481c93ad0cf2c",
+      "updatedBodySha256": "824f612654128445a41f72206e0331152700dfe2a4bc630d52c78018ecb612d4",
+      "originalState": "closed",
+      "originalAssignees": []
+    },
+    {
+      "number": 5,
+      "sprint": 1,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/5",
+      "state": "closed",
+      "assignees": [],
+      "milestone": 1,
+      "deadlineVietnam": "15/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "592d75f8eba0af1377f3c780d2729b348b980b7db0134c1bf3c6610358537fa7",
+      "updatedBodySha256": "ebde36666b04bf1f197fb858ff1b93effa2ab34a7d7e43db51851d0fecf54d79",
+      "originalState": "closed",
+      "originalAssignees": []
+    },
+    {
+      "number": 6,
+      "sprint": 1,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/6",
+      "state": "closed",
+      "assignees": [
+        "vtishan",
+        "longnhatdinhviet8-byte",
+        "kieudu-dlst"
+      ],
+      "milestone": 1,
+      "deadlineVietnam": "15/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "e3e608b8aa94b78b7d94cb012b58f206f416b3893812195e9f4f8f24607f6fd1",
+      "updatedBodySha256": "3c7922ab50573ba9f8e3ed2b2a65117aa67e5afdf511ce1e2c1843be50247748",
+      "originalState": "closed",
+      "originalAssignees": [
+        "vtishan",
+        "longnhatdinhviet8-byte",
+        "kieudu-dlst"
+      ]
+    },
+    {
+      "number": 7,
+      "sprint": 1,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/7",
+      "state": "closed",
+      "assignees": [
+        "vtishan",
+        "longnhatdinhviet8-byte",
+        "kieudu-dlst"
+      ],
+      "milestone": 1,
+      "deadlineVietnam": "15/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "54aa65765f4f124e4939fffb0b604449e4a4762a27f814b076695816d0e5b89d",
+      "updatedBodySha256": "154da32e2a038fb142a1db3619c82f1fe36ce46232753ed192a58840c536e6c9",
+      "originalState": "closed",
+      "originalAssignees": [
+        "vtishan",
+        "longnhatdinhviet8-byte",
+        "kieudu-dlst"
+      ]
+    },
+    {
+      "number": 8,
+      "sprint": 1,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/8",
+      "state": "closed",
+      "assignees": [
+        "longnhatdinhviet8-byte",
+        "kieudu-dlst"
+      ],
+      "milestone": 1,
+      "deadlineVietnam": "15/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "46540814a8bb29367dcfe7489880ca660e0866c729b18c6985def45a7d39730c",
+      "updatedBodySha256": "002a271b640da9e44f2ee8472f1052aa2dc6712aba586dc604eabab9752340ca",
+      "originalState": "closed",
+      "originalAssignees": [
+        "longnhatdinhviet8-byte",
+        "kieudu-dlst"
+      ]
+    },
+    {
+      "number": 9,
+      "sprint": 1,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/9",
+      "state": "closed",
+      "assignees": [
+        "longnhatdinhviet8-byte",
+        "kieudu-dlst"
+      ],
+      "milestone": 1,
+      "deadlineVietnam": "15/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "355d717cdc20f4ae464755be95bfe23b8d8b43444386a9c6847bac736820d7ab",
+      "updatedBodySha256": "25121e6846e70cd70bd21449d4d65c6c92654b71ed65e11d7a8b62b2b1c96b0a",
+      "originalState": "closed",
+      "originalAssignees": [
+        "longnhatdinhviet8-byte",
+        "kieudu-dlst"
+      ]
+    },
+    {
+      "number": 10,
+      "sprint": 1,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/10",
+      "state": "closed",
+      "assignees": [
+        "longnhatdinhviet8-byte",
+        "kieudu-dlst"
+      ],
+      "milestone": 1,
+      "deadlineVietnam": "15/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "30fc8809db32f2ebe1b82f4f0232a2180d78cd7e24f0f8722c7886466058b046",
+      "updatedBodySha256": "70853e217b02aa9c1cfcbcda9c12fa13acb016e559f6406fca224e648b6ee0cd",
+      "originalState": "closed",
+      "originalAssignees": [
+        "longnhatdinhviet8-byte",
+        "kieudu-dlst"
+      ]
+    },
+    {
+      "number": 11,
+      "sprint": 1,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/11",
+      "state": "closed",
+      "assignees": [
+        "vtishan",
+        "longnhatdinhviet8-byte"
+      ],
+      "milestone": 1,
+      "deadlineVietnam": "15/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "6040c3e85ae6ffa22675559219127b617ff0b151d85897f57865122793e943c1",
+      "updatedBodySha256": "707585acf9cf1873b2ee5cbbb0e13071d32b2a7b42dfa020ce33e7480d7edde2",
+      "originalState": "closed",
+      "originalAssignees": [
+        "vtishan",
+        "longnhatdinhviet8-byte"
+      ]
+    },
+    {
+      "number": 12,
+      "sprint": 1,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/12",
+      "state": "closed",
+      "assignees": [
+        "longnhatdinhviet8-byte",
+        "Tham2007",
+        "AnhTuancode-25"
+      ],
+      "milestone": 1,
+      "deadlineVietnam": "15/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "023b23c2ecfb76a6dbd9091fe9e3c9dfae17f8a6ecfb14543a79a682f1dccff4",
+      "updatedBodySha256": "fe8a65517281e42cd675f3fc0eccae4fef90d3a3ed557b389bf6f580908692f6",
+      "originalState": "closed",
+      "originalAssignees": [
+        "longnhatdinhviet8-byte",
+        "Tham2007",
+        "AnhTuancode-25"
+      ]
+    },
+    {
+      "number": 13,
+      "sprint": 2,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/13",
+      "state": "closed",
+      "assignees": [
+        "longnhatdinhviet8-byte",
+        "kieudu-dlst"
+      ],
+      "milestone": 2,
+      "deadlineVietnam": "22/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "03de2719e5103049611b2fbb6f0393715b931ffb4c3f4273b4eb3b10a2813fcb",
+      "updatedBodySha256": "255fe1789e0b5837be7b465d2036c43016e00ac68dcb0dbd3ab9b6945999d4df",
+      "originalState": "closed",
+      "originalAssignees": [
+        "longnhatdinhviet8-byte",
+        "kieudu-dlst"
+      ]
+    },
+    {
+      "number": 14,
+      "sprint": 2,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/14",
+      "state": "closed",
+      "assignees": [
+        "vtishan",
+        "kieudu-dlst"
+      ],
+      "milestone": 2,
+      "deadlineVietnam": "22/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "ebe592d45991457bbbf8805c60b4717dbb4782f2552a0a57e2498ba23e63b803",
+      "updatedBodySha256": "ca98846fc355ccc5da6602605d53a4db2212f9451acf5479527f24a811f51bb9",
+      "originalState": "closed",
+      "originalAssignees": [
+        "vtishan",
+        "kieudu-dlst"
+      ]
+    },
+    {
+      "number": 15,
+      "sprint": 2,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/15",
+      "state": "closed",
+      "assignees": [
+        "longnhatdinhviet8-byte",
+        "kieudu-dlst"
+      ],
+      "milestone": 2,
+      "deadlineVietnam": "22/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "bf7ba9da85469b666a00f21852e2229141c31a91296154f1cf8293ccc0cc7feb",
+      "updatedBodySha256": "10194d391f49d2720eb87fe90c55a1fa5f6af90d6353b4f587745ff0506601a5",
+      "originalState": "closed",
+      "originalAssignees": [
+        "longnhatdinhviet8-byte",
+        "kieudu-dlst"
+      ]
+    },
+    {
+      "number": 16,
+      "sprint": 2,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/16",
+      "state": "closed",
+      "assignees": [
+        "vtishan",
+        "longnhatdinhviet8-byte",
+        "Tham2007",
+        "AnhTuancode-25"
+      ],
+      "milestone": 2,
+      "deadlineVietnam": "22/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "0e2c39bd7e4f42b8325996e07dda57a0fed2100f4e25e799dc1a8f2555cfddda",
+      "updatedBodySha256": "05d08e8c8e560392922f56c9c686b3031c2ec4c0c352e79415c256a555ed041b",
+      "originalState": "closed",
+      "originalAssignees": [
+        "vtishan",
+        "longnhatdinhviet8-byte",
+        "Tham2007",
+        "AnhTuancode-25"
+      ]
+    },
+    {
+      "number": 17,
+      "sprint": 2,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/17",
+      "state": "closed",
+      "assignees": [
+        "vtishan",
+        "longnhatdinhviet8-byte",
+        "Tham2007",
+        "kieudu-dlst",
+        "AnhTuancode-25"
+      ],
+      "milestone": 2,
+      "deadlineVietnam": "22/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "c754d5a1491f42d658567e14b4063c95db860ec02545e9b51c7a42318b428610",
+      "updatedBodySha256": "bf5fab52130c9d394143a4c614bdc75d105eefd53efe50e64d4532b827fac32d",
+      "originalState": "closed",
+      "originalAssignees": [
+        "vtishan",
+        "longnhatdinhviet8-byte",
+        "Tham2007",
+        "kieudu-dlst",
+        "AnhTuancode-25"
+      ]
+    },
+    {
+      "number": 19,
+      "sprint": 3,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/19",
+      "state": "closed",
+      "assignees": [],
+      "milestone": 4,
+      "deadlineVietnam": "29/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "638d482a3a96e860671d44ee0f97c4f72369fae1072bcc4526f594dd9cd93a3c",
+      "updatedBodySha256": "8c27e39db3f43e31f778d846a7e09ce285e3becf542c7e2403f7a7679a3a8cf3",
+      "originalState": "closed",
+      "originalAssignees": []
+    },
+    {
+      "number": 20,
+      "sprint": 3,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/20",
+      "state": "closed",
+      "assignees": [],
+      "milestone": 4,
+      "deadlineVietnam": "29/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "7c1cc14e92e507cf849c02afdbfe954415d6335555bcc8afab98f5a1a912c2d1",
+      "updatedBodySha256": "564cc83594a470bdd088dacc01fa964cdb351b10dc9673b8760b75f93d22c300",
+      "originalState": "closed",
+      "originalAssignees": []
+    },
+    {
+      "number": 21,
+      "sprint": 3,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/21",
+      "state": "closed",
+      "assignees": [],
+      "milestone": 4,
+      "deadlineVietnam": "29/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "80bf6d6722bca996c7740f11f65ff132f2babd5d21419e410bf58edf15b0b1f3",
+      "updatedBodySha256": "3b990fbe12906a28832743292976de437b3a781a2e90c5c2a4d82385f4a34924",
+      "originalState": "closed",
+      "originalAssignees": []
+    },
+    {
+      "number": 22,
+      "sprint": 3,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/22",
+      "state": "closed",
+      "assignees": [],
+      "milestone": 4,
+      "deadlineVietnam": "29/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "277d3a8731775b7a497f1c1392dd84fb763a57a4855c6f5a4d16337dd489669f",
+      "updatedBodySha256": "78b289d9a94c6adf472efb86511c1022bc0bac994b4fb0f22c6ed3ae7f6671b9",
+      "originalState": "closed",
+      "originalAssignees": []
+    },
+    {
+      "number": 23,
+      "sprint": 3,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/23",
+      "state": "closed",
+      "assignees": [],
+      "milestone": 4,
+      "deadlineVietnam": "29/10/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": true,
+      "originalBodySha256": "288e31034c7dbac6845d2766233cf3d60109be7d618ffb1d41e3b030a652277c",
+      "updatedBodySha256": "f629653d09c3249399b63e1889436c8b21b7380a535d55ac58a73377dae62a7f",
+      "originalState": "closed",
+      "originalAssignees": []
+    },
+    {
+      "number": 24,
+      "sprint": 4,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/24",
+      "state": "open",
+      "assignees": [
+        "vtishan"
+      ],
+      "milestone": 3,
+      "deadlineVietnam": "05/11/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": null,
+      "originalBodySha256": "5469891e0f3ae407121cd1086a6075582fed4638b8357204f74d6bfe81edd79d",
+      "updatedBodySha256": "cfb2e1330cd9f5a085ea2ae56ece7afcd1addf4860c375f6f8a12f4c5e566599",
+      "originalState": "open",
+      "originalAssignees": [
+        "vtishan"
+      ]
+    },
+    {
+      "number": 25,
+      "sprint": 4,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/25",
+      "state": "open",
+      "assignees": [
+        "AnhTuancode-25"
+      ],
+      "milestone": 3,
+      "deadlineVietnam": "05/11/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": null,
+      "originalBodySha256": "ff11138b46e56e4548db9ed1cd1a63a68a4ecf89f985c4797ec2f44099f34490",
+      "updatedBodySha256": "eee7ebca31781d677b01b4d9bc6ccfaefbde9aedc364767910d5c16105f9b373",
+      "originalState": "open",
+      "originalAssignees": [
+        "AnhTuancode-25"
+      ]
+    },
+    {
+      "number": 26,
+      "sprint": 4,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/26",
+      "state": "open",
+      "assignees": [
+        "longnhatdinhviet8-byte"
+      ],
+      "milestone": 3,
+      "deadlineVietnam": "05/11/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": null,
+      "originalBodySha256": "644d399e499b6b697d871f030c0c13c179510bed8231d6024723eddad00b59d0",
+      "updatedBodySha256": "b9b7c7160fb5aabfebf94a61c090e3063e32a3b02022ef63ba2de0e4ccaf54b2",
+      "originalState": "open",
+      "originalAssignees": [
+        "longnhatdinhviet8-byte"
+      ]
+    },
+    {
+      "number": 27,
+      "sprint": 4,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/27",
+      "state": "open",
+      "assignees": [
+        "Tham2007"
+      ],
+      "milestone": 3,
+      "deadlineVietnam": "05/11/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": null,
+      "originalBodySha256": "ac33bce3a0e02b6d5e585e1c1528cf5e39e8fb9309d61e580382285a98c2cda2",
+      "updatedBodySha256": "8a0e9822f9815bbf2bcd8a9c692723966118860df159fd0737e99ed2e600cdb5",
+      "originalState": "open",
+      "originalAssignees": [
+        "Tham2007"
+      ]
+    },
+    {
+      "number": 28,
+      "sprint": 4,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/28",
+      "state": "open",
+      "assignees": [
+        "kieudu-dlst"
+      ],
+      "milestone": 3,
+      "deadlineVietnam": "05/11/2026 23:59:59 +07:00",
+      "historicalTaskBodyPreserved": null,
+      "originalBodySha256": "e07f495c5541bed6d6d57d15464943e431ebb9b0e0185091ed5ee5f7174653f5",
+      "updatedBodySha256": "dfb6ce9b4a01545204cab541ebff0a24733a73bc9759d15650264190db9c3514",
+      "originalState": "open",
+      "originalAssignees": [
+        "kieudu-dlst"
+      ]
+    }
+  ],
+  "projects": {
+    "status": "not_updated",
+    "existenceVerified": false,
+    "apiBlocker": "INSUFFICIENT_SCOPES: read:project/project missing",
+    "uiBlocker": "Computer Use stopped: browser URL policy enforcement unsupported for current Windows Coc Coc browser",
+    "permissionsChanged": false
+  },
+  "verification": "REST GET readback verified 27 issues and 4 milestones; no duplicate issues; prior states/assignees retained",
+  "deadlineStorageNote": "GitHub milestones normalize to a date at 00:00 UTC; Vietnam 23:59:59 is recorded in each issue and description, not as the milestone timestamp."
+}

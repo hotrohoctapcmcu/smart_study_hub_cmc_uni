@@ -2,10 +2,10 @@ import React from 'react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import apiClient, { backendOrigin } from '../api/apiClient';
+import apiClient from '../api/apiClient';
 import { AppProvider } from '../components/common/ui';
 import Documents from '../pages/Documents/Documents';
-import { adaptCourse, extractSlideImages, studyStats } from '../utils/studyMaterials';
+import { adaptCourse, studyStats } from '../utils/studyMaterials';
 import { studyStorageKey } from '../hooks/useStudyProgress';
 import * as fileUtils from '../utils/files';
 
@@ -39,27 +39,27 @@ beforeEach(() => {
 afterEach(() => { apiClient.defaults.adapter = adapter; localStorage.clear(); });
 
 describe('Study library and viewer', () => {
-  it('reads EDUX base64 images and cached image files without treating encoded data as URLs or text', () => {
-    expect(extractSlideImages({ image_base64: image.split(',')[1] })).toEqual([image]);
-    expect(extractSlideImages({ data: { content: JSON.stringify({ image_base64: image }) } })).toEqual([image]);
-    expect(extractSlideImages({ imageBase64: image, thumbnail: '/small.png' })[0]).toBe(image);
-    expect(extractSlideImages({ images: ['/api/v1/learning/images/abc.png'] })).toEqual([`${backendOrigin}/api/v1/learning/images/abc.png`]);
-    expect(extractSlideImages({ image_base64: 'not-an-image', imageBase64: 'data:image/svg+xml;base64,PHN2Zz4=' })).toEqual([]);
-    const adapted = adaptCourse({ id: 'image-course', chapters: [{ id: 'c', documents: [{ id: 's', content: image.split(',')[1] }] }] });
-    expect(adapted.chapters[0].slides[0]).toMatchObject({ text: '', images: [image] });
+  it('ignores EDUX image fields and image-only content', () => {
+    const adapted = adaptCourse({ id: 'image-course', chapters: [{ id: 'c', documents: [
+      { id: 's', content: image.split(',')[1], image_base64: image, images: [image] },
+      { id: 'text', content: '<p>Kiến thức thật.</p><img src="' + image + '">', imageUrl: '/old.png' },
+    ] }] });
+    expect(adapted.chapters[0].slides[0]).toMatchObject({ text: '', images: [] });
+    expect(adapted.chapters[0].slides[1]).toMatchObject({ text: 'Kiến thức thật.', images: [] });
   });
-  it('opens subject, then chapter, then slide using real source images without opening a file first', async () => {
+  it('opens subject, chapter and slide using lecture text', async () => {
     mount();
     expect(screen.getByRole('tab', { name: 'Bài giảng' }).getAttribute('aria-selected')).toBe('true');
     const card = await screen.findByRole('button', { name: 'Mở môn Cơ sở dữ liệu' });
-    expect(within(card).getByRole('img').getAttribute('src')).toBe(image);
+    expect(within(card).queryByRole('img')).toBeNull();
     fireEvent.click(card);
     expect(screen.queryByRole('dialog')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Mở Tổng quan cơ sở dữ liệu' }));
     expect(screen.getAllByRole('button', { name: /^Mở slide/ })).toHaveLength(2);
     fireEvent.click(screen.getByRole('button', { name: 'Mở slide 1: Khái niệm dữ liệu' }));
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getAllByRole('img').some(img => img.getAttribute('src') === image)).toBe(true);
+    expect(within(dialog).queryByRole('img')).toBeNull();
+    expect(within(dialog).getAllByText('Dữ liệu mô tả các sự vật.').length).toBeGreaterThan(0);
     expect(screen.getByLabelText('route').textContent).toContain('slide=same-id');
     expect(requests.some(c => c.url.endsWith('/file'))).toBe(false);
   });
@@ -160,12 +160,6 @@ describe('Study library and viewer', () => {
   });
 });
 describe('Existing material payload compatibility', () => {
-  it('reuses images in direct fields, HTML, Markdown and editor JSON and rejects executable URLs', () => {
-    expect(extractSlideImages({ imageUrl: '/lecture/a.png', rawContent: '<img src="https://edux.example/b.jpg"><script>bad()</script>' })).toEqual([`${backendOrigin}/lecture/a.png`, 'https://edux.example/b.jpg']);
-    expect(extractSlideImages(JSON.stringify({ type: 'doc', content: [{ type: 'image', attrs: { src: 'https://edux.example/c.png' } }] }))).toEqual(['https://edux.example/c.png']);
-    expect(extractSlideImages('![Slide](https://edux.example/d.png)')).toEqual(['https://edux.example/d.png']);
-    expect(extractSlideImages({ imageUrl: 'javascript:alert(1)', rawContent: '<img src="data:text/html,bad">' })).toEqual([]);
-  });
   it('distinguishes opened from learned and isolates repeated slide IDs across chapters', () => {
     const normalized = adaptCourse(course), first = normalized.chapters[0].slides[0], second = normalized.chapters[1].slides[0];
     expect(first.key).not.toBe(second.key);

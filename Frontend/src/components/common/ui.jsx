@@ -144,6 +144,7 @@ export function Tabs({ items, value, onChange }) {
         return (
           <button
             key={key}
+            type="button"
             role="tab"
             aria-selected={value === key}
             className={value === key ? "active" : ""}

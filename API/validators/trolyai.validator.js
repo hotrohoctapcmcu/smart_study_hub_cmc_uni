@@ -113,6 +113,8 @@ function validatePlanSessions(output, constraints) {
             title,
             subject,
             reason: optionalText(candidate.reason, 300),
+            ...(candidate.objective !== undefined ? { objective: optionalText(candidate.objective, 500) } : {}),
+            ...(candidate.selfTest !== undefined ? { selfTest: optionalText(candidate.selfTest, 1000) } : {}),
             assignmentId: candidate.assignmentId ?? null,
             examId: candidate.examId ?? null,
             durationMinutes: minutes(end) - minutes(start),

@@ -1,0 +1,33 @@
+{
+  "date": "2026-11-04",
+  "timezone": "Asia/Saigon",
+  "applicationDatabaseModified": false,
+  "scope": ["chat", "explanation", "question generation", "text and course summaries", "flashcards", "quiz grading", "weakness analysis", "study and exam planning", "answer checking", "leave drafts", "progress advice", "difficult notes", "Pomodoro goals", "notebook AI content"],
+  "fixes": [
+    "Use the current web request payload and select the default guest model published by the provider page",
+    "Bound bootstrap, request and retry by one generation deadline",
+    "Expose unchecked, online and unavailable connection states based on actual requests",
+    "Propagate HTTP disconnect cancellation through AI controllers and services",
+    "Allow stopping AI Tutor requests, preserve drafts and ignore late responses",
+    "Align course controls and composer content on desktop and mobile"
+  ],
+  "verification": {
+    "backend": { "passed": 140, "failed": 0, "provider": "local HTTP fixtures and service stubs" },
+    "frontend": { "passed": 104, "failed": 0, "files": 10 },
+    "frontendApiHttpIntegration": { "passed": 9, "failed": 0, "database": "temporary SQLite" },
+    "chromiumSmoke": { "passed": 13, "failed": 0, "provider": "mock", "viewports": ["desktop", "mobile"], "screenshotsInspected": true },
+    "productionBuild": { "passed": true, "seconds": 14.97 }
+  },
+  "realProvider": {
+    "data": "synthetic prompts only",
+    "checks": [
+      { "name": "Vietnamese explanation of software engineering", "passed": true, "elapsedMs": 18489 },
+      { "name": "Two JSON quiz questions grounded in supplied JOIN source", "passed": true, "elapsedMs": 41430 },
+      { "name": "Course summary with 25-second budget", "passed": false, "code": "GEMINI_TIMEOUT", "elapsedMs": 25013 },
+      { "name": "Flashcards after that summary", "skipped": true, "reason": "Summary did not complete within the live test budget" },
+      { "name": "Task goal breakdown with 25-second budget", "passed": false, "code": "GEMINI_TIMEOUT" }
+    ],
+    "limitation": "Controlled test success does not prove all complex requests succeed on the guest provider. Complex live checks still hit their 25-second budget."
+  },
+  "runtime": "The already-running Electron backend must restart to load the changed server modules. The frontend production build has been refreshed."
+}

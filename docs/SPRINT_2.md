@@ -1,5 +1,13 @@
 # Sprint 2 — Học liệu, không gian học tập và tích hợp dữ liệu
 
+## Lịch và deadline được bổ sung — 05/11/2026
+
+**Lịch Sprint 2: 16/10/2026–22/10/2026. Báo cáo thứ Năm 22/10/2026. Deadline: 23:59:59 ngày 22/10/2026 (Asia/Saigon, UTC+7).**
+
+Quy ước deadline cuối ngày vì lịch yêu cầu chưa ấn định giờ báo cáo; không phải giờ họp. Ngày triển khai/kiểm thử thực tế trong bằng chứng được giữ nguyên.
+
+Milestone: [Sprint 2](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/2). Giữ nguyên nhiệm vụ, phân công và trạng thái lịch sử bên dưới.
+
 Tổng hợp ngày **02/11/2026** từ báo cáo tiến độ và đợt hoàn thiện **27/10/2026**. Nội dung thể hiện kết quả tại mốc Sprint 2; phần React, học liệu mở rộng và sổ tay mới được ghi ở [Sprint 4](SPRINT_4.md).
 
 ## Mục tiêu và kết quả

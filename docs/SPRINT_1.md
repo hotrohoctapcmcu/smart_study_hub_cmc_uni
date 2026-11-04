@@ -1,5 +1,13 @@
 # Sprint 1 — Nền tảng và quản lý học tập cốt lõi
 
+## Lịch và deadline được bổ sung — 05/11/2026
+
+**Lịch Sprint 1: 25/09/2026–15/10/2026. Báo cáo thứ Năm 15/10/2026. Deadline: 23:59:59 ngày 15/10/2026 (Asia/Saigon, UTC+7).**
+
+Quy ước deadline cuối ngày vì lịch yêu cầu chưa ấn định giờ báo cáo; không phải giờ họp. Ngày triển khai/kiểm thử thực tế trong bằng chứng được giữ nguyên.
+
+Milestone: [Sprint 1](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/1). Giữ nguyên nhiệm vụ, phân công và trạng thái lịch sử bên dưới.
+
 Tổng hợp ngày **02/11/2026** từ báo cáo Sprint 1 ngày 22/10 và phân công GitHub. Đây là báo cáo lịch sử; trạng thái bản cập nhật được theo dõi tại [Sprint 4](SPRINT_4.md).
 
 ## Mục tiêu và phạm vi

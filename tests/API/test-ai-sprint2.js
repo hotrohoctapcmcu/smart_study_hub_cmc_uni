@@ -15,24 +15,30 @@ test("Sprint 2 AI: context, planning, advice and provider failures", async t => 
     let delay = false;
     let oversized = false;
     let afterGenerate = null;
+    let streamFrames = null;
+    let replies = [];
+    let parallelGate = null;
     const calls = [];
+    const cancelledCalls = [];
     const provider = http.createServer((req, res) => {
         if (req.method === "GET" && req.url === "/app") {
             res.writeHead(200, { "Content-Type": "text/html", "Set-Cookie": ["NID=anonymous; Path=/", "__Secure-1PSID=must-be-ignored; Path=/"] });
-            return res.end('<script>window.WIZ_global_data={"cfb2h":"guest-build","FdrFJe":"guest-fsid"}</script>');
+            return res.end('<script>window.WIZ_global_data={"cfb2h":"guest-build","FdrFJe":"guest-fsid","flags":"{\\"45744962\\":\\"0123456789abcdef\\"}"}</script>');
         }
         let body = "";
         req.on("data", chunk => { body += chunk; });
         req.on("end", async () => {
             const form = new URLSearchParams(body);
             const payload = JSON.parse(JSON.parse(form.get("f.req"))[1]);
-            calls.push({ url: req.url, key: req.headers["x-goog-api-key"], cookie: req.headers.cookie || "", prompt: payload[0][0] });
+            res.on('close', () => { if (!res.writableEnded) cancelledCalls.push(payload[0][0]); });
+            calls.push({ url: req.url, key: req.headers["x-goog-api-key"], cookie: req.headers.cookie || "", prompt: payload[0][0], conversation: payload[2], payload, requestId: req.headers['x-goog-ext-525005358-jspb'], modelHeader: req.headers['x-goog-ext-525001261-jspb'], contentLength: req.headers['content-length'], bodyBytes: Buffer.byteLength(body) });
+            if (parallelGate) await parallelGate;
             if (delay) return;
             if (oversized) { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('x'.repeat(2 * 1024 * 1024 + 1)); }
             if (afterGenerate) { const callback = afterGenerate; afterGenerate = null; await callback(); }
             res.writeHead(providerStatus, { "Content-Type": "text/plain" });
             res.end(providerStatus === 200
-                ? JSON.stringify([["wrb.fr", null, JSON.stringify([null, ["cid", "rid"], null, null, [["rcid", [reply]]]])]])
+                ? (streamFrames || [replies.length ? replies.shift() : reply]).map(text => JSON.stringify([["wrb.fr", null, JSON.stringify([null, ["cid", "rid"], null, null, [["rcid", [text]]]])]])).join('\n')
                 : "provider-error-with-secret");
         });
     });
@@ -134,17 +140,70 @@ test("Sprint 2 AI: context, planning, advice and provider failures", async t => 
         assert.equal(status.body.data.mode, "web-guest");
         assert.equal(status.body.data.guest, true);
         assert.equal(status.body.data.authenticated, false);
+        assert.equal(status.body.data.ready, false);
+        assert.equal(status.body.data.available, null);
+        assert.equal(status.body.data.connection, 'unchecked');
         assert.ok(!JSON.stringify(status.body).includes("must-be-ignored"));
         const result = await call("/ask", { question: "Lịch của tôi?", conversationId: "__proto__" });
         assert.equal(result.status, 200);
+        assert.equal((await call('/status')).body.data.available, true);
         assert.equal(calls.at(-1).key, undefined);
         assert.ok(!calls.at(-1).url.includes("must-be-ignored"));
         assert.ok(!calls.at(-1).cookie.includes("PSID"));
         assert.ok(!calls.at(-1).cookie.includes("must-be-ignored"));
+        const sent = calls.at(-1);
+        assert.equal(sent.payload.length, 81);
+        assert.deepEqual(sent.payload[0].slice(1), [0, null, null, null, null, 0]);
+        assert.deepEqual(sent.payload[1], ['vi']);
+        assert.equal(sent.payload[2].length, 10);
+        for (const index of [7, 10, 27, 68, 79, 80]) assert.equal(sent.payload[index], 1);
+        assert.deepEqual(JSON.parse(sent.requestId), [sent.payload[59], 1]);
+        const model = JSON.parse(sent.modelHeader);
+        assert.equal(model[4], '0123456789abcdef', 'model is discovered from the guest page, not guessed');
+        assert.equal(model[14], sent.payload[79]);
+        assert.equal(model[15], sent.payload[80]);
+        assert.match(model[16], /^[A-F0-9-]{36}$/);
+        assert.match(sent.payload[59], /^[A-F0-9-]{36}$/);
+        assert.equal(Number(sent.contentLength), sent.bodyBytes);
+        assert.equal(new URL(sent.url, baseUrl).searchParams.get('hl'), 'vi');
         assert.ok(calls.at(-1).prompt.includes("Chưa làm"));
         assert.ok(calls.at(-1).prompt.includes("Sinh viên test"));
         assert.ok(!calls.at(-1).prompt.includes("Không được thấy"));
         assert.ok(!fs.readFileSync(path.join(directory, "gemini", "guest-session.json"), "utf8").includes("must-be-ignored"));
+    });
+    await t.test('JSON uses the final nonempty stream snapshot even when an intermediate draft is longer', async () => {
+        streamFrames = ['{"broken":"' + 'unfinished '.repeat(100), '{"ok":true}', ''];
+        try { assert.deepEqual(await gemini.generateJson('Test final snapshot', { retryMalformed: false }), { ok: true }); }
+        finally { streamFrames = null; }
+    });
+    await t.test('one JSON repair includes the actual invalid draft and validates the repaired result', async () => {
+        const draft = '{"cards":[{"front":"quote "bad"","back":"source"}]}';
+        const expected = { cards: [{ front: 'quote "bad"', back: 'C:\\tmp\nconst x = { a: 1 };' }] };
+        replies = [draft, JSON.stringify(expected)];
+        const before = calls.length;
+        assert.deepEqual(await gemini.generateJson('Only use supplied source', { validate: value => Array.isArray(value?.cards) }), expected);
+        assert.equal(calls.length - before, 2); assert.ok(calls.at(-1).prompt.includes(draft));
+        assert.ok(calls.at(-1).prompt.includes('GEMINI_JSON'));
+    });
+    await t.test('parallel summary workers issue four independent real HTTP requests before any reply', async () => {
+        const { summarizeInBatches } = require('../../API/utils/course-summary-ai');
+        const cache = new Map(), before = calls.length;
+        let release, metadata;
+        parallelGate = new Promise(resolve => { release = resolve; });
+        const pending = summarizeInBatches({ subject: 'HTTP parallel fixture' }, 'Ordered chapter content. '.repeat(140), {
+            chunkChars: 512, parallelism: 4,
+            load: key => cache.get(key), save: (key, value) => cache.set(key, value), onFormat: value => { metadata = value; },
+            ask: prompt => gemini.ask(prompt, { timeoutMs: 3000, retry: false })
+        });
+        try {
+            const deadline = Date.now() + 2000;
+            while (calls.length - before < 4 && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5));
+            assert.equal(calls.length - before, 4, 'four HTTP POSTs overlap, rather than serial awaits');
+        } finally { release(); parallelGate = null; }
+        assert.equal(await pending, reply);
+        assert.ok(metadata.totalParts > 4); assert.equal(metadata.parallelism, 4);
+        assert.equal(calls.length - before, metadata.totalParts + 1, 'one call per part, one final merge');
+        for (const entry of calls.slice(before)) assert.deepEqual(entry.conversation, ['', '', '', null, null, null, null, null, null, ''], 'worker chats do not share conversation state');
     });
     await t.test("input errors never call Gemini", async () => {
         const count = calls.length;
@@ -291,6 +350,42 @@ test("Sprint 2 AI: context, planning, advice and provider failures", async t => 
         await assert.rejects(gemini.ask('x'.repeat(4000), { maxInputChars: 4000, retry: false }),
             error => error.code === 'GEMINI_INPUT_SIZE' && error.statusCode === 413);
         assert.equal(calls.length, before);
+    });
+    await t.test('one deadline covers retries and timeout updates connection status', async () => {
+        delay = true;
+        const before = calls.length, started = Date.now();
+        try {
+            await assert.rejects(gemini.ask('Deadline budget', { timeoutMs: 40 }), error => error.code === 'GEMINI_TIMEOUT');
+            assert.equal(calls.length - before, 1, 'an exhausted deadline must not start another provider request');
+            assert.ok(Date.now() - started < 500);
+            const status = (await call('/status')).body.data;
+            assert.equal(status.ready, false);
+            assert.equal(status.available, false);
+            assert.equal(status.error.code, 'GEMINI_TIMEOUT');
+        } finally { delay = false; }
+        await gemini.ask('Recovery');
+        assert.equal(gemini.getStatus().available, true);
+        assert.equal(gemini.getStatus().error, null);
+    });
+    await t.test('disconnecting chat cancels the provider request and never persists a late answer', async () => {
+        const before = calls.length;
+        const controller = new AbortController();
+        delay = true;
+        try {
+            const pending = fetch(baseUrl + '/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: 'Cancelled question', conversationId: 'cancelled-http-chat' }), signal: controller.signal });
+            const rejected = assert.rejects(pending, error => error.name === 'AbortError');
+            const deadline = Date.now() + 1000;
+            while (calls.length === before && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5));
+            assert.equal(calls.length, before + 1);
+            controller.abort();
+            await rejected;
+            const cancelledDeadline = Date.now() + 500;
+            while (!cancelledCalls.some(prompt => prompt.includes('Cancelled question')) && Date.now() < cancelledDeadline) await new Promise(resolve => setTimeout(resolve, 5));
+            assert.ok(cancelledCalls.some(prompt => prompt.includes('Cancelled question')), 'the provider socket must close when HTTP chat disconnects');
+            assert.equal((await query("SELECT * FROM AiConversations WHERE conversation_id='cancelled-http-chat'")).length, 0);
+            assert.equal(calls.length, before + 1, 'cancelling must not retry');
+        } finally { controller.abort(); delay = false; }
     });
     await t.test("wire response overflow keeps its size error code for automatic adaptation", async () => {
         oversized = true;

@@ -1,0 +1,67 @@
+{
+  "date": "2026-11-04",
+  "timezone": "Asia/Saigon",
+  "provider": "mock",
+  "passed": 20,
+  "failed": 0,
+  "errors": [],
+  "layout": [
+    {
+      "name": "desktop gives most of the workspace to the answer",
+      "height": 701,
+      "pageHeight": 931,
+      "ratio": 0.7529538131041891,
+      "answerWidth": 1146,
+      "logWidth": 1212,
+      "composerHeight": 94
+    },
+    {
+      "name": "desktop reading mode enlarges the answer without losing content",
+      "height": 870,
+      "composerHidden": true,
+      "tail": true
+    },
+    {
+      "name": "laptop gives most of the workspace to the answer",
+      "height": 421,
+      "pageHeight": 651,
+      "ratio": 0.6466973886328725,
+      "answerWidth": 986,
+      "logWidth": 1052,
+      "composerHeight": 94
+    },
+    {
+      "name": "laptop reading mode enlarges the answer without losing content",
+      "height": 590,
+      "composerHidden": true,
+      "tail": true
+    },
+    {
+      "name": "mobile gives most of the workspace to the answer",
+      "height": 440,
+      "pageHeight": 709,
+      "ratio": 0.6205923836389281,
+      "answerWidth": 346,
+      "logWidth": 392,
+      "composerHeight": 94
+    },
+    {
+      "name": "mobile reading mode enlarges the answer without losing content",
+      "height": 653,
+      "composerHidden": true,
+      "tail": true
+    }
+  ],
+  "screenshots": [
+    "ai-desktop-reading.png",
+    "ai-desktop-end.png",
+    "ai-desktop.png",
+    "ai-laptop-reading.png",
+    "ai-laptop-end.png",
+    "ai-laptop.png",
+    "ai-mobile-reading.png",
+    "ai-mobile-end.png",
+    "ai-mobile.png",
+    "ai-notebook.png"
+  ]
+}

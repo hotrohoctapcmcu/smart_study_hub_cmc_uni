@@ -1,0 +1,80 @@
+.pomodoro-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.pomodoro-layout .pomodoro-widget.focus-timer-card {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  max-width: none;
+}
+.pomodoro-layout .focus-timer-card > .card-content { padding: 18px 22px; }
+.pomodoro-layout .pomodoro-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+.pomodoro-layout .pomodoro-heading img { width: 58px; height: 58px; object-fit: contain; }
+.pomodoro-layout .pomodoro-heading h2 { margin: 0 0 4px; font-size: 15px; }
+.pomodoro-layout .pomodoro-heading p { margin: 0; color: var(--text-secondary); font-size: 11px; }
+.pomodoro-layout .focus-timer-card .tabs { justify-content: center; width: fit-content; margin: 0 auto; }
+.pomodoro-layout .focus-timer-card .timer-value {
+  margin: 12px 0 5px;
+  font-size: clamp(52px, 6vw, 76px);
+  line-height: 1.1;
+  letter-spacing: -3px;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary-ink);
+}
+.pomodoro-layout .focus-timer-card .timer-mode { margin: 8px 0 12px; font-size: 11px; line-height: 1.6; }
+.pomodoro-layout .pomodoro-controls { justify-content: center; flex-wrap: wrap; margin: 0; gap: 8px; }
+.pomodoro-layout .focus-timer-card .hint { margin: 12px 0; font-size: 10px; line-height: 1.7; }
+.pomodoro-layout .pomodoro-today { padding: 10px 0 0; margin-top: 10px; gap: 24px; font-size: 10px; }
+.pomodoro-layout .pomodoro-today strong { font-size: 19px; }
+.pomodoro-layout .pomodoro-history > .card-content { max-height: 440px; overflow-y: auto; }
+.pomodoro-layout .pomodoro-history .empty-state { min-height: 210px; padding: 20px 12px; }
+.pomodoro-layout .pomodoro-history .empty-state img { width: 64px; height: 64px; }
+.pomodoro-layout .pomodoro-history .empty-state p { max-width: 280px; line-height: 1.8; }
+.pomodoro-layout .pomodoro-history-status { display: block; margin-top: 4px; color: var(--text-secondary); }
+.pomodoro-side { display: grid; gap: 16px; min-width: 0; }
+.pomodoro-presets { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.pomodoro-active-goal { padding: 8px 10px; margin: 8px 0; background: var(--primary-soft); border-radius: 9px; font-size: 11px; overflow-wrap: anywhere; }
+.pomodoro-plan .card-content { display: grid; gap: 12px; }
+.pomodoro-plan .hint { margin: 0; font-size: 10px; }
+.pomodoro-task-suggestions { display: grid; gap: 5px; }
+.pomodoro-task-suggestions > small, .pomodoro-resume > small { color: var(--text-secondary); }
+.pomodoro-task-suggestions button { text-align: left; color: var(--primary-ink); background: var(--primary-soft); padding: 7px 9px; border-radius: 8px; font-size: 10px; overflow-wrap: anywhere; }
+.pomodoro-task-suggestions button small { color: var(--text-secondary); }
+.pomodoro-resume { padding: 10px; background: var(--success-soft); border-radius: 10px; }
+.pomodoro-resume p, .pomodoro-result p, .pomodoro-week p { font-size: 11px; line-height: 1.7; overflow-wrap: anywhere; }
+.pomodoro-history .field { margin-bottom: 12px; }
+.pomodoro-history .history-row { gap: 12px; align-items: start; }
+.pomodoro-history .history-row > span { min-width: 0; overflow-wrap: anywhere; }
+.pomodoro-history .history-row > strong { white-space: nowrap; }
+.pomodoro-history-notes { margin-top: 7px; font-size: 10px; line-height: 1.8; }
+.pomodoro-history-notes button { color: var(--primary-ink); }
+.pomodoro-complete-task { display: flex; align-items: start; gap: 8px; margin-top: 12px; font-size: 12px; }
+.pomodoro-complete-task input { width: auto; flex-shrink: 0; margin-top: 2px; }
+.pomodoro-layout ~ .modal-overlay .field, .pomodoro-layout > .modal-overlay .field { margin: 12px 0; }
+.pomodoro-ai-goals { padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--primary-soft); font-size: 11px; line-height: 1.7; }
+.pomodoro-ai-goals p { margin: 0 0 8px; }
+.pomodoro-ai-goals ol { margin: 8px 0; padding-left: 18px; }
+.pomodoro-ai-goals li { margin-bottom: 9px; overflow-wrap: anywhere; }
+.pomodoro-ai-goals small, .pomodoro-micro-goals small { display: block; color: var(--text-secondary); }
+.pomodoro-micro-goals { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 11px; line-height: 1.7; }
+.pomodoro-micro-goals label { display: flex; align-items: start; gap: 8px; overflow-wrap: anywhere; }
+.pomodoro-micro-goals input { width: auto; flex-shrink: 0; margin-top: 4px; }
+@media (max-width: 720px) {
+  .pomodoro-layout { grid-template-columns: minmax(0, 1fr); }
+  .pomodoro-layout .focus-timer-card > .card-content { padding: 16px; }
+  .pomodoro-layout .pomodoro-history > .card-content { max-height: 320px; }
+}
+@media (max-height: 750px) and (min-width: 721px) {
+  .pomodoro-layout .pomodoro-heading img { width: 42px; height: 42px; }
+  .pomodoro-layout .focus-timer-card .timer-value { font-size: 60px; margin-top: 10px; }
+}

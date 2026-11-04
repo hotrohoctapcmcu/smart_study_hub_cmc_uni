@@ -53,6 +53,8 @@ async function luuBaiTapEDUX(userId, assignments, { preserveExisting = false } =
                     chapter       = excluded.chapter,
                     description   = excluded.description,
                     status        = CASE WHEN @hasStatus THEN excluded.status ELSE EduxAssignments.status END,
+                    completed_at  = CASE WHEN @hasStatus AND excluded.status NOT IN ('Hoàn thành','Đã hoàn thành','COMPLETED')
+                                         THEN NULL ELSE EduxAssignments.completed_at END,
                     priority      = excluded.priority,
                     highest_score = excluded.highest_score,
                     doc_done      = excluded.doc_done,
@@ -149,6 +151,8 @@ async function layBaiTapEDUX(userId, opts = {}) {
         source: 'EDUX',
         isLocalDraft: false,
         syncedAt: row.synced_at,
+        // SQLite datetime('now') is UTC. Do not label the sync time as completion.
+        completedAt: row.completed_at ? row.completed_at.replace(' ', 'T') + 'Z' : null,
         ...(opts.includeHidden && { isHidden: Number(row.is_hidden) === 1 })
     }));
 }
@@ -179,7 +183,9 @@ async function capNhatTrangThaiBaiTapEDUX(userId, externalId, trangThai) {
 
     await executeQuery(`
         UPDATE EduxAssignments
-        SET status = @st, updated_at = datetime('now')
+        SET status = @st, updated_at = datetime('now'),
+            completed_at = CASE WHEN @st IN ('Hoàn thành','Đã hoàn thành','COMPLETED')
+                THEN COALESCE(completed_at, datetime('now')) ELSE NULL END
         WHERE user_id = @uid AND external_id = @ext
     `, { st: trangThai || 'Chưa làm', uid, ext: String(externalId) });
 

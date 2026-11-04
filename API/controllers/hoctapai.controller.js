@@ -1,17 +1,17 @@
 'use strict';
 
-const { dataHandler, binaryHandler } = require('../utils/response');
+const { dataHandler, binaryHandler, cancellableDataHandler } = require('../utils/response');
 
 function createHocTapAiController(service) {
     return {
         conversations: dataHandler(() => service.conversations()),
         conversation: dataHandler(req => service.conversation(req.params.id)),
         quizzes: dataHandler(() => service.quizzes()),
-        generateQuiz: dataHandler(req => service.generateQuiz(req.body)),
+        generateQuiz: cancellableDataHandler((req, options) => service.generateQuiz(req.body, options)),
         quiz: dataHandler(req => service.quiz(req.params.id)),
         submitQuiz: dataHandler(req => service.submitQuiz(req.params.id, req.body)),
         weaknesses: dataHandler(() => service.weaknesses()),
-        analyzeWeaknesses: dataHandler(() => service.analyzeWeaknesses()),
+        analyzeWeaknesses: cancellableDataHandler((req, options) => service.analyzeWeaknesses(options)),
         confirmExamPlan: dataHandler(req => service.confirmExamPlan(req.body)),
         leaveDrafts: dataHandler(() => service.leaveDrafts()),
         createLeave: dataHandler(req => service.saveLeave(null, req.body)),

@@ -10,6 +10,48 @@ const local = [
 const external = [{ id: "edux-1", title: "Quiz cây", subject: "Cấu trúc dữ liệu", due: null, status: "Đang làm", priority: "Cao" }];
 
 describe("Task workspace data", () => {
+  it("includes EDUX course windows overlapping the Vietnam week without counting unrelated courses", () => {
+    const rows = workspaceTasks([], [
+      { id: "active-done", status: "Hoàn thành", due: "2026-12-01", dueSource: "subject", subjectStartTime: "2026-10-01", subjectDeadline: "2026-12-01" },
+      { id: "active-partial", status: "Đang làm", progress: { daHoc: 2, tongSo: 5 }, subjectStartTime: "2026-10-01", subjectDeadline: "2026-12-01" },
+      { id: "expired", status: "Hoàn thành", subjectStartTime: "2026-09-01", subjectDeadline: "2026-10-25" },
+      { id: "future", status: "Hoàn thành", subjectStartTime: "2026-11-02", subjectDeadline: "2026-12-01" },
+      { id: "invalid-window", status: "Hoàn thành", subjectStartTime: "2026-12-01", subjectDeadline: "2026-10-01" },
+    ]);
+    expect(workspaceStats(rows, now).week).toMatchObject({ start: "2026-10-26", end: "2026-11-01", total: 2, edux: 2, completed: 1, inProgress: 1, percent: 70 });
+  });
+
+  it("keeps undated EDUX visible in its own summary without assigning sync or import dates to this week", () => {
+    const rows = workspaceTasks([], [
+      { id: "old-done", status: "Hoàn thành", syncedAt: "2026-10-30T12:00:00Z", updated_at: "2026-10-30", created_at: "2026-10-30" },
+      { id: "unknown-start", status: "Đang làm", subjectDeadline: "2026-12-01", progress: { daHoc: 3, tongSo: 5 } },
+    ]);
+    expect(workspaceStats(rows, now)).toMatchObject({
+      week: { total: 0, percent: null }, edux: { total: 2, completed: 1, outsideWeek: 2, percent: 80 },
+    });
+  });
+
+  it("counts a completion once even when it also has a weekly deadline, using UTC SQL timestamps at the Vietnam boundary", () => {
+    const rows = workspaceTasks([
+      { id: 1, status: "COMPLETED", completed_at: "2026-10-25 17:01:00" },
+      { id: 2, status: "COMPLETED", completed_at: "2026-10-25 16:59:00" },
+      { id: 3, status: "COMPLETED", completed_at: "2026-11-01 17:00:00" },
+      { id: 4, status: "COMPLETED", completed_at: "2026-10-29 13:00:00", deadline: "2026-10-30" },
+      { id: 5, status: "PENDING", completed_at: "2026-10-29 13:00:00" },
+    ], [{ id: "edux-completed", status: "Hoàn thành", completedAt: "2026-10-30T10:00:00Z" }]);
+    expect(workspaceStats(rows, now).week).toMatchObject({ total: 3, completed: 3, edux: 1, percent: 100 });
+  });
+
+  it("bounds partial EDUX document progress and honors completed and reopened status", () => {
+    const rows = workspaceTasks([], [
+      { id: "partial", status: "Đang làm", due: "2026-10-30", progress: { daHoc: 2, tongSo: 5 } },
+      { id: "invalid", status: "Đang làm", due: "2026-10-30", progress: { daHoc: 10, tongSo: 0 } },
+      { id: "reopened", status: "Chưa làm", due: "2026-10-30", progress: { daHoc: 5, tongSo: 5 } },
+      { id: "done", status: "Hoàn thành", due: "2026-10-30", progress: { daHoc: 0, tongSo: 5 } },
+    ]);
+    expect(workspaceStats(rows, now).week).toMatchObject({ total: 4, completed: 1, inProgress: 2, percent: 35 });
+  });
+
   it("keeps both source identities, normalizes EDUX fields and never invents its missing deadline", () => {
     const rows = workspaceTasks(local, external);
     expect(rows).toHaveLength(4);

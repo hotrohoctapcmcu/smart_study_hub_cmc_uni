@@ -133,6 +133,7 @@ async function getPool() {
         runSchema(db);
 
         migrateSchema(db);
+        require('../migrations/curriculumMigration').migrateCurriculum(db);
 
         await require('../migrations/studyMigration').ensureSprint2Migration(db);
         require('../migrations/workspaceMigration').migrateWorkspace(db);

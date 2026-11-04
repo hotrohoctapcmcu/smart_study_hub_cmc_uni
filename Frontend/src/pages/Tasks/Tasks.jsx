@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
-import { Plus, RefreshCw, List, LayoutGrid, Columns3, CalendarDays, Calendar, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowRight, ArrowUp, ArrowDown, ArrowDownWideNarrow, Diamond, CircleAlert, Search, FileText, MoreHorizontal, CodeXml, Sigma, BookOpen, Clock3, Target, Pencil, Trash2, ExternalLink } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, RefreshCw, List, LayoutGrid, Columns3, CalendarDays, Calendar, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowRight, ArrowUp, ArrowDown, ArrowDownWideNarrow, Diamond, CircleAlert, Search, FileText, MoreHorizontal, CodeXml, Sigma, BookOpen, Clock3, SlidersHorizontal, Pencil, Trash2, ExternalLink } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { taskApi } from "../../api";
 import { responseList } from "../../api/apiClient";
 import { useApi } from "../../hooks/useApi";
-import { PageHeader, Card, Button, ApiContent, EmptyState, ProgressRing, Modal, ConfirmModal, useAction, ErrorState } from "../../components/common/ui";
+import { PageHeader, Card, Button, ApiContent, EmptyState, Modal, ConfirmModal, useAction, ErrorState } from "../../components/common/ui";
 import TaskEditor from "../../components/tasks/TaskEditor";
 import TaskDetail from "../../components/tasks/TaskDetail";
 import EduxTaskDetail from "../../components/tasks/EduxTaskDetail";
@@ -85,6 +85,8 @@ export default function Tasks() {
   const [view, setView] = useState("subjects"), [tab, setTab] = useState("pending"), [query, setQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState(""), [subjectFilter, setSubjectFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState(""), [statusFilter, setStatusFilter] = useState(""), [deadlineFilter, setDeadlineFilter] = useState(""), [sort, setSort] = useState("priority");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const contentRef = useRef(null);
   const [expanded, setExpanded] = useState(() => new Set()), [editor, setEditor] = useState(null), [selected, setSelected] = useState(null), [deleting, setDeleting] = useState(null), [eduxDetail, setEduxDetail] = useState(null);
   const { run, busy } = useAction();
   const tasks = workspaceTasks(responseList(state.data, "tasks"), edux.error ? [] : responseList(edux.data, "assignments"));
@@ -93,6 +95,9 @@ export default function Tasks() {
   const attention = groupWorkspaceTasks(filterWorkspaceTasks(tasks, { tab: "pending", sort: "priority" })).slice(0, 4);
   const upcoming = upcomingWorkspaceTasks(tasks, 4);
   const hasFilters = Boolean(query || sourceFilter || subjectFilter || priorityFilter || statusFilter || deadlineFilter);
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [view, tab, query, sourceFilter, subjectFilter, priorityFilter, statusFilter, deadlineFilter, sort]);
   useEffect(() => {
     if (params.get("action") !== "create") return;
     setEditor({});
@@ -110,7 +115,10 @@ export default function Tasks() {
     setSelected(null); setEduxDetail(null);
     if (taskId || eduxId) { const next = new URLSearchParams(params); next.delete("task"); next.delete("edux"); setParams(next, { replace: true }); }
   }
-  async function reload() { await Promise.all([state.refetch(), edux.refetch()]); window.dispatchEvent(new Event("workspace-updated")); }
+  async function reload(refreshEdux = false) {
+    await Promise.all([state.refetch(), refreshEdux === true ? edux.execute({ refresh: "true" }) : edux.refetch()]);
+    window.dispatchEvent(new Event("workspace-updated"));
+  }
   function openTask(task) {
     if (task.source === "EDUX") { setEduxDetail(task.id); detail.execute(task.id); }
     else setSelected(task);
@@ -141,30 +149,35 @@ export default function Tasks() {
   };
   const subjectNames = [...new Set(tasks.map(task => task.subject))].sort((a, b) => a.localeCompare(b, "vi"));
   const allLoading = state.loading || edux.loading;
+  const advancedFilterCount = [priorityFilter, statusFilter, deadlineFilter].filter(Boolean).length;
+  const weekLabel = [stats.week.start, stats.week.end].map(day => day.split("-").reverse().slice(0, 2).join("/")).join(" – ");
   const allFinished = tab === "pending" && !hasFilters && stats.pending === 0 && stats.completed > 0;
   const emptyTitle = hasFilters ? "Không có công việc khớp bộ lọc" : allFinished ? "Bạn đã hoàn thành mọi công việc" : tab === "completed" ? "Chưa có công việc đã hoàn thành" : "Không có công việc trong mục này";
   const emptyDescription = hasFilters ? "Thử thay đổi bộ lọc để tìm công việc của bạn." : allFinished ? "Các công việc đã xong được lưu riêng trong mục Đã hoàn thành." : tab === "completed" ? "Công việc sẽ chuyển vào đây khi bạn đánh dấu hoàn thành." : "Thêm công việc đầu tiên để bắt đầu sắp xếp việc học.";
   return <div className="page tasks-page"><div className="tasks-workspace"><div className="tasks-primary">
-    <PageHeader eyebrow="TỪNG VIỆC NHỎ · BƯỚC TIẾN LỚN" title="Công việc" description="Quản lý tất cả công việc cá nhân và từ EDUX của bạn, được sắp xếp theo từng môn học."><Button onClick={() => setEditor({})}><Plus size={18} />Thêm công việc</Button></PageHeader>
+    <PageHeader title="Công việc" description="Công việc cá nhân và EDUX, gọn trong một nơi."><Button onClick={() => setEditor({})}><Plus size={16} />Thêm công việc</Button></PageHeader>
     {taskId && !state.loading && !state.error && !tasks.some(task => String(task.id) === taskId) && <ErrorState title="Không tìm thấy công việc" error={new Error("Công việc có thể đã bị xóa hoặc không còn trong học kỳ hiện tại.")} />}
     <div className="tasks-controls" aria-label="B. Danh mục công việc" data-region="B">
       <div className="tasks-view-bar"><div className="tasks-view-switch" role="tablist" aria-label="Cách hiển thị công việc">{viewOptions.map(([value, label, Icon]) => <button key={value} type="button" role="tab" aria-selected={view === value} className={view === value ? "is-active" : ""} onClick={() => setView(value)}><Icon size={17} />{label}</button>)}</div>
-        <div className="tasks-secondary-tools"><select className="tasks-subject-filter" aria-label="Lọc theo môn học" value={subjectFilter} onChange={event => setSubjectFilter(event.target.value)}><option value="">Tất cả môn học</option>{subjectNames.map(subject => <option key={subject}>{subject}</option>)}</select><button type="button" className="tasks-refresh" aria-label="Làm mới công việc" disabled={busy || allLoading} onClick={reload}><RefreshCw size={15} /></button></div>
+        <div className="tasks-secondary-tools"><select className="tasks-subject-filter" aria-label="Lọc theo môn học" value={subjectFilter} onChange={event => setSubjectFilter(event.target.value)}><option value="">Tất cả môn học</option>{subjectNames.map(subject => <option key={subject}>{subject}</option>)}</select><button type="button" className="tasks-refresh" aria-label="Làm mới công việc" title="Tải lại công việc và cập nhật từ EDUX" disabled={busy || allLoading} onClick={() => reload(true)}><RefreshCw size={15} className={allLoading ? "spinning" : ""} /></button></div>
       </div>
-      <section className="tasks-toolbar" aria-label="C. Bộ lọc nâng cao" data-region="C">
+      <div className="tasks-toolbar">
         <label className="tasks-search"><Search size={18} /><input aria-label="Tìm công việc..." placeholder="Tìm công việc..." value={query} onChange={event => setQuery(event.target.value)} /></label>
         <label className="tasks-filter-field"><select aria-label="Lọc theo nguồn" value={sourceFilter} onChange={event => setSourceFilter(event.target.value)}><option value="">Nguồn: Tất cả</option><option value="PERSONAL">Nguồn: Cá nhân</option><option value="EDUX">Nguồn: EDUX</option></select><ChevronDown size={13} /></label>
+        <label className="tasks-filter-field tasks-sort-field"><ArrowDownWideNarrow size={15} /><select aria-label="Sắp xếp công việc" value={sort} onChange={event => setSort(event.target.value)}><option value="priority">Ưu tiên + hạn</option><option value="deadline">Hạn gần nhất</option><option value="title">Tên công việc</option></select></label>
+        <button type="button" className="tasks-filter-toggle" aria-expanded={filtersOpen} aria-controls="tasks-advanced-filters" onClick={() => setFiltersOpen(open => !open)}><SlidersHorizontal size={15} />Bộ lọc{advancedFilterCount > 0 && <span>{advancedFilterCount}</span>}</button>
+      </div>
+      <section id="tasks-advanced-filters" className="tasks-toolbar tasks-advanced-filters" aria-label="C. Bộ lọc nâng cao" data-region="C" hidden={!filtersOpen}>
         <label className="tasks-filter-field"><select aria-label="Lọc theo ưu tiên" value={priorityFilter} onChange={event => setPriorityFilter(event.target.value)}><option value="">Ưu tiên: Tất cả</option>{[["URGENT", "Khẩn cấp"], ["HIGH", "Cao"], ["MEDIUM", "Trung bình"], ["LOW", "Thấp"]].map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><ChevronDown size={13} /></label>
         <label className="tasks-filter-field"><select aria-label="Lọc theo trạng thái" value={statusFilter} onChange={event => chooseStatus(event.target.value)}><option value="">Trạng thái: Tất cả</option>{[["PENDING", "Chưa làm"], ["IN_PROGRESS", "Đang làm"], ["COMPLETED", "Hoàn thành"], ["OVERDUE", "Quá hạn"]].map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><ChevronDown size={13} /></label>
         <label className="tasks-filter-field tasks-date-filter"><Calendar size={15} /><span>Ngày: {deadlineFilter ? deadlineFilter.split("-").reverse().slice(0, 2).join("/") : "Tất cả"}</span><input type="date" aria-label="Lọc theo deadline" value={deadlineFilter} onChange={event => setDeadlineFilter(event.target.value)} /><ChevronDown size={13} /></label>
-        <label className="tasks-filter-field tasks-sort-field"><ArrowDownWideNarrow size={15} /><select aria-label="Sắp xếp công việc" value={sort} onChange={event => setSort(event.target.value)}><option value="priority">Ưu tiên + hạn</option><option value="deadline">Hạn gần nhất</option><option value="title">Tên công việc</option></select></label>
       </section>
       <div className="tasks-status-strip"><div className="tasks-status-tabs" role="tablist" aria-label="Trạng thái và thời hạn công việc">{[["pending", "Chưa hoàn thành", stats.pending], ["today", "Hôm nay", stats.today], ["upcoming", "Sắp tới", stats.upcoming], ["completed", "Đã hoàn thành", stats.completed]].map(([value, label, count]) => <button key={value} role="tab" aria-selected={tab === value} className={tab === value ? "is-active" : ""} onClick={() => chooseTab(value)}>{label}<span aria-hidden="true"> ({count})</span></button>)}</div>{hasFilters && <button className="tasks-clear-filters" type="button" onClick={clearFilters}>Xóa bộ lọc</button>}</div>
     </div>
     {state.error && sourceFilter !== "PERSONAL" && <p className="tasks-source-notice" aria-live="polite">Chưa tải được công việc cá nhân. <button onClick={state.refetch}>Thử lại</button></p>}
     {edux.error && sourceFilter !== "EDUX" && <p className="tasks-source-notice">{Number(edux.error.response?.status) === 401 ? "Kết nối EDUX để xem thêm bài tập của bạn." : "Chưa tải được bài tập EDUX."} <Link to="/sync">Đến Đồng bộ <ArrowRight size={12} /></Link>{Number(edux.error.response?.status) !== 401 && <button onClick={edux.refetch}>Thử lại</button>}</p>}
     {edux.loading && sourceFilter !== "EDUX" && <p className="tasks-source-notice" role="status">Đang tải thêm bài tập EDUX…</p>}
-    <section className="tasks-content" role="region" aria-label="D. Danh sách công việc" data-region="D"><ApiContent state={contentState}>
+    <section ref={contentRef} className="tasks-content" role="region" aria-label="D. Danh sách công việc" data-region="D" tabIndex={0}><ApiContent state={contentState}>
       {filtered.length ? view === "subjects" ? <div className="tasks-subjects">{groups.map(group => {
         const expansionKey = `${tab}:${group.key}`, isCollapsed = !expanded.has(expansionKey);
         const overall = allGroups.find(item => item.key === group.key) || group;
@@ -179,10 +192,14 @@ export default function Tasks() {
         : <Card className="tasks-empty"><EmptyState title={emptyTitle} description={emptyDescription} mascot="fox-quiz-success.png" action={<Button size="sm" variant="outline" onClick={hasFilters ? clearFilters : allFinished ? () => chooseTab("completed") : tab === "completed" ? () => chooseTab("pending") : () => setEditor({})}>{hasFilters ? "Xóa bộ lọc" : allFinished ? "Xem đã hoàn thành" : tab === "completed" ? "Xem việc chưa hoàn thành" : "Thêm công việc"}</Button>} /></Card>}
     </ApiContent></section>
   </div>
-  <aside className="tasks-insights" data-region="E" aria-label="E. Tiến độ và thống kê">
+  <aside className="tasks-insights" data-region="E" aria-label="E. Tiến độ và thống kê" tabIndex={0}>
     <Card className="tasks-insight-card tasks-progress-card" title="Tiến độ tuần này" action={<Link to="/statistics">Xem chi tiết <ArrowRight size={13} /></Link>}>
-      <div className="tasks-week-progress"><ProgressRing value={stats.week.percent} /><div className="tasks-progress-legend">{[["completed", "Đã hoàn thành", stats.week.completed], ["in-progress", "Đang thực hiện", stats.week.inProgress], ["pending", "Chưa làm", stats.week.pending]].map(([key, label, value]) => <div key={key}><i data-status={key} /><span>{label}</span><strong>{state.loading ? "—" : value}</strong></div>)}</div></div>
-      <div className="tasks-progress-message"><Target size={26} /><p>{stats.week.total ? <><strong>{stats.week.percent > 0 ? `Tuyệt vời! Bạn đã hoàn thành ${stats.week.percent}%` : "Một việc nhỏ, một bước tiến mới."}</strong><span>{stats.week.percent > 0 ? "công việc trong tuần này." : "Cùng hoàn thành công việc đầu tiên nhé!"}</span></> : <><strong>Sẵn sàng cho một tuần hiệu quả!</strong><span>Công việc có hạn trong tuần sẽ hiển thị ở đây.</span></>}</p></div>
+      <p className="tasks-week-range">{weekLabel} · Thứ 2 – Chủ nhật</p>
+      <div className="tasks-week-progress" aria-busy={allLoading}><div className="tasks-week-ring" role="img" aria-label={allLoading ? "Đang tải tiến độ tuần" : stats.week.total ? `Tiến độ tuần: ${stats.week.percent}%` : "Chưa có công việc thuộc tuần này"} style={{ "--percent": `${stats.week.percent || 0}%` }}><div><strong>{allLoading || stats.week.percent == null ? "—" : `${stats.week.percent}%`}</strong><small>{allLoading ? "Đang tải" : "Tiến độ"}</small></div></div><div className="tasks-progress-legend">{[["completed", "Đã hoàn thành", stats.week.completed], ["in-progress", "Đang thực hiện", stats.week.inProgress], ["pending", "Chưa làm", stats.week.pending]].map(([key, label, value]) => <div key={key}><i data-status={key} /><span>{label}</span><strong>{allLoading ? "—" : value}</strong></div>)}</div></div>
+      <p className="tasks-week-note" aria-live="polite">{allLoading ? "Đang tổng hợp công việc cá nhân và EDUX…" : state.error || edux.error ? "Tiến độ tạm tính từ nguồn đã tải. Một nguồn dữ liệu chưa khả dụng." : stats.week.total ? `${stats.week.completed}/${stats.week.total} việc hoàn thành · ${stats.week.edux} từ EDUX` : "Chưa có công việc thuộc tuần này."}</p>
+      {!edux.loading && !edux.error && stats.edux.total > 0 && <div className="tasks-edux-summary"><div><span>EDUX hiện tại</span><strong>{stats.edux.completed}/{stats.edux.total} bài</strong></div><span className="tasks-edux-track" role="img" aria-label={`EDUX: ${stats.edux.completed}/${stats.edux.total} bài hoàn thành`}><span style={{ width: `${stats.edux.percent || 0}%` }} /></span>{stats.edux.outsideWeek > 0 && <small>{stats.edux.outsideWeek} bài ngoài phạm vi tuần hoặc chưa có mốc thời gian.</small>}</div>}
+      {edux.data?.thatBai?.length > 0 && <p className="tasks-week-note">Một số học phần EDUX chưa cập nhật được. Hãy thử làm mới.</p>}
+      <details className="tasks-progress-explanation"><summary>Cách tính tiến độ</summary><p>Tính việc có hạn trong tuần, việc hoàn thành trong tuần và bài EDUX có khoảng học phần giao với tuần này. Tiến độ bài EDUX đang làm tính theo tỉ lệ tài liệu đã học. Bài thiếu mốc thời gian vẫn được tổng hợp ở “EDUX hiện tại”; ngày đồng bộ không được coi là ngày hoàn thành.</p></details>
     </Card>
     <Card className="tasks-insight-card tasks-attention-card" title="Môn học cần chú ý" action={<button type="button" onClick={() => chooseSubject()}>Xem tất cả <ArrowRight size={13} /></button>}>
       {attention.length ? attention.map(group => <button type="button" className="tasks-attention-row" key={group.key} onClick={() => chooseSubject(group.subject)} aria-label={"Xem công việc môn " + group.subject}><SubjectToken group={group} small /><span className="tasks-attention-info"><strong>{group.subject}</strong><small>{group.tasks.length - group.completed} công việc cần làm</small></span><span className="tasks-attention-count is-overdue" title="Quá hạn">{group.overdue}</span><span className="tasks-attention-count" title="Đang thực hiện">{group.inProgress}</span><ChevronRight size={15} /></button>) : <p className="tasks-insight-empty">{allLoading ? "Đang tải môn học…" : state.error || edux.error ? "Chưa có đủ dữ liệu để tổng hợp môn học." : "Bạn đã hoàn thành mọi công việc. Thật tuyệt!"}</p>}

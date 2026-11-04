@@ -61,6 +61,7 @@ module.exports = {
     layVanBang: data.layVanBang,
     layDiemRenLuyen: data.layDiemRenLuyen,
     layChuongTrinhHoc: data.layChuongTrinhHoc,
+    layDuLieuChuongTrinh: data.layDuLieuChuongTrinh,
     layLichHoc: data.layLichHoc,
     layLichThi: data.layLichThi,
     layPhucKhao: data.layPhucKhao,

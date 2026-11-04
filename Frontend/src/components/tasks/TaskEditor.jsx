@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Button, Field, ErrorState } from "../common/ui";
-import { taskApi, studentApi } from "../../api";
-import { responseList } from "../../api/apiClient";
-import { useApi } from "../../hooks/useApi";
+import { taskApi } from "../../api";
+import { useCurrentCourses } from "../../hooks/useCurrentCourses";
+import CurrentCourseHint from "../common/CurrentCourseHint";
+import { assertFutureDateTime, nextPlanningMinute } from "../../utils/planning";
 export default function TaskEditor({ task, onSaved, onClose }) {
-  const subjects = useApi(studentApi.getSubjects);
+  const subjects = useCurrentCourses(task?.subjectId, task?.subject || task?.subjectName);
   const [error, setError] = useState(null),
     [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
@@ -18,6 +19,7 @@ export default function TaskEditor({ task, onSaved, onClose }) {
     value: form[name],
     onChange: (e) => setForm((f) => ({ ...f, [name]: e.target.value })),
   });
+  const deadlineChanged = !task?.id || form.deadline !== (task.deadline || "").replace(" ", "T").slice(0, 16);
   async function save(e) {
     e.preventDefault();
     setError(null);
@@ -30,6 +32,7 @@ export default function TaskEditor({ task, onSaved, onClose }) {
       };
       if (!body.title) throw new Error("Vui lòng nhập tên công việc.");
       if (!body.subjectId) throw new Error("Vui lòng chọn môn học.");
+      if (deadlineChanged) assertFutureDateTime(body.deadline, "Hạn hoàn thành");
       await (task ? taskApi.update(task.id, body) : taskApi.create(body));
       await onSaved();
     } catch (err) {
@@ -51,7 +54,7 @@ export default function TaskEditor({ task, onSaved, onClose }) {
         <Field label="Môn học">
           <select required {...field("subjectId")}>
             <option value="">Chọn môn học</option>
-            {responseList(subjects.data, "subjects").map((s) => (
+            {subjects.subjects.map((s) => (
               <option key={s.subject_id ?? s.id} value={s.subject_id ?? s.id}>
                 {s.subject_name || s.name}
               </option>
@@ -77,16 +80,13 @@ export default function TaskEditor({ task, onSaved, onClose }) {
         label="Hạn hoàn thành"
         type="datetime-local"
         required
+        min={deadlineChanged ? nextPlanningMinute() : undefined}
         {...field("deadline")}
       />
       <Field label="Mô tả">
         <textarea {...field("description")} />
       </Field>
-      {subjects.error && (
-        <p className="hint">
-          Chưa tải được môn học. Hãy kiểm tra kết nối hoặc đồng bộ dữ liệu trước khi lưu.
-        </p>
-      )}
+      <CurrentCourseHint state={subjects} />
       <div className="form-actions">
         <Button variant="outline" onClick={onClose}>
           Hủy

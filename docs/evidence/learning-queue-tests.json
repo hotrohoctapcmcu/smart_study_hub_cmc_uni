@@ -1,0 +1,73 @@
+{
+  "checkedAt": "2026-11-04T21:06:38.217518+07:00",
+  "policy": {
+    "automaticAiSummary": false,
+    "manualSummaryEndpoint": "POST /learning/courses/:id/summarize",
+    "queue": "FIFO, one complete learning job at a time",
+    "maxActiveJobs": 50,
+    "duplicateRequests": "coalesced while queued/running",
+    "queuePersistence": "RAM; no automatic AI replay after restart"
+  },
+  "checks": [
+    {
+      "command": "npm --prefix Frontend test -- --reporter=dot",
+      "kind": "mock/jsdom",
+      "pass": 426,
+      "files": 47,
+      "fail": 0
+    },
+    {
+      "command": "npm run test:api",
+      "kind": "HTTP/contracts/temporary SQLite",
+      "tests": 139,
+      "pass": 139,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run test:ai",
+      "kind": "mock AI provider/temporary SQLite",
+      "tests": 75,
+      "pass": 75,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "node --test tests/API/test-edux-materials.js tests/API/test-schedule-refresh.js",
+      "kind": "EDUX HTTP fixture/background refresh",
+      "tests": 8,
+      "pass": 8,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm --prefix Frontend run build",
+      "passed": true,
+      "seconds": 9.61,
+      "warnings": {
+        "mathjaxEval": true,
+        "largeChunks": true
+      }
+    },
+    {
+      "command": "git diff --check",
+      "passed": true
+    }
+  ],
+  "preFixLiveObservation": {
+    "operation": "read-only GET /learning/courses on the running application",
+    "readyCourses": 4,
+    "chapters": 45,
+    "readySlides": 1869,
+    "oneCourseHadUnavailableEduxMaterial": true,
+    "backgroundPhase": "summaries",
+    "noSyncOrAiStartedByThisInspection": true
+  },
+  "newLiveProviderCalls": 0,
+  "limitations": [
+    "No direct post-build Electron/device acceptance",
+    "Existing Electron process was not restarted; restart required to apply backend policy and stop old automatic jobs",
+    "Waiting jobs do not survive backend restart; stored sources/summaries remain"
+  ],
+  "countsOverlap": true
+}

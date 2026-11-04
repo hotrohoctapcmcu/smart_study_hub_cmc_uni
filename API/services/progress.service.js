@@ -1,6 +1,7 @@
 'use strict';
 
 const gemini = require('../utils/gemini-client');
+const { summarizeGrades } = require('../../database/shared/academic-results');
 
 const AI_TIMEOUT_MS = 10_000;
 const AI_FALLBACK_ADVICE = 'Hiện chưa thể tạo nhận xét học tập tự động. Vui lòng xem các chỉ số tiến độ để chọn nội dung cần ưu tiên ôn tập.';
@@ -107,46 +108,11 @@ function createProgressService({ getDb }) {
 
     async function getGPA(studentId) {
         const { db, profile } = await getStudentContext(studentId);
-        const rows = await db.executeQuery(`
-            SELECT
-                g.semester,
-                g.academic_year AS academicYear,
-                ROUND(SUM(g.final_score * g.credits) / NULLIF(SUM(g.credits), 0), 2) AS gpa10,
-                ROUND(SUM((CASE g.letter_grade
-                    WHEN 'A+' THEN 4.0
-                    WHEN 'A' THEN 3.8
-                    WHEN 'B+' THEN 3.5
-                    WHEN 'B' THEN 3.0
-                    WHEN 'C+' THEN 2.5
-                    WHEN 'C' THEN 2.0
-                    WHEN 'D+' THEN 1.5
-                    WHEN 'D' THEN 1.0
-                    ELSE 0.0
-                END) * g.credits) / NULLIF(SUM(g.credits), 0), 2) AS gpa4,
-                SUM(g.credits) AS credits,
-                COUNT(*) AS subjectCount
-            FROM Grades g
-            WHERE g.student_id = @studentId
-              AND g.attempt_number = (
-                    SELECT MAX(latest.attempt_number)
-                    FROM Grades latest
-                    WHERE latest.student_id = g.student_id
-                      AND latest.subject_id = g.subject_id
-                      AND latest.semester = g.semester
-                      AND latest.academic_year = g.academic_year
-              )
-            GROUP BY g.semester, g.academic_year
-            ORDER BY g.academic_year ASC, g.semester ASC
-        `, { studentId: profile.student_id });
-
-        return rows.map(row => ({
-            semester: row.semester,
-            academicYear: row.academicYear,
-            gpa10: Number(row.gpa10) || 0,
-            gpa4: Number(row.gpa4) || 0,
-            credits: Number(row.credits) || 0,
-            subjectCount: Number(row.subjectCount) || 0
-        }));
+        const history = profile.academic_summary || summarizeGrades(await db.layBangDiem(profile.student_id));
+        return history.semesters.map(row => ({ semester: row.semester, academicYear: row.academicYear,
+            gpa10: row.average10, gpa4: row.average4,
+            cumulativeGpa10: row.cumulative10, cumulativeGpa4: row.cumulative4,
+            credits: row.gradedCredits, earnedCredits: row.earnedCredits, subjectCount: row.subjectCount }));
     }
 
     async function getDaysToNextExam(studentId) {
@@ -182,6 +148,7 @@ function createProgressService({ getDb }) {
             const prompt = [
                 'Dựa duy nhất trên dữ liệu JSON tiến độ bên dưới, viết một nhận xét và gợi ý ôn tập ngắn bằng tiếng Việt (tối đa 3 câu).',
                 'Nêu ưu tiên cụ thể từ số liệu; không suy diễn dữ liệu không có. Nếu thiếu dữ liệu, hãy nói rõ.',
+                'Đối chiếu gpaBySemester từ học kỳ cũ tới mới; phân biệt trung bình/tích lũy và hệ 10/hệ 4. Không suy diễn lực học cố định hay dự đoán điểm chưa có.',
                 JSON.stringify(progressData)
             ].join('\n\n');
 

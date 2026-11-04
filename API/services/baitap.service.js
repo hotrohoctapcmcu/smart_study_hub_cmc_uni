@@ -61,13 +61,26 @@ function createChecklist(body) {
     return db.themChecklist(NGUOI_DUNG_ID, body);
 }
 
-function createTaskChecklist(taskId, body) {
+async function createTaskChecklist(taskId, body) {
+    if (Array.isArray(body.steps)) {
+        if (!body.steps.length || body.steps.length > 5) throw loi('Checklist cần từ 1 đến 5 bước.');
+        body.steps.forEach(validate.checklist);
+        const tasks = await db.layDanhSachDeadline(NGUOI_DUNG_ID);
+        const task = tasks.find(row => Number(row.assignment_id) === Number(taskId));
+        if (!task) throw loi('Không tìm thấy công việc của bạn.', 404);
+        return db.withTransaction(async () => {
+            const saved = [];
+            for (const step of body.steps) saved.push(await db.themChecklist(NGUOI_DUNG_ID, { ...step, assignmentId: taskId, subjectId: task.subject_id }));
+            return saved;
+        });
+    }
     validate.checklist(body);
     return db.themChecklist(NGUOI_DUNG_ID, { ...body, assignmentId: taskId });
 }
 
 async function updateChecklist(id, body) {
     validate.positiveId(id, 'checklistId phải là số nguyên dương.');
+    if (body.title !== undefined || body.minutes !== undefined || body.doneWhen !== undefined) validate.checklist({ ...body, title: body.title === undefined ? 'Bước checklist' : body.title });
     const row = await db.capNhatChecklist(id, body, NGUOI_DUNG_ID);
     if (!row) throw loi('Không tìm thấy checklist thuộc người dùng hiện tại.', 404);
     return row;

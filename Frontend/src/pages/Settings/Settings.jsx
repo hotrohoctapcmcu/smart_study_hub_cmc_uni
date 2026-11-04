@@ -86,11 +86,11 @@ export default function Settings() {
                 <h3>Màu chủ đạo</h3>
                 <div className="actions" style={{ gap: 13 }}>
                   {[
-                    ["#7557ff", "Tím"],
-                    ["#3b82f6", "Xanh dương"],
-                    ["#159b72", "Xanh lá"],
-                    ["#e07928", "Cam"],
-                    ["#d34b98", "Hồng"],
+                    ["#6340df", "Tím"],
+                    ["#2564c2", "Xanh dương"],
+                    ["#067257", "Xanh lá"],
+                    ["#955107", "Cam"],
+                    ["#b52b7d", "Hồng"],
                   ].map(([color, label]) => (
                     <button
                       key={color}

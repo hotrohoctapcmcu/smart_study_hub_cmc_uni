@@ -17,7 +17,7 @@ const output = path.join(root, 'tests', 'artifacts', 'ai-qa');
 fs.mkdirSync(output, { recursive: true });
 app.whenReady().then(async () => {
     let win, vite, status = 0;
-    const report = { date: '2026-10-30', mode: 'Chromium, mocked AI, isolated browser storage', checks: [], errors: [], screenshots: [] };
+    const report = { date: new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10), mode: 'Chromium, mocked AI, isolated browser storage', checks: [], errors: [], screenshots: [] };
     try {
         const port = await new Promise(resolve => { const server = net.createServer(); server.listen(0, '127.0.0.1', () => { const port = server.address().port; server.close(() => resolve(port)); }); });
         const base = `http://127.0.0.1:${port}`;
@@ -37,11 +37,18 @@ app.whenReady().then(async () => {
         const installMock = async () => js(`(async()=>{
             const client=(await import('/src/api/apiClient.js')).default, original=client.defaults.adapter;
             globalThis.aiFixture=${JSON.stringify(fixture)};globalThis.aiMode='ok';globalThis.pollCount=0;globalThis.cancelled=false;
+            globalThis.savedAiChats={};
             client.defaults.adapter=async config=>{
                 if(config.url==='/ai/ask'){
                     if(globalThis.aiMode==='fail')throw Object.assign(new Error('AI đang quá tải. Hãy thử lại.'),{response:{data:{message:'AI đang quá tải. Hãy thử lại.'}}});
-                    return {config,status:200,data:{success:true,data:{answer:globalThis.aiFixture,conversationId:'browser-test'}}};
+                    const body=typeof config.data==='string'?JSON.parse(config.data):config.data;
+                    const id=body.conversationId||'browser-'+Object.keys(globalThis.savedAiChats).length;
+                    const row=globalThis.savedAiChats[id]||(globalThis.savedAiChats[id]={id,title:body.question,createdAt:new Date().toISOString(),messages:[]});
+                    row.updatedAt=new Date().toISOString();row.messages.push({role:'user',text:body.question,createdAt:row.updatedAt},{role:'assistant',text:globalThis.aiFixture,createdAt:row.updatedAt});
+                    return {config,status:200,data:{success:true,data:{answer:globalThis.aiFixture,conversationId:id}}};
                 }
+                if(config.url==='/ai/conversations')return {config,status:200,data:{success:true,data:Object.values(globalThis.savedAiChats).map(({messages,...row})=>row)}};
+                if(config.url.startsWith('/ai/conversations/'))return {config,status:200,data:{success:true,data:globalThis.savedAiChats[decodeURIComponent(config.url.split('/').at(-1))]}};
                 if(config.url==='/ai/summarize')return {config,status:202,data:{success:true,data:{jobId:'browser-job',status:'queued',message:'Đang chia tài liệu dài…'}}};
                 if(config.url==='/ai/summary-jobs/browser-job'){
                     if(config.method==='delete'){globalThis.cancelled=true;return {config,status:200,data:{success:true,data:{status:'cancelled'}}};}
@@ -57,10 +64,17 @@ app.whenReady().then(async () => {
         await wait(`!!document.querySelector('.message.ai .ai-content strong')`);
         const content = await js(`(()=>{const e=document.querySelector('.message.ai .ai-content');return {bold:e.querySelector('strong').textContent,math:e.querySelectorAll('.katex').length,code:e.querySelector('pre code').textContent,table:!!e.querySelector('table'),unsafe:!!e.querySelector('script,img,a[href^="javascript"]')}})()`);
         check('Chat renders bold, math, table and literal code safely', content.bold === 'Chữ đậm tiếng Việt' && content.math === 3 && content.code.includes('C:\\new\\test') && content.table && !content.unsafe, JSON.stringify(content));
-        for (const [name, width, height] of [['desktop', 1440, 1000], ['mobile', 390, 844]]) {
+        for (const [name, width, height] of [['desktop', 1440, 1000], ['laptop', 1280, 720], ['mobile', 390, 844]]) {
             win.setContentSize(width, height); await pause(250);
             const layout = await js(`(()=>{const e=document.querySelector('.ai-chat-workspace'),table=document.querySelector('.ai-table-scroll'),pre=document.querySelector('.ai-content pre');return {viewport:innerWidth,document:document.documentElement.scrollWidth,workspace:e.getBoundingClientRect().width,tableWidth:table.clientWidth,tableScroll:table.scrollWidth,codeWidth:pre.clientWidth,codeScroll:pre.scrollWidth}})()`);
             check(name + ' layout keeps table/code scroll inside the message', layout.document <= layout.viewport + 2 && layout.workspace <= layout.viewport && layout.codeScroll > layout.codeWidth, JSON.stringify(layout));
+            const readingArea = await js(`(()=>{const page=document.querySelector('.ai-workspace').getBoundingClientRect(),log=document.querySelector('.chat-messages').getBoundingClientRect(),ai=document.querySelector('.message.ai').getBoundingClientRect(),composer=document.querySelector('.chat-input').getBoundingClientRect();return {height:log.height,pageHeight:page.height,ratio:log.height/page.height,answerWidth:ai.width,logWidth:log.width,composerHeight:composer.height}})()`);
+            check(name + ' gives most of the workspace to the answer', readingArea.ratio >= .5 && readingArea.answerWidth >= readingArea.logWidth * .8 && readingArea.composerHeight <= 110, JSON.stringify(readingArea));
+            await click('Chế độ đọc');
+            const expanded = await js(`(()=>{const log=document.querySelector('.chat-messages'),input=document.querySelector('.ai-composer-dock');return {height:log.clientHeight,composerHidden:getComputedStyle(input).display==='none',tail:log.textContent.includes('KẾT THÚC')}})()`);
+            check(name + ' reading mode enlarges the answer without losing content', expanded.height >= readingArea.height + 120 && expanded.composerHidden && expanded.tail, JSON.stringify(expanded));
+            await screenshot('ai-' + name + '-reading');
+            await click('Thoát chế độ đọc');
             await screenshot('ai-' + name + '-end');
             await js(`document.querySelector('.chat-messages').scrollTop=0`);
             await screenshot('ai-' + name);
@@ -87,6 +101,23 @@ app.whenReady().then(async () => {
         await input('.chat-input textarea', 'Bản nháp khi AI lỗi'); await click('Gửi tin nhắn');
         await wait(`!!document.querySelector('.chat-error')`);
         check('Provider failure keeps the draft and offers a readable error', await js(`document.querySelector('.chat-input textarea').value==='Bản nháp khi AI lỗi'&&document.querySelector('.chat-error').textContent.includes('quá tải')`));
+
+        await click('Lịch sử trò chuyện');
+        await wait(`!!document.querySelector('.ai-history-item')`);
+        check('History lists the completed conversation from the API', await js(`document.querySelector('.ai-history-item strong').textContent==='Giải thích kiến thức này'`));
+        await screenshot('ai-history-desktop');
+        win.setContentSize(390,844);await pause(200);
+        check('History drawer fits on mobile without covering its close control', await js(`(()=>{const d=document.querySelector('.ai-history-modal [role="dialog"]').getBoundingClientRect(),b=document.querySelector('.ai-history-modal button[aria-label="Đóng hộp thoại"]').getBoundingClientRect();return d.left>=0&&d.right<=innerWidth+1&&b.right<=innerWidth})()`));
+        await screenshot('ai-history-mobile');
+        await input('input[aria-label="Tìm cuộc trò chuyện"]','giai thich');
+        check('History search accepts Vietnamese titles without accents', await js(`document.querySelectorAll('.ai-history-item').length===1`));
+        await js(`document.querySelector('.ai-history-item').click()`);
+        await wait(`!document.querySelector('[role="dialog"]')`);
+        check('Opening history restores messages and keeps the unsent question', await js(`document.querySelectorAll('.message.user').length===1&&document.querySelector('.message.ai').textContent.includes('KẾT THÚC')&&document.querySelector('.chat-input textarea').value==='Bản nháp khi AI lỗi'`));
+        await click('Cuộc trò chuyện mới');await click('Lịch sử trò chuyện');
+        await wait(`!!document.querySelector('.ai-history-item')`);
+        check('Starting a new conversation keeps saved history', await js(`document.querySelectorAll('.ai-history-item').length===1`));
+        await click('Đóng hộp thoại');win.setContentSize(1440,1000);await pause(100);
 
         const bookId = await js(`(async()=>{const s=await import('/src/utils/textbookStore.js');const book=s.createBook({title:'AI QA — vở riêng'});book.pages[0].objects.push({id:'source',type:'text',x:40,y:40,width:600,height:60,data:{text:'Nội dung gốc để tóm tắt.',fontSize:16}});s.saveBook(book);return book.id})()`);
         await win.loadURL(base + '/textbook/' + bookId); await wait(`!!document.querySelector('.tb-paper')`); await installMock();

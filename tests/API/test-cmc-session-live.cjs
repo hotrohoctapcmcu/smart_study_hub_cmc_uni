@@ -18,11 +18,6 @@ app.whenReady().then(async () => {
     let deadline;
     try {
         const currentSession = session.fromPartition(CMC_PARTITION);
-        const cookies = await currentSession.cookies.get({ url: IU_URL });
-        if (!cookies.length) {
-            console.log(JSON.stringify({ cmcSession: "unavailable", reason: "Không có cookie IU trong phiên cục bộ của ứng dụng." }));
-            return;
-        }
         win = new BrowserWindow({ show: false, webPreferences: { session: currentSession, contextIsolation: true, nodeIntegration: false, sandbox: true } });
         await Promise.race([
             win.loadURL(IU_URL),
@@ -35,9 +30,34 @@ app.whenReady().then(async () => {
         }
         const iu = require("../../CRWEB/modules/IU");
         const identifiers = await iu.laySession(win);
-        const cookieHeader = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join("; ");
+        // Portal localStorage can restore auth before issuing fresh cookies.
+        const jar = await require('../../CRWEB/modules/IU/login/cookies').readIuCookies();
+        const cookieHeader = jar.cookie;
         const profile = await iu.layHoSoSinhVien(identifiers, cookieHeader);
         console.log(JSON.stringify({ cmcSession: "authenticated", profileRead: Boolean(profile && Object.keys(profile).length) }));
+        if (process.argv.includes("--inspect-curriculum")) {
+            const { goiIU } = require("../../CRWEB/modules/IU/data/client");
+            const programs = await goiIU(identifiers, cookieHeader, "LayThongTinChuongTrinhHoc");
+            const selected = Array.isArray(programs.data) ? programs.data[0] : null;
+            const programId = selected?.DAOTAO_TOCHUCCHUONGTRINH_ID || selected?.ID || selected?.DAOTAO_CHUONGTRINH_ID;
+            const patch = programId ? { strDaoTao_ChuongTrinh_Id: programId } : {};
+            // Report field names/counts and numeric credit indicators only. Never
+            // persist the raw portal response or authentication material.
+            function shape(value, depth = 0) {
+                if (depth > 3 || value == null) return null;
+                if (Array.isArray(value)) return { count: value.length, row: shape(value[0], depth + 1) };
+                if (typeof value !== 'object') return typeof value;
+                return Object.fromEntries(Object.entries(value).map(([key, item]) => [key,
+                    item && typeof item === 'object' ? shape(item, depth + 1)
+                        : /HOCTRINH|TINCHI/i.test(key) && item !== '' && item != null && Number.isFinite(Number(item))
+                            ? Number(item) : typeof item]));
+            }
+            console.log(JSON.stringify({ endpoint: "LayThongTinChuongTrinhHoc", status: programs.status, shape: shape(programs.data) }));
+            for (const endpoint of ["KetQuaHocTapCaNhan", "LayKetQuaTichLuyTheoKhoi"]) {
+                const response = await goiIU(identifiers, cookieHeader, endpoint, patch);
+                console.log(JSON.stringify({ endpoint, status: response.status, shape: shape(response.data) }));
+            }
+        }
         if (process.argv.includes("--refresh-exams")) {
             const { getExamWindow } = require("../../CRWEB/modules/IU/exam-calendar");
             const range = getExamWindow();

@@ -152,8 +152,8 @@ export const courseApi = {
   summary(id) {
     return apiClient.get(`${ENDPOINTS.courses.summary}/${id}/summary`);
   },
-  sync() {
-    return apiClient.post(ENDPOINTS.courses.sync);
+  sync(data = {}) {
+    return apiClient.post(ENDPOINTS.courses.sync, data);
   },
   summarize(id) {
     return apiClient.post(`${ENDPOINTS.courses.summarize}/${id}/summarize`);
@@ -518,6 +518,9 @@ export const syncApi = {
     group(data) {
       return apiClient.post(ENDPOINTS.sync.iu.group, data);
     },
+    curriculum() {
+      return apiClient.post(ENDPOINTS.sync.iu.group, { nhom: 'chuongtrinh', luuDb: true }, { timeout: 180000 });
+    },
   },
   edux: {
     createSession(data) {
@@ -551,26 +554,35 @@ export const tagApi = {
 };
 
 export const aiApi = {
+  pomodoroGoals(data, options = {}) {
+    return apiClient.post(ENDPOINTS.ai.pomodoroGoals, data, options);
+  },
   status() {
     return apiClient.get(ENDPOINTS.ai.status);
   },
-  ask(data) {
-    return apiClient.post(ENDPOINTS.ai.ask, data);
+  ask(data, options = {}) {
+    return apiClient.post(ENDPOINTS.ai.ask, data, options);
   },
-  plan(data) {
-    return apiClient.post(ENDPOINTS.ai.plan, data);
+  conversations() {
+    return apiClient.get(ENDPOINTS.ai.conversations);
+  },
+  conversation(id, options = {}) {
+    return apiClient.get(`${ENDPOINTS.ai.conversations}/${encodeURIComponent(id)}`, options);
+  },
+  plan(data, options = {}) {
+    return apiClient.post(ENDPOINTS.ai.plan, data, options);
   },
   confirmPlan(data) {
     return apiClient.post(ENDPOINTS.ai.planConfirm, data);
   },
-  examPlan(data) {
-    return apiClient.post(ENDPOINTS.ai.examPlan, data);
+  examPlan(data, options = {}) {
+    return apiClient.post(ENDPOINTS.ai.examPlan, data, options);
   },
   confirmExamPlan(data) {
     return apiClient.post(ENDPOINTS.ai.examPlanConfirm, data);
   },
-  check(data) {
-    return apiClient.post(ENDPOINTS.ai.check, data);
+  check(data, options = {}) {
+    return apiClient.post(ENDPOINTS.ai.check, data, options);
   },
   async summarize(data, options = {}) {
     const { signal, onProgress } = options;
@@ -602,30 +614,29 @@ export const aiApi = {
   cancelSummary(id) {
     return apiClient.delete('/ai/summary-jobs/' + encodeURIComponent(id));
   },
-  draftLeave(data) {
-    return apiClient.post(ENDPOINTS.ai.draftLeave, data);
+  draftLeave(data, options = {}) {
+    return apiClient.post(ENDPOINTS.ai.draftLeave, data, options);
   },
-  progressAdvice(data) {
-    return apiClient.post(ENDPOINTS.ai.progressAdvice, data);
+  progressAdvice(data, options = {}) {
+    return apiClient.post(ENDPOINTS.ai.progressAdvice, data, options);
   },
-  difficultNotes(data) {
-    return apiClient.post(ENDPOINTS.ai.difficultNotes, data);
+  difficultNotes(data, options = {}) {
+    return apiClient.post(ENDPOINTS.ai.difficultNotes, data, options);
   },
 };
 
 export const quizApi = {
   list() {
-    return aiResourceRequest("get", ENDPOINTS.quizzes.list);
+    return apiClient.get(ENDPOINTS.quizzes.list);
   },
   create(data) {
-    return aiResourceRequest("post", ENDPOINTS.quizzes.list, data);
+    return apiClient.post(ENDPOINTS.quizzes.list, data);
   },
   detail(id) {
-    return aiResourceRequest("get", `${ENDPOINTS.quizzes.detail}/${id}`);
+    return apiClient.get(`${ENDPOINTS.quizzes.detail}/${id}`);
   },
   submit(id, data) {
-    return aiResourceRequest(
-      "post",
+    return apiClient.post(
       `${ENDPOINTS.quizzes.submit}/${id}/submit`,
       data,
     );
@@ -634,10 +645,10 @@ export const quizApi = {
 
 export const weaknessApi = {
   list() {
-    return aiResourceRequest("get", ENDPOINTS.weaknesses.list);
+    return apiClient.get(ENDPOINTS.weaknesses.list);
   },
   analyze(data) {
-    return aiResourceRequest("post", ENDPOINTS.weaknesses.analyze, data);
+    return apiClient.post(ENDPOINTS.weaknesses.analyze, data);
   },
 };
 
@@ -648,17 +659,3 @@ export const healthApi = {
     });
   },
 };
-// Both paths exist in published backend contracts; retry only a missing route.
-async function aiResourceRequest(method, url, data) {
-  try {
-    return await apiClient.request({ method, url, data, timeout: 180000 });
-  } catch (error) {
-    if (error.response?.status !== 404) throw error;
-    return apiClient.request({
-      method,
-      url: ENDPOINTS.aiResourcesPrefix + url,
-      data,
-      timeout: 180000,
-    });
-  }
-}

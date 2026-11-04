@@ -57,6 +57,7 @@ function normalizeTask(row, fallbackSource) {
     dueSource: source === "EDUX" && ["subject", "exam"].includes(row.dueSource) ? row.dueSource : null,
     subjectDeadline: typeof row.subjectDeadline === "string" ? row.subjectDeadline : null,
     subjectStartTime: typeof row.subjectStartTime === "string" ? row.subjectStartTime : null,
+    completedAt: row.completedAt || (row.completed_at ? row.completed_at.replace(" ", "T") + (/Z$|[+-]\d{2}:?\d{2}$/.test(row.completed_at) ? "" : "Z") : null),
     status, priority, statusLabel: mapStatusLabel(status), priorityLabel: priority ? mapPriorityLabel(priority) : "Chưa đặt",
   };
 }
@@ -139,16 +140,36 @@ export function workspaceStats(tasks, now = new Date()) {
   const weekday = (date.getUTCDay() + 6) % 7;
   const weekStart = new Date(date.getTime() - weekday * DAY_MS).toISOString().slice(0, 10);
   const weekEnd = new Date(date.getTime() + (6 - weekday) * DAY_MS).toISOString().slice(0, 10);
-  const weekTasks = tasks.filter(task => { const day = workspaceDay(task.deadline); return day && day >= weekStart && day <= weekEnd; });
+  const inWeek = value => { const day = workspaceDay(value); return Boolean(day && day >= weekStart && day <= weekEnd); };
+  const weekTasks = tasks.filter(task => {
+    if (inWeek(task.deadline) || task.status === "COMPLETED" && inWeek(task.completedAt)) return true;
+    // EDUX often sets a course-wide window instead of an individual weekly due date.
+    // Only include that window when both boundaries are known; sync time is not completion time.
+    const start = workspaceDay(task.subjectStartTime), end = workspaceDay(task.subjectDeadline);
+    return task.source === "EDUX" && Boolean(start && end && start <= end && start <= weekEnd && end >= weekStart);
+  });
   const completed = weekTasks.filter(task => task.status === "COMPLETED").length;
   const inProgress = weekTasks.filter(task => task.status === "IN_PROGRESS").length;
+  const eduxTasks = tasks.filter(task => task.source === "EDUX");
+  const weekKeys = new Set(weekTasks.map(task => task.key));
+  const progressFraction = task => {
+    if (task.status === "COMPLETED") return 1;
+    if (task.source !== "EDUX" || task.status !== "IN_PROGRESS") return 0;
+    const done = Number(task.progress?.daHoc), total = Number(task.progress?.tongSo);
+    return Number.isFinite(done) && Number.isFinite(total) && total > 0 ? Math.max(0, Math.min(1, done / total)) : 0;
+  };
+  const progressPercent = rows => rows.length ? Math.round(rows.reduce((sum, task) => sum + progressFraction(task), 0) / rows.length * 100) : null;
   return {
     total: tasks.length, completed: tasks.filter(task => task.status === "COMPLETED").length,
     pending: tasks.filter(task => task.status !== "COMPLETED").length,
     today: filterWorkspaceTasks(tasks, { tab: "today" }, now).length,
     upcoming: filterWorkspaceTasks(tasks, { tab: "upcoming" }, now).length,
     overdue: tasks.filter(task => taskDueMeta(task, now).isOverdue).length,
-    week: { total: weekTasks.length, completed, inProgress, pending: weekTasks.length - completed - inProgress, percent: weekTasks.length ? Math.round(completed / weekTasks.length * 100) : 0 },
+    week: { start: weekStart, end: weekEnd, total: weekTasks.length, completed, inProgress,
+      pending: weekTasks.length - completed - inProgress, percent: progressPercent(weekTasks),
+      edux: weekTasks.filter(task => task.source === "EDUX").length },
+    edux: { total: eduxTasks.length, completed: eduxTasks.filter(task => task.status === "COMPLETED").length, percent: progressPercent(eduxTasks),
+      outsideWeek: eduxTasks.filter(task => !weekKeys.has(task.key)).length },
   };
 }
 

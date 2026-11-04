@@ -64,4 +64,27 @@ test('EDUX deadlines persist and distinguish removed dates from unavailable look
     assert.equal((await db.layBaiTapEDUX(1))[0].due, '2026-11-06', 'legacy deadline input also round trips');
     await assert.rejects(db.luuBaiTapEDUX(1, [{ ...task, dueSource: 'unrecognized' }]), /dueSource/);
     assert.equal((await db.layBaiTapEDUX(1))[0].due, '2026-11-06', 'invalid metadata never overwrites a saved deadline');
+
+    await t.test('EDUX completion time persists without treating sync time as completion', async () => {
+        const done = { ...task, id: 'completion', status: 'Hoàn thành', progress: { daHoc: 5, tongSo: 5 } };
+        await db.luuBaiTapEDUX(3, [done]);
+        assert.equal((await db.layBaiTapEDUX(3))[0].completedAt, null, 'first import cannot infer when completed work was done');
+        await db.capNhatTrangThaiBaiTapEDUX(3, done.id, 'Chưa làm');
+        await db.capNhatTrangThaiBaiTapEDUX(3, done.id, 'Hoàn thành');
+        const timestamp = (await db.layBaiTapEDUX(3))[0].completedAt;
+        assert.ok(timestamp.endsWith('Z'), 'SQLite UTC time has an explicit offset in the API');
+        assert.ok(Math.abs(Date.now() - Date.parse(timestamp)) < 5000);
+        await db.executeQuery("UPDATE EduxAssignments SET completed_at='2026-10-25 17:01:00' WHERE user_id=3");
+        await db.capNhatTrangThaiBaiTapEDUX(3, done.id, 'Hoàn thành');
+        await db.luuBaiTapEDUX(3, [done]);
+        assert.equal((await db.layBaiTapEDUX(3))[0].completedAt, '2026-10-25T17:01:00Z', 'repeated completed sync does not move work to the current week');
+        await db.luuBaiTapEDUX(3, [{ ...task, id: done.id }]);
+        await db.closePool();
+        assert.equal((await db.layBaiTapEDUX(3))[0].completedAt, '2026-10-25T17:01:00Z', 'a partial sync and app restart preserve the known completion time');
+        await db.luuBaiTapEDUX(3, [{ ...done, status: 'Đang làm' }]);
+        assert.equal((await db.layBaiTapEDUX(3))[0].completedAt, null, 'remote reopening clears the old completion time');
+        await db.capNhatTrangThaiBaiTapEDUX(3, done.id, 'Hoàn thành');
+        await db.capNhatTrangThaiBaiTapEDUX(3, done.id, 'Chưa làm');
+        assert.equal((await db.layBaiTapEDUX(3))[0].completedAt, null, 'local reopening clears the old completion time');
+    });
 });

@@ -109,15 +109,24 @@ function mapSangDataIU(schema) {
         const nam = s(mon.nam_hoc).trim();
         const ky = (hk || nam ? `${hk} ${nam}`.trim() : 'HK1').replace(/\s+/g, '_') || 'HK1';
         if (!bang_diem[ky]) bang_diem[ky] = {};
-        const key = s(mon.ten_hoc_phan || mon.ma_mon).replace(/\s+/g, '_') || 'Mon_hoc';
+        const baseKey = s(mon.ten_hoc_phan || mon.ma_mon).replace(/\s+/g, '_') || 'Mon_hoc';
+        const key = bang_diem[ky][baseKey] ? `${baseKey}_lan_${Number(mon.lan_hoc) || 1}_thi_${Number(mon.lan_thi) || 1}` : baseKey;
+        const letter = s(mon.diem_chu).trim().toUpperCase();
+        const score = mon.diem_he_10 == null || mon.diem_he_10 === '' ? null : Number(mon.diem_he_10);
+        const evaluation = s(mon.xep_loai).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
         bang_diem[ky][key] = {
-            so_tin_chi: Number(mon.so_tin_chi) || 3,
+            ten_mon: s(mon.ten_hoc_phan || mon.ma_mon),
+            so_tin_chi: Number(mon.so_tin_chi) || 0,
             // Giữ mã môn thật của IU: trước đây chỉ lưu tên nên saveIUData()
             // phải tự bịa mã "SUB_<hash>" và UI hiển thị mã giả đó.
             ma_mon: s(mon.ma_mon),
-            diem_tong_ket: Number(mon.diem_he_10) || 0,
-            diem_chu: s(mon.diem_chu) || 'B',
-            trang_thai: (Number(mon.diem_he_10) || 0) >= 4 ? 'dat' : 'rot'
+            diem_tong_ket: score,
+            diem_he_4: mon.diem_he_4,
+            diem_chu: letter,
+            hoc_ky: hk, nam_hoc: nam,
+            lan_hoc: Number(mon.lan_hoc) || 1, lan_thi: Number(mon.lan_thi) || 1,
+            trang_thai: /khong\s*dat|rot/.test(evaluation) || ['F', 'NP'].includes(letter) ? 'rot'
+                : evaluation.includes('dat') || letter === 'P' || score !== null && score >= 4 ? 'dat' : 'rot'
         };
     }
 
@@ -161,6 +170,14 @@ function mapSangDataIU(schema) {
         ten_nganh_hoc: s(cn.nganh),
         ngay_thang_nam_sinh: toDMY(cn.ngay_sinh),
         bang_diem,
+        ...(goc.chuong_trinh ? { chuong_trinh: goc.chuong_trinh } : {}),
+        ...(Array.isArray(goc.khoi_kien_thuc) ? { khoi_kien_thuc: goc.khoi_kien_thuc } : {}),
+        ...(goc.chuong_trinh_fetched === true && Array.isArray(goc.chuong_trinh_hoc_tap) ? {
+            hoc_phan_chuong_trinh: goc.chuong_trinh_hoc_tap.flatMap(term =>
+                (Array.isArray(term.hoc_phan) ? term.hoc_phan : []).map(course => ({
+                    ...course, hoc_ky: s(term.hoc_ky), nam_hoc: s(term.nam_hoc),
+                }))),
+        } : {}),
         ...(!Array.isArray(iu.lich_hoc?.chi_tiet_thoi_khoa_bieu) || iu.lich_hoc.fetched === false ? {} : { tkb }),
         ...(iu.lich_hoc?.range ? { tkb_range: iu.lich_hoc.range } : {}),
         ...(!Array.isArray(iu.lich_thi?.chi_tiet_lich_thi) || iu.lich_thi.fetched === false ? {} : { lich_thi })
@@ -213,6 +230,8 @@ async function keoNhomIU(session, cookie, nhom, opts = {}) {
             return iu.layHoSoSinhVien(session, cookie, opts);
         case 'bangdiem':
             return iu.layBangDiem(session, cookie, opts);
+        case 'chuongtrinh':
+            return iu.layDuLieuChuongTrinh(session, cookie, opts);
         case 'tkb':
             if (!opts.ngayBatDau || !opts.ngayKetThuc) {
                 throw Object.assign(new Error('tkb cần ngayBatDau và ngayKetThuc (DD/MM/YYYY).'), { statusCode: 400 });
@@ -221,7 +240,7 @@ async function keoNhomIU(session, cookie, nhom, opts = {}) {
         case 'lichthi':
             return iu.layLichThi(session, cookie, opts);
         default:
-            throw Object.assign(new Error(`nhom không hỗ trợ: ${nhom} (hoso|bangdiem|tkb|lichthi).`), { statusCode: 400 });
+            throw Object.assign(new Error(`nhom không hỗ trợ: ${nhom} (hoso|bangdiem|chuongtrinh|tkb|lichthi).`), { statusCode: 400 });
     }
 }
 

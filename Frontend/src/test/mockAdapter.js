@@ -16,6 +16,7 @@ const db = {
   courses: clone(fixture.mockCourses),
   edux: clone(fixture.mockEduxTasks),
   quizzes: clone(fixture.mockQuizzes),
+  conversations: [],
   plans: [],
   sessions: [],
   checklists: [
@@ -91,7 +92,8 @@ function idOf(r) {
 export async function mockAdapter(config) {
   await new Promise((r) => setTimeout(r, 180));
   const method = config.method.toLowerCase(),
-    path = config.url.split("?")[0],
+    // AI resource fixtures use storage keys without their backend mount prefix.
+    path = config.url.split("?")[0].replace(/^\/ai\/(quizzes|weaknesses)(?=\/|$)/, "/$1"),
     parts = path.split("/").filter(Boolean),
     p = config.params || {};
   let body = config.data;
@@ -263,14 +265,14 @@ export async function mockAdapter(config) {
   } else if (path === "/tasks/checklist" && isGet) ok(db.checklists);
   else if (parts[0] === "tasks" && parts[2] === "checklist") {
     if (isPost) {
-      const row = {
+      const rows = (body.steps || [body]).map(step => ({
         checklist_id: ++sequence,
         assignment_id: Number(parts[1]),
-        title: body.title,
+        title: step.title, done_when: step.doneWhen || '', estimated_minutes: step.minutes || null,
         is_completed: 0,
-      };
-      db.checklists.push(row);
-      ok(row);
+      }));
+      db.checklists.push(...rows);
+      ok(body.steps ? rows : rows[0]);
     } else
       ok(db.checklists.filter((r) => String(r.assignment_id) === parts[1]));
   } else if (parts[0] === "tasks" && parts[1] === "checklist") {
@@ -279,7 +281,7 @@ export async function mockAdapter(config) {
     if (method === "delete")
       db.checklists = db.checklists.filter((r) => r !== row);
     else if (parts[3] === "done") row.is_completed = body.isCompleted ? 1 : 0;
-    else Object.assign(row, body);
+    else Object.assign(row, body, ...(body.doneWhen !== undefined ? [{ done_when: body.doneWhen }] : []), ...(body.minutes !== undefined ? [{ estimated_minutes: body.minutes }] : []));
     ok(row);
   } else if (parts[0] === "tags") {
     const rows = parts[1] === "edux" ? db.edux : db.tasks,
@@ -321,6 +323,21 @@ export async function mockAdapter(config) {
   } else if (parts[0] === "ai") {
     if (parts[1] === "status")
       ok({ available: true, online: true, provider: "mock" });
+    else if (parts[1] === 'conversations') {
+      if (parts[2]) {
+        const row = db.conversations.find(item => item.id === decodeURIComponent(parts[2]));
+        if (!row) fail(config, 'Không tìm thấy hội thoại.', 404);
+        ok(row);
+      } else ok([...db.conversations].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ messages, ...row }) => row));
+    }
+    else if (parts[1] === "pomodoro-goals") {
+      const duration = Number(body.durationMinutes) || 25;
+      const first = Math.max(1, Math.floor(duration / 3));
+      ok({ goal: body.goal, durationMinutes: duration, persisted: false, source: "mock", note: "Gợi ý trong chế độ dữ liệu mẫu.", steps: [
+        { id: "step-1", title: "Xác định một phần việc cụ thể", minutes: first, doneWhen: "Viết được đầu ra cần hoàn thành" },
+        { id: "step-2", title: "Thực hành và tự kiểm tra phần việc", minutes: duration - first, doneWhen: "Có kết quả thực hành và ghi lại phần còn vướng" },
+      ] });
+    }
     else if (parts.at(-1) === "confirm") {
       if (!Array.isArray(body.sessions) || (!body.sessions.length && parts[1] === 'plan')) fail(config, 'Chưa có buổi học để xác nhận.', 400);
       for (const session of body.sessions) db.study.push({schedule_id:++sequence,title:session.title,study_date:session.date,start_time:session.start,end_time:session.end,status:'PLANNED'});
@@ -343,16 +360,26 @@ export async function mockAdapter(config) {
               title: "Ôn kiến thức",
               subject: "Tự học",
               examId: parts[1] === 'exam-plan' ? 1 : null,
+              ...(parts[1] === 'exam-plan' ? { objective: 'Giải thích được khái niệm bằng lời của mình', selfTest: 'Viết một ví dụ và tự kiểm tra kết quả' } : {}),
             },
           ],
       });
-    else
-      ok({
+    else {
+      const answer = {
         answer:
           "Đây là phản hồi trong chế độ dữ liệu mẫu.\n\nĐể học hiệu quả, bạn có thể:\n1. Đọc lại khái niệm và ghi chú ý chính.\n2. Thử một ví dụ nhỏ để kiểm tra cách hiểu.\n3. Tự giải thích lại bằng lời của mình.\n\nKhi kết nối backend thật, AI Tutor sẽ trả lời theo nội dung bạn gửi.",
-        conversationId: body.conversationId || "mock-chat",
+        conversationId: body.conversationId || 'mock-chat-' + ++sequence,
         source: "mock",
-      });
+      };
+      if (parts[1] === 'ask') {
+        let row = db.conversations.find(item => item.id === answer.conversationId);
+        const now = new Date().toISOString();
+        if (!row) { row = { id: answer.conversationId, title: body.question.slice(0, 100), createdAt: now, messages: [] }; db.conversations.push(row); }
+        row.messages.push({ role: 'user', text: body.question, createdAt: now }, { role: 'assistant', text: answer.answer, createdAt: now });
+        row.updatedAt = now;
+      }
+      ok(answer);
+    }
   } else if (parts[0] === "email") {
     if (parts[1] === "status")
       ok({ connected: db.connections.outlook, synced: true });
@@ -414,7 +441,7 @@ export async function mockAdapter(config) {
         })),
       );
     else if (parts[1] === "current-courses")
-      ok({ courses: fixture.mockSubjects });
+      ok({ resolved: true, semester: "HK1", academicYear: "2026-2027", courses: fixture.mockSubjects.map(subject => ({ subjectId: subject.subject_id, subjectName: subject.subject_name, subjectCode: subject.subject_code })) });
     else if (parts[1] === "iu" || parts[1] === "edux") {
       const key = parts[1];
       if (parts[2] === "session") db.connections[key] = method !== "delete";
@@ -525,6 +552,8 @@ export async function mockAdapter(config) {
         }
         value = {
           ...info,
+          subject: info.subjectId ? subject(info.subjectId).subject_name : info.subject || '',
+          semester: info.subjectId ? 'HK1' : '', academicYear: info.subjectId ? '2026-2027' : '',
           title: info.title || "Tài liệu mới",
           type: (info.filename || info.title || "file").split(".").at(-1),
           size: config.data?.size || 0,
@@ -536,6 +565,7 @@ export async function mockAdapter(config) {
           ...clone(fixture.mockQuizzes[0]),
           title: "Quiz: " + body.subject,
           subject: body.subject,
+          topic: body.topic, difficulty: body.difficulty, source: { kind: 'mock', title: 'Quiz mẫu: chưa đọc tài liệu thật' },
         };
       const row = {
         ...value,

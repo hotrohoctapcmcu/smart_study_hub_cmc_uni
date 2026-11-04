@@ -1,5 +1,8 @@
 'use strict';
 
+const { createHash } = require('node:crypto');
+const { textOnlyChapters } = require('../shared/eduxContent');
+
 function migrateLearning(db) {
     db.run(`
         CREATE TABLE IF NOT EXISTS LearningCourses (
@@ -71,17 +74,48 @@ function migrateLearning(db) {
             created_at TEXT NOT NULL,
             PRIMARY KEY(user_id, course_id, input_hash, part_key)
         );
+        CREATE TABLE IF NOT EXISTS LearningCardBatches (
+            user_id INTEGER NOT NULL,
+            course_id TEXT NOT NULL,
+            source_hash TEXT NOT NULL,
+            summary_hash TEXT NOT NULL,
+            batch_key TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            PRIMARY KEY(user_id, course_id, source_hash, summary_hash, batch_key)
+        );
     `);
 
     for (const [table, column, type] of [
         ['LearningSummaries', 'input_hash', "TEXT NOT NULL DEFAULT ''"],
         ['LearningSummaries', 'pipeline_version', 'INTEGER NOT NULL DEFAULT 1'],
         ['LearningSummaries', 'summary_hash', "TEXT NOT NULL DEFAULT ''"],
+        ['LearningSummaries', 'format_json', "TEXT NOT NULL DEFAULT '{}'"],
+        ['LearningSummaries', 'cards_state_json', "TEXT NOT NULL DEFAULT '{}'"],
         ['LearningCards', 'summary_hash', "TEXT NOT NULL DEFAULT ''"]
     ]) {
         const columns = db.exec(`PRAGMA table_info(${table})`)[0].values.map(row => row[1]);
         if (!columns.includes(column)) db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
     }
+
+    // Remove image payloads and references written by older versions as well.
+    const rows = db.exec('SELECT user_id,course_id,chapters_json,complete FROM LearningCourses')[0]?.values || [];
+    let cleanedUp = false;
+    for (const [userId, courseId, stored, wasComplete] of rows) {
+        let previous;
+        try { previous = JSON.parse(stored); } catch { continue; }
+        const chapters = textOnlyChapters(previous);
+        const serialized = JSON.stringify(chapters);
+        if (serialized === stored) continue;
+        const documents = chapters.flatMap(chapter => chapter.documents || []);
+        const complete = wasComplete && chapters.length > 0 && documents.length > 0 &&
+            chapters.every(chapter => chapter.complete !== false) && documents.every(document => document.status === 'ready');
+        const hash = createHash('sha256').update(JSON.stringify(chapters.map(chapter => [chapter.id, chapter.title,
+            (chapter.documents || []).map(document => [document.id, document.title, document.number, document.rawContent ?? document.content])]))).digest('hex');
+        db.run('UPDATE LearningCourses SET chapters_json=?,source_hash=?,complete=? WHERE user_id=? AND course_id=?',
+            [serialized, hash, complete ? 1 : 0, userId, courseId]);
+        cleanedUp = true;
+    }
+    if (cleanedUp) db.run('VACUUM');
 }
 
 module.exports = { migrateLearning };

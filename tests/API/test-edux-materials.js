@@ -3,9 +3,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
 const { collectCourseMaterials, materialText } = require('../../API/utils/edux-materials');
 
 const cookie = 'access_token=test-session-only';
@@ -46,6 +43,21 @@ test('unresolved or empty timetable scope never reads all joined courses', async
     const empty = await collectCourseMaterials('', { scope: { resolved: true, courses: [] }, edux });
     assert.equal(empty.complete, true); assert.equal(calls, 0);
     await assert.rejects(() => collectCourseMaterials('', { scope, edux }), { statusCode: 401 });
+});
+
+test('course callbacks persist a finished course before fetching the next course', async () => {
+    const second = { id: 'edux-web', name: 'Web', subject_code: 'WEB' }, seen = [], progress = [];
+    const edux = fixture({
+        layHocPhan: async () => [subject, second],
+        layChuongTrinhHoc: async id => {
+            if (id === second.id) assert.deepEqual(seen, ['edux-sql'], 'the first course was delivered before scanning the second');
+            return [{ id: `${id}-chapter`, title: 'Chương 1' }];
+        },
+    });
+    const result = await collectCourseMaterials(cookie, { scope: { ...scope, courses: [...scope.courses, { subjectId: 8, subjectCode: 'WEB', subjectName: 'Web' }] }, edux,
+        onProgress: entry => progress.push(entry), onCourse: async (course, failures) => { assert.equal(course.chapters[0].documents[0].status, 'ready'); assert.deepEqual(failures, []); seen.push(course.id); } });
+    assert.deepEqual(seen, ['edux-sql', 'edux-web']); assert.equal(result.courses.length, 2);
+    assert.deepEqual(progress.map(entry => [entry.done, entry.total]), [[0, 2], [1, 2]]);
 });
 
 test('retrieves every current course/chapter/slide in source order with bounded parallelism', async () => {
@@ -115,11 +127,6 @@ test('transient GET failures retry, while session expiry stops acquisition witho
 });
 
 test('real EDUX adapter reads presentation endpoint, nested documents and auth/timeout errors without write requests', async t => {
-    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ssh-edux-images-'));
-    t.after(() => {
-        assert.ok(path.resolve(directory).startsWith(path.resolve(os.tmpdir()) + path.sep));
-        fs.rmSync(directory, { recursive: true, force: true });
-    });
     const image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=';
     const requests = [];
     const server = http.createServer((req, res) => {
@@ -157,14 +164,15 @@ test('real EDUX adapter reads presentation endpoint, nested documents and auth/t
         }
     });
     const edux = require('../../CRWEB/modules/EDUX');
-    const result = await collectCourseMaterials(cookie, { scope, edux, retryDelayMs: 0, imageCache: { directory } });
+    const original = await edux.layNoiDungSlide('slide-1', { cookie, includeImages: true });
+    assert.equal(original.image_base64, image, 'the crawler can still retrieve images on demand');
+    const result = await collectCourseMaterials(cookie, { scope, edux, retryDelayMs: 0 });
     assert.equal(result.complete, true); assert.equal(result.courses[0].chapters[0].documents.length, 2);
     assert.ok(requests.some(request => request.pathname.endsWith('/presentation/document-summary') && request.query.includes('model_id=chapter-1')));
     assert.ok(!requests.some(request => request.pathname.endsWith('/chapter-1/slides')));
     assert.equal(result.courses[0].chapters[0].documents[0].content, 'Khóa ngoại.');
     const slide = result.courses[0].chapters[0].documents[0];
-    assert.match(slide.images[0], /^\/api\/v1\/learning\/images\/[a-f0-9]{64}\.png$/);
-    assert.deepEqual(fs.readFileSync(path.join(directory, path.basename(slide.images[0]))), Buffer.from(image, 'base64'));
+    assert.equal(Object.hasOwn(slide, 'images'), false);
     assert.ok(!JSON.stringify(result).includes(image), 'course responses never embed the large base64 field');
     const { aggregateCourseText } = require('../../API/utils/course-material-text');
     assert.ok(!aggregateCourseText(result.courses[0]).includes(image), 'AI gets source text without binary data');

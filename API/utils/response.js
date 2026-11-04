@@ -30,4 +30,15 @@ const binaryHandler = callback => async (req, res, next) => {
     }
 };
 
-module.exports = { dataHandler, spreadHandler, binaryHandler };
+const cancellableDataHandler = callback => async (req, res, next) => {
+    const controller = new AbortController();
+    const close = () => { if (!res.writableEnded) controller.abort(); };
+    res.on('close', close);
+    try {
+        const data = await callback(req, { signal: controller.signal });
+        if (!res.destroyed) res.json({ success: true, data });
+    } catch (error) { if (!res.destroyed) next(error); }
+    finally { res.removeListener('close', close); }
+};
+
+module.exports = { dataHandler, spreadHandler, binaryHandler, cancellableDataHandler };

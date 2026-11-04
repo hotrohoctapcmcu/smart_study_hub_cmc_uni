@@ -6,12 +6,14 @@ const context = require('./study-context.service');
 const { fail, clean, required } = require('../validators/hoctapai.validator');
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const now = () => new Date().toISOString();
+const { resolveQuizSource } = require('./quiz-source.service');
 
-function createQuizService({ q, one, userId, mutate }) {
+function createQuizService({ q, one, userId, mutate, getDb }) {
     const quizView = row => {
         const submitted = Boolean(row.submitted_at);
         return { id: row.quiz_id, subject: row.subject, topic: row.topic, difficulty: row.difficulty,
             createdAt: row.created_at, submittedAt: row.submitted_at, status: submitted ? 'submitted' : 'draft',
+            source: row.source_json ? JSON.parse(row.source_json) : { kind: 'unspecified', title: 'Bản cũ: chưa ghi nhận nguồn' },
             questions: JSON.parse(row.questions_json).map(({ correctIndex, explanation, ...question }) => submitted ? { ...question, correctIndex, explanation } : question),
             ...(submitted && { answers: JSON.parse(row.answers_json), result: JSON.parse(row.result_json) }) };
     };
@@ -24,15 +26,16 @@ function createQuizService({ q, one, userId, mutate }) {
                 questionCount: item.questions.length, score: item.result?.score ?? null };
         });
     }
-    async function generateQuiz(body = {}) {
+    async function generateQuiz(body = {}, options = {}) {
         const subject = required(body.subject, 'Môn học', 120);
         const topic = required(body.topic, 'Chủ đề', 180);
         const count = body.count === undefined ? 5 : body.count;
         if (!Number.isInteger(count) || count < 3 || count > 15) throw fail('Số câu phải từ 3 đến 15.');
         const difficulty = body.difficulty || 'medium';
         if (!['easy', 'medium', 'hard'].includes(difficulty)) throw fail('Độ khó không hợp lệ.');
-        const sourceText = body.sourceText ? required(body.sourceText, 'Nội dung ôn tập', 15000) : '';
-        const study = await context.buildStudyContext(userId, { studyData: body.studyData });
+        const resolved = body.source ? await resolveQuizSource(body.source, { getDb, userId, subject }) : null;
+        const sourceText = resolved?.text || (body.sourceText ? required(body.sourceText, 'Nội dung ôn tập', 15000) : '');
+        const source = resolved?.evidence || { kind: sourceText ? 'provided-text' : 'general', title: sourceText ? 'Văn bản người học cung cấp' : 'Kiến thức chung; không dùng tài liệu nguồn' };
         const valid = output => Array.isArray(output?.questions) && output.questions.length === count && output.questions.every(item =>
             typeof item?.question === 'string' && item.question.trim() && item.question.length <= 2000 &&
             Array.isArray(item.options) && item.options.length === 4 && item.options.every(o => typeof o === 'string' && o.trim() && o.length <= 1000) &&
@@ -42,15 +45,16 @@ function createQuizService({ q, one, userId, mutate }) {
             `Tạo đúng ${count} câu trắc nghiệm kiến thức bằng tiếng Việt. Mỗi câu có 4 lựa chọn và duy nhất 1 đáp án đúng.`,
             `Môn: ${subject}. Chủ đề: ${topic}. Độ khó: ${difficulty}.`,
             'Mỗi câu ghi rõ chủ đề con để theo dõi điểm yếu, kèm giải thích đáp án. Không đặt câu hỏi về thông tin cá nhân của người học.',
-            sourceText ? `Chỉ đặt câu dựa trên nội dung sau:\n${sourceText}` : 'Dùng kiến thức chuẩn của môn/chủ đề được yêu cầu; ưu tiên các ghi chú có liên quan.',
-            `Ghi chú liên quan:\n${JSON.stringify(study.notes.filter(n => n.subject?.toLowerCase() === subject.toLowerCase()).slice(0, 15))}`
-        ].join('\n\n'), { validate: valid, schemaDescription: JSON.stringify({ questions: [{ question: 'string', topic: 'string', options: ['A', 'B', 'C', 'D'], correctIndex: 0, explanation: 'string' }] }) });
+            sourceText ? `Chỉ đặt câu dựa trên nội dung sau:\n${sourceText}` : 'Dùng kiến thức chuẩn của môn/chủ đề được yêu cầu.',
+            sourceText ? 'Không sử dụng nguồn bên ngoài nội dung đã chọn.' : 'Không khẳng định đã sử dụng tệp hoặc tài liệu riêng của người học.'
+        ].join('\n\n'), { signal: options.signal, validate: valid, schemaDescription: JSON.stringify({ questions: [{ question: 'string', topic: 'string', options: ['A', 'B', 'C', 'D'], correctIndex: 0, explanation: 'string' }] }) });
         if (!valid(output)) throw new gemini.GeminiError('Bộ câu hỏi AI chưa hợp lệ. Hãy thử lại.', 'GEMINI_SCHEMA', 502);
         const questions = output.questions.map((item, i) => ({ id: `q${i + 1}`, question: item.question.trim(), topic: clean(item.topic, 180) || topic,
             options: item.options.map(o => o.trim()), correctIndex: item.correctIndex, explanation: item.explanation.trim() }));
         const id = randomUUID();
-        await q(`INSERT INTO AiQuizzes(quiz_id,user_id,subject,topic,difficulty,questions_json,created_at)
-            VALUES(@id,@uid,@subject,@topic,@difficulty,@questions,@created)`, { id, subject, topic, difficulty, questions: JSON.stringify(questions), created: now() });
+        options.signal?.throwIfAborted();
+        await q(`INSERT INTO AiQuizzes(quiz_id,user_id,subject,topic,difficulty,questions_json,created_at,source_json)
+            VALUES(@id,@uid,@subject,@topic,@difficulty,@questions,@created,@source)`, { id, subject, topic, difficulty, questions: JSON.stringify(questions), created: now(), source: JSON.stringify(source) });
         return quiz(id);
     }
     async function submitQuiz(id, body = {}) {
@@ -106,7 +110,7 @@ function createQuizService({ q, one, userId, mutate }) {
         const reports = await q('SELECT * FROM AiWeaknessReports WHERE user_id=@uid AND evidence_hash=@hash ORDER BY created_at DESC LIMIT 1', { hash: hash(evidence) });
         return { ...evidence, advice: reports.length ? JSON.parse(reports[0].advice_json) : [], analyzedAt: reports[0]?.created_at || null };
     }
-    async function analyzeWeaknesses() {
+    async function analyzeWeaknesses(options = {}) {
         const evidence = await weaknessEvidence();
         if (!evidence.topics.length) return { ...evidence, advice: [], analyzedAt: null };
         const study = await context.buildStudyContext(userId, { difficultOnly: true });
@@ -115,13 +119,14 @@ function createQuizService({ q, one, userId, mutate }) {
             'Mỗi đề xuất phải dùng đúng key của một chủ đề đã đo. Đưa ra nội dung cần học, một bài luyện tập cụ thể và cách tự kiểm tra lại.',
             `Kết quả đo từ bài kiểm tra:\n${JSON.stringify(evidence)}`,
             `Ghi chú khó và điểm thực tế (chỉ làm ngữ cảnh):\n${JSON.stringify({ notes: study.notes, grades: study.grades })}`
-        ].join('\n\n'), { validate: value => Array.isArray(value?.advice),
+        ].join('\n\n'), { signal: options.signal, validate: value => Array.isArray(value?.advice),
             schemaDescription: JSON.stringify({ advice: [{ key: 'topic key from input', recommendation: 'string', exercise: 'string' }] }) });
         const advice = (Array.isArray(output?.advice) ? output.advice : []).map(item => ({ key: item?.key,
             recommendation: clean(item?.recommendation, 1500), exercise: clean(item?.exercise, 1500) }))
             .filter((item, i, all) => evidence.topics.some(t => t.key === item.key) && item.recommendation && all.findIndex(a => a.key === item.key) === i).slice(0, 30);
         if (!advice.length) throw new gemini.GeminiError('AI chưa trả đề xuất gắn với kết quả thực tế. Hãy thử lại.', 'GEMINI_SCHEMA', 502);
         const created = now();
+        options.signal?.throwIfAborted();
         await q('INSERT INTO AiWeaknessReports(report_id,user_id,evidence_hash,advice_json,created_at) VALUES(@id,@uid,@hash,@advice,@created)',
             { id: randomUUID(), hash: hash(evidence), advice: JSON.stringify(advice), created });
         return { ...evidence, advice, analyzedAt: created };

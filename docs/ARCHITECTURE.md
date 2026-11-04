@@ -70,7 +70,7 @@ Schema gốc nằm trong `database/schema/00_sqlite_init.sql`; các thay đổi 
 | --- | --- |
 | Dữ liệu nghiệp vụ | `DB_PATH` hoặc `data/unistudy.db`; lưu trên máy qua SQLite. |
 | File người dùng tải lên | `DOCUMENTS_PATH`, mặc định `documents/` cạnh file DB; metadata nằm trong SQLite. |
-| Ảnh slide EDUX | `EDUX_IMAGES_PATH`, mặc định `edux-images/` cạnh DB; endpoint ảnh trả file đã cache. |
+| Học liệu EDUX | SQLite chỉ lưu văn bản và metadata chương/slide; ảnh được loại bỏ trước khi lưu. Crawler vẫn hỗ trợ lấy ảnh tạm trong bộ nhớ khi cần. |
 | Tài khoản EDUX | `EDUX_ACCOUNTS_PATH`, mặc định `edux-accounts/` cạnh DB; JSON chứa email và mật khẩu để đăng nhập lại. Trạng thái API không trả mật khẩu. |
 | Phiên cổng dữ liệu | API giữ session/cookie hoạt động trong RAM; Electron có phiên Microsoft riêng và có thể khôi phục kết nối. |
 | Sổ tay cấu trúc | Nội dung chuẩn trong `Notebooks`/`Notes`; nháp trình duyệt theo hồ sơ để phục hồi khi lưu lỗi. |

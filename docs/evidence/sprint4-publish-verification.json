@@ -1,0 +1,71 @@
+{
+  "date": "2026-11-05",
+  "timezone": "Asia/Saigon",
+  "recordedAt": "2026-11-05T02:24:04+07:00",
+  "baselineCommit": "3348fcb",
+  "testedSource": "Current Sprint 4 working tree delivered by the accompanying commit; application source unchanged between test runs and commit",
+  "checks": [
+    {
+      "command": "npm run test:api",
+      "passed": 152,
+      "failed": 0,
+      "scope": "Node contract/API/temporary SQLite/mock provider"
+    },
+    {
+      "command": "npm run test:ai",
+      "passed": 96,
+      "failed": 0,
+      "scope": "AI contracts, parallel pipeline, mocked/local HTTP providers"
+    },
+    {
+      "command": "npm run test:electron",
+      "passed": 31,
+      "failed": 0,
+      "scope": "Mock Electron entry/IPC/portal session flows"
+    },
+    {
+      "command": "npm run test:course-learning",
+      "passed": 63,
+      "failed": 0,
+      "scope": "Current courses, EDUX materials, summary/card recovery, mock source"
+    },
+    {
+      "command": "npm run test:frontend-api",
+      "passed": 10,
+      "failed": 0,
+      "scope": "Actual Axios/HTTP boundary with temporary SQLite"
+    },
+    {
+      "command": "npm --prefix Frontend test -- --maxWorkers=2",
+      "passed": 455,
+      "failed": 0,
+      "files": 50,
+      "scope": "React/Vitest/jsdom"
+    },
+    {
+      "command": "npm --prefix Frontend run build",
+      "passed": true,
+      "seconds": 13.7,
+      "remainingWarnings": [
+        "MathJax eval",
+        "chunks larger than 500 kB"
+      ]
+    }
+  ],
+  "testGroupsOverlap": true,
+  "applicationRestarted": false,
+  "livePortalsOrAiRetested": false,
+  "historicalEvidencePreserved": true,
+  "githubAudit": "docs/evidence/github-sprint-sync.json",
+  "logs": "OS temporary directory codex-smart-study-sprint-audit; not committed",
+  "dependencies": "Frontend dependencies restored with npm ci from the existing unchanged lockfile",
+  "publicationExclusions": [
+    ".env",
+    "data/",
+    "node_modules/",
+    "Frontend/node_modules/",
+    "Frontend/dist/",
+    "tests/artifacts/",
+    "*.log"
+  ]
+}

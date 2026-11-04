@@ -178,7 +178,6 @@ Backend đọc `.env` ở thư mục gốc; Vite đọc `Frontend/.env`. Dùng h
 | `VITE_USE_MOCK` | `false`; bật khi phát triển với dữ liệu giả lập. |
 | `DOCUMENTS_PATH` | Thư mục file tải lên, mặc định `documents/` cạnh database. |
 | `EDUX_ACCOUNTS_PATH` | Thư mục thông tin tài khoản EDUX cục bộ, mặc định `edux-accounts/` cạnh database. |
-| `EDUX_IMAGES_PATH` | Thư mục cache ảnh học liệu, mặc định `edux-images/` cạnh database. |
 | `GEMINI_TIMEOUT_MS` | `45000`, giới hạn thời gian gọi Gemini. Provider hiện dùng phiên web khách. |
 | `OUTLOOK_ACCESS_TOKEN` | Tùy chọn cho headless; token Graph có quyền `Mail.Read`. |
 

@@ -28,8 +28,10 @@ function createSummaryService() {
     }
     async function execute(text, title, parts, signal, update) {
         signal.throwIfAborted();
+        let format = {};
         const summary = await summarizeInBatches({ subject: title || 'nội dung được cung cấp' }, text, {
             singlePass: true,
+            onFormat: value => { format = value; },
             limits: { inputChars: 14000, partChars: 4000, summaryChars: 8000 },
             load: key => parts.get(key), save: (key, value) => { signal.throwIfAborted(); parts.set(key, value); }, update,
             ask: prompt => learningAiQueue.run(async () => {
@@ -44,7 +46,7 @@ function createSummaryService() {
                 }
             })
         });
-        return { title, summary };
+        return { title, summary, ...format };
     }
     function start(job, text, title) {
         job.status = 'queued'; job.error = null; job.updated = Date.now();

@@ -1,0 +1,61 @@
+{
+  "checkedAt": "2026-11-04T14:44:23.013968+00:00",
+  "checks": [
+    {
+      "command": "npm run test:ai",
+      "kind": "mock AI/HTTP/temporary SQLite",
+      "tests": 89,
+      "passed": 89,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run test:api",
+      "kind": "contracts/HTTP/temporary SQLite",
+      "tests": 139,
+      "passed": 139,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm --prefix Frontend test -- --maxWorkers=2 --reporter=dot",
+      "kind": "mock/jsdom",
+      "files": 47,
+      "passed": 427,
+      "failed": 0
+    },
+    {
+      "command": "npm --prefix Frontend run build",
+      "passed": true,
+      "seconds": 10.26,
+      "warnings": [
+        "existing MathJax eval",
+        "large chunks"
+      ]
+    }
+  ],
+  "countsOverlap": true,
+  "actualProviderReport": "learning-recovery-live.json",
+  "recovery": {
+    "manualAiOnly": true,
+    "queue": "FIFO one complete course job at a time",
+    "summaryPresentationTarget": 8000,
+    "defaultSummaryStorageCap": 120000,
+    "oversizedAnswer": "bounded rewrite of actual draft, then explicitly expanded or real AI sections",
+    "cardSource": "persisted AI summary only",
+    "cardBatchChars": 3500,
+    "cardAttempts": [
+      4,
+      2,
+      1
+    ],
+    "checkpoints": "transactional SQLite per user/course/source/summary/batch",
+    "resume": "explicit user retry skips completed batches and persisted summary"
+  },
+  "limitations": [
+    "Existing app not restarted",
+    "No direct post-build Electron/device acceptance",
+    "Real provider timed out on synthetic summary; cards skipped; no real large-course acceptance"
+  ],
+  "applicationDatabaseWrites": 0
+}

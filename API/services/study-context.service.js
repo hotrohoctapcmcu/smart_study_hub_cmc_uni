@@ -17,6 +17,8 @@ const MAX_CONTEXT_CHARS = 48000;
 
 const { truncate, normalizeDate, normalizeTime, normalizeDateTime, toNumber, toBoolean, take, sourceInfo, normalizeNote, normalizeDocument, isIncompleteStatus } = require("../utils/study-context");
 const { loadOptionalTable } = require("./study-sources.service");
+const { summarizeGrades, gradeTerm } = require('../../database/shared/academic-results');
+const { resolveEnrollmentYear } = require('../../database/shared/student-identity');
 
 function setDb(instance) {
     db = instance;
@@ -159,12 +161,14 @@ async function buildStudyContext(studentId, options = {}) {
         subjectId: item.subject_id,
         subjectCode: truncate(item.subject_code, 30),
         subject: truncate(item.subject_name, 120),
-        semester: truncate(item.semester, 40),
-        academicYear: truncate(item.academic_year, 30),
+        semester: gradeTerm(item.semester, item.academic_year).semester,
+        academicYear: gradeTerm(item.semester, item.academic_year).academicYear,
         attempt: toNumber(item.attempt_number),
         componentScore: toNumber(item.component_score),
         examScore: toNumber(item.exam_score),
         finalScore: toNumber(item.final_score),
+        score4: toNumber(item.score_4),
+        credits: toNumber(item.credits),
         letterGrade: truncate(item.letter_grade, 5),
         passed: item.is_passed === null || item.is_passed === undefined
             ? null
@@ -187,6 +191,10 @@ async function buildStudyContext(studentId, options = {}) {
         studentCode: truncate(profileRaw.student_code, 40),
         fullName: truncate(profileRaw.full_name, 120),
         major: truncate(profileRaw.major, 120),
+        enrollmentYear: resolveEnrollmentYear(profileRaw.student_code, profileRaw.enrollment_year),
+        programName: truncate(profileRaw.program_name, 160),
+        totalProgramCredits: profileRaw.total_program_credits ?? null,
+        earnedCredits: profileRaw.total_passed_credits ?? null,
         currentSemester: truncate(profileRaw.current_semester, 40)
     } : null;
 
@@ -195,6 +203,7 @@ async function buildStudyContext(studentId, options = {}) {
         generatedAt: new Date().toISOString(),
         timezone: TIMEZONE,
         profile,
+        academicHistory: summarizeGrades(gradesRaw || []),
         timetable,
         studySchedules,
         assignments,
@@ -219,6 +228,16 @@ async function buildStudyContext(studentId, options = {}) {
             })
         }
     };
+    // Keep one summary per semester from the complete transcript even when raw
+    // grade rows are trimmed. Bound unusually long transcripts explicitly.
+    for (const name of ['semesters', 'retakes', 'needsReview']) {
+        const history = context.academicHistory;
+        if (history[name].length > 20) {
+            history[`${name}Total`] = history[name].length;
+            history[name] = name === 'semesters' ? history[name].slice(-20) : history[name].slice(0, 20);
+            history.truncated = true;
+        }
+    }
     // Giới hạn tổng payload, đồng thời giữ JSON hợp lệ và báo rõ phần bị cắt.
     while (JSON.stringify(context).length > MAX_CONTEXT_CHARS) {
         const name = Object.keys(DEFAULT_LIMITS).filter(key => context[key].length)

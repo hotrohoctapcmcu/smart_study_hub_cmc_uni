@@ -24,16 +24,30 @@ import { formatDateISO, addDays } from "../../utils/date";
 import { expandClassSchedules } from "../../utils/scheduleAdapter";
 import { mapProgress } from "../../utils/progressAdapter";
 
-export function SubjectGrid({ state, courses }) {
+export function SubjectGrid({ state, courses, programName }) {
   const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
+  const [block, setBlock] = useState('');
+  const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
+  const visible = courses.filter(course => (!search.trim() || normalize(`${course.code} ${course.name}`).includes(normalize(search.trim())))
+    && (!status || course.status === status) && (!block || course.block === block));
+  const blocks = [...new Set(courses.map(course => course.block).filter(Boolean))];
   if (state.loading) return <div className="profile-card-grid"><LoadingSkeleton /><LoadingSkeleton /><LoadingSkeleton /></div>;
   if (state.error) return <ErrorState error={state.error} onRetry={state.refetch} title="Không thể tải danh sách môn học" />;
   if (!courses.length) return <EmptyState title="Chưa có môn học" description="Môn học sẽ xuất hiện sau lần đồng bộ tiếp theo." />;
   return (
     <section className="profile-tab-section" aria-labelledby="subjects-heading">
-      <div className="profile-section-heading"><div><span>MÔN HỌC CỦA BẠN</span><h2 id="subjects-heading">Học phần đang theo dõi</h2><p>Tổng hợp tiến độ và kết quả ở từng môn học.</p></div></div>
+      <div className="profile-section-heading"><div><span>MÔN HỌC CỦA BẠN</span><h2 id="subjects-heading">Toàn bộ học phần</h2><p>{programName ? `${programName}. ` : ''}Bao gồm các môn đã học, đang học và chưa bắt đầu.</p></div></div>
+      <div className="profile-subject-filters">
+        <label>Tìm học phần<input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Tên hoặc mã học phần" /></label>
+        <label>Trạng thái học phần<select value={status} onChange={event => setStatus(event.target.value)}><option value="">Tất cả trạng thái</option>{[...new Set(courses.map(course => course.status))].map(value => <option key={value}>{value}</option>)}</select></label>
+        {blocks.length > 0 && <label>Khối kiến thức<select value={block} onChange={event => setBlock(event.target.value)}><option value="">Tất cả khối</option>{blocks.map(value => <option key={value}>{value}</option>)}</select></label>}
+      </div>
+      <p className="profile-subject-count" role="status">Hiển thị {visible.length} / {courses.length} học phần</p>
+      {!visible.length && <EmptyState title="Không tìm thấy học phần phù hợp" description="Thử đổi tên, mã hoặc bộ lọc học phần." />}
       <div className="subject-grid">
-        {courses.map((course, index) => {
+        {visible.map((course, index) => {
           const tone = getScoreTone(course.score);
           return (
             <article className="subject-profile-card" key={course.id || `${course.code}-${index}`}>
@@ -42,7 +56,7 @@ export function SubjectGrid({ state, courses }) {
                 <span className={`subject-state ${course.status === "Đang học" ? "is-learning" : ""}`}>{course.status}</span>
               </div>
               <div><h3>{course.name}</h3><p className="subject-code">{course.code || "Chưa có mã môn"}</p></div>
-              <div className="subject-meta"><span>Giảng viên <strong>{course.instructor}</strong></span><span>Tín chỉ <strong>{course.credit || "—"}</strong></span></div>
+              <div className="subject-meta"><span>Giảng viên <strong>{course.instructor}</strong></span><span>Tín chỉ <strong>{course.credit ?? "—"}</strong></span>{course.block && <span>Khối kiến thức <strong>{course.block}</strong></span>}</div>
               <div className="subject-progress-copy"><span>Tiến độ</span><strong>{course.progress === null ? "Chưa cập nhật" : `${course.progress}%`}</strong></div>
               <div className="subject-progress"><span style={{ width: `${course.progress || 0}%` }} /></div>
               <div className="subject-card-footer">
@@ -55,7 +69,7 @@ export function SubjectGrid({ state, courses }) {
       </div>
       <Modal isOpen={Boolean(selected)} onClose={() => setSelected(null)} title={selected?.name || "Chi tiết môn học"}>
         {selected && <div className="stack">
-          <div className="subject-meta"><span>Mã môn <strong>{selected.code || "—"}</strong></span><span>Giảng viên <strong>{selected.instructor}</strong></span><span>Tín chỉ <strong>{selected.credit || "—"}</strong></span><span>Học kỳ <strong>{selected.semester || "Chưa cập nhật"}</strong></span><span>Điểm hiện tại <strong>{selected.score ?? "—"}</strong></span><span>Trạng thái <strong>{selected.status}</strong></span></div>
+          <div className="subject-meta"><span>Mã môn <strong>{selected.code || "—"}</strong></span><span>Giảng viên <strong>{selected.instructor}</strong></span><span>Tín chỉ <strong>{selected.credit ?? "—"}</strong></span><span>Học kỳ <strong>{selected.semester || "Chưa cập nhật"}</strong></span><span>Điểm hiện tại <strong>{selected.score ?? "—"}</strong></span><span>Trạng thái <strong>{selected.status}</strong></span>{selected.block && <span>Khối kiến thức <strong>{selected.block}</strong></span>}{selected.portalStatus && <span>Kết quả trên IU <strong>{selected.portalStatus}</strong></span>}</div>
           <Link className="btn btn-primary" to="/learning">Đến không gian học tập <ArrowRight size={14} /></Link>
         </div>}
       </Modal>
@@ -63,8 +77,8 @@ export function SubjectGrid({ state, courses }) {
   );
 }
 
-export function SemesterTimeline({ grades, compact }) {
-  const semesters = buildSemesterRows(grades);
+export function SemesterTimeline({ grades, compact, academicSummary }) {
+  const semesters = buildSemesterRows(grades, academicSummary);
   if (!semesters.length) return <EmptyState title="Chưa có dữ liệu kỳ học" description="Thông tin học kỳ sẽ được tổng hợp từ bảng điểm." />;
   return (
     <section className={`profile-tab-section ${compact ? "semester-summary" : ""}`} aria-labelledby="semesters-heading">
@@ -74,12 +88,13 @@ export function SemesterTimeline({ grades, compact }) {
           <article className="semester-item" key={semester.key}>
             <div className="semester-marker"><span>{index + 1}</span></div>
             <div className="semester-card">
-              <div className="semester-card-heading"><div><span>{semester.academicYear || "Năm học chưa cập nhật"}</span><h3>{semester.semester}</h3></div><strong>{semester.gpa === null ? "—" : semester.gpa.toFixed(1)} GPA</strong></div>
+              <div className="semester-card-heading"><div><span>{semester.academicYear || "Năm học chưa cập nhật"}</span><h3>{/^\d+$/.test(semester.semester) ? `Học kỳ ${semester.semester}` : semester.semester}</h3></div><strong>{semester.gpa4 == null ? '—' : semester.gpa4.toFixed(2)} / 4</strong></div>
               <div className="semester-metrics">
                 <span><small>Số môn</small><strong>{semester.subjects}</strong></span>
                 <span><small>Tín chỉ</small><strong>{semester.credits ?? "—"}</strong></span>
                 <span><small>Môn đạt</small><strong>{semester.passed}</strong></span>
                 <span><small>Chưa đạt</small><strong>{semester.failed}</strong></span>
+                <span><small>Trung bình hệ 10</small><strong>{semester.gpa == null ? '—' : semester.gpa.toFixed(2)}</strong></span>
               </div>
             </div>
           </article>
@@ -94,10 +109,10 @@ export function Achievements({ stats, goal }) {
   const activity = progress.data ? mapProgress(progress.data) : null;
   const hours = activity?.totalHours || 0;
   const achievements = [
-    [Trophy, "GPA nổi bật", stats.gpaText === "—" ? "Đang chờ điểm số đầu tiên" : `GPA hiện tại ${stats.gpaText}/10`, "gold", stats.gpa >= 8],
+    [Trophy, "Kết quả nổi bật", stats.gpaText === "—" ? "Đang chờ điểm số đầu tiên" : `Điểm tích lũy ${stats.gpaText}/10`, "gold", stats.gpa >= 8],
     [CheckCircle2, "Chinh phục môn học", `${stats.passed} môn đã đạt`, "mint", stats.passed > 0],
     [Flame, "Chuỗi ngày học", "Duy trì học mỗi ngày để mở huy hiệu", "pink", false],
-    [Target, "Bám sát mục tiêu", `${Math.min(100, Math.round((stats.gpa / goal) * 100) || 0)}% mục tiêu GPA ${goal.toFixed(1)}`, "blue", stats.gpa >= goal],
+    [Target, "Bám sát mục tiêu", `${Math.min(100, Math.round((stats.gpa / goal) * 100) || 0)}% mục tiêu ${goal.toFixed(1)}/10`, "blue", stats.gpa >= goal],
     [Clock3, "Giờ học tập trung", progress.loading ? "Đang tải thời gian học..." : `${hours.toFixed(1)} giờ học đã ghi nhận`, "violet", hours >= 10],
     [Sparkles, "Bạn đồng hành AI", "Khám phá và học cùng AI Tutor", "peach", false],
   ];

@@ -65,11 +65,13 @@ function mapBangDiem(rsDiem, rsThanhPhan) {
             ma_mon: s(e.DAOTAO_HOCPHAN_MA || ""),
             ten_hoc_phan: s(e.DAOTAO_HOCPHAN_TEN || ""),
             so_tin_chi: n(e.DAOTAO_HOCPHAN_HOCTRINH),
-            diem_he_10: n(e.DIEM),
-            diem_he_4: n(e.DIEMQUYDOI),
+            diem_he_10: e.DIEM == null || String(e.DIEM).trim() === '' ? null : n(e.DIEM, null),
+            diem_he_4: e.DIEMQUYDOI == null || String(e.DIEMQUYDOI).trim() === '' ? null : n(e.DIEMQUYDOI, null),
             diem_chu: s(e.DIEMQUYDOI_TEN || ""),
             hoc_ky: s(e.HOCKY || e.HOC_KY || ""),
             nam_hoc: s(e.NAMHOC || e.NAM_HOC || ""),
+            lan_hoc: n(e.LANHOC, 1),
+            lan_thi: n(e.LANTHI, 1),
             xep_loai: s(e.DANHGIA_TEN || ""),
             chi_tiet_diem: {
                 chuyen_can: lay("chuy.n.c.n|chuyencan|cc$"),
@@ -125,9 +127,12 @@ function mapDiemRenLuyen(data) {
 }
 
 function mapChuongTrinhHoc(rows, tichLuy) {
-    const src = (rows && rows.length ? rows : tichLuy) || [];
+    // LayThongTinChuongTrinhHoc is a program dropdown, not the course list.
+    // A successful empty rsChiTiet must also stay empty.
+    const src = Array.isArray(tichLuy) ? tichLuy : Array.isArray(rows) ? rows : [];
     const theoKy = {};
     for (const e of src) {
+        if (!s(e.DAOTAO_HOCPHAN_MA).trim() || !s(e.DAOTAO_HOCPHAN_TEN).trim()) continue;
         const key = `${s(e.NAMHOC || "")}|${s(e.HOCKY || "")}`;
         if (!theoKy[key]) {
             theoKy[key] = {
@@ -139,8 +144,10 @@ function mapChuongTrinhHoc(rows, tichLuy) {
         theoKy[key].hoc_phan.push({
             ma_mon: s(e.DAOTAO_HOCPHAN_MA || ""),
             ten_mon: s(e.DAOTAO_HOCPHAN_TEN || ""),
-            so_tin_chi: n(e.DAOTAO_HOCPHAN_HOCTRINH),
-            loai_hoc_phan: s(e.TENKHOI || e.LOAIHOCPHAN_TEN || ""),
+            so_tin_chi: e.DAOTAO_HOCPHAN_HOCTRINH == null || String(e.DAOTAO_HOCPHAN_HOCTRINH).trim() === ''
+                ? null : n(String(e.DAOTAO_HOCPHAN_HOCTRINH).replace(',', '.'), null),
+            ma_khoi: s(e.MAKHOI || e.DAOTAO_KHOIKIENTHUC_MA || ''),
+            loai_hoc_phan: s(e.TENKHOI || e.DAOTAO_KHOIKIENTHUC_TEN || e.LOAIHOCPHAN_TEN || ""),
             trang_thai: s(e.DANHGIA_TEN || (e.KETQUA === 1 ? "Hoàn thành" : "")),
         });
     }
@@ -189,6 +196,7 @@ function mapLichThi(rows) {
 }
 
 module.exports = {
+    ...require('./program'),
     mapTinTuc,
     mapThongTinCaNhan,
     mapBangDiem,

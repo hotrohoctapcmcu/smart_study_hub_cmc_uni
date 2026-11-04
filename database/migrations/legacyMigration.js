@@ -3,6 +3,8 @@
 const { queryAll } = require('../shared/sqlite');
 
 function migrateSchema(db) {
+    require('./academicMigration').migrateAcademicResults(db);
+    require('./studentIdentityMigration').migrateStudentEnrollmentYears(db);
 
     try {
         db.run(`

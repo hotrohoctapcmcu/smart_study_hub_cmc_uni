@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { useApi } from "../../hooks/useApi";
-import { scheduleApi, studentApi } from "../../api";
-import { unwrapResponse, responseList } from "../../api/apiClient";
+import { useCurrentCourses } from "../../hooks/useCurrentCourses";
+import CurrentCourseHint from "../common/CurrentCourseHint";
+import { scheduleApi } from "../../api";
+import { unwrapResponse } from "../../api/apiClient";
 import { Button, Field, Tabs, ErrorState } from "../common/ui";
 import {
   formatDateISO,
@@ -9,8 +10,10 @@ import {
   minutes,
   parseDate,
 } from "../../utils/date";
+import { assertFutureDateTime, defaultStudySlot, nextPlanningMinute, planningNow } from "../../utils/planning";
 export default function ScheduleEditor({ event, onSaved, onClose }) {
-  const subjects = useApi(studentApi.getSubjects);
+  const subjects = useCurrentCourses(event?.subjectId, event?.subjectName || event?.subject);
+  const [defaultSlot] = useState(defaultStudySlot);
   const [kind, setKind] = useState(event?.kind || "study"),
     [error, setError] = useState(null),
     [busy, setBusy] = useState(false),
@@ -18,9 +21,9 @@ export default function ScheduleEditor({ event, onSaved, onClose }) {
   const [form, setForm] = useState({
     title: event?.title || "",
     subjectId: event?.subjectId || "",
-    studyDate: formatDateISO(event?.studyDate || new Date()),
-    startTime: event?.startTime?.slice(0, 5) || "19:00",
-    endTime: event?.endTime?.slice(0, 5) || "20:00",
+    studyDate: formatDateISO(event?.studyDate || defaultSlot.studyDate),
+    startTime: event?.startTime?.slice(0, 5) || (event?.studyDate && event.studyDate > planningNow().date ? "19:00" : defaultSlot.startTime),
+    endTime: event?.endTime?.slice(0, 5) || (event?.studyDate && event.studyDate > planningNow().date ? "20:00" : defaultSlot.endTime),
     notes: event?.notes || "",
     className: event?.className || "",
     room: event?.room || "",
@@ -29,12 +32,17 @@ export default function ScheduleEditor({ event, onSaved, onClose }) {
     value: form[name],
     onChange: (e) => setForm((f) => ({ ...f, [name]: e.target.value })),
   });
+  const timingChanged = !event?.id || form.studyDate !== formatDateISO(event.studyDate)
+    || form.startTime !== event.startTime?.slice(0, 5) || form.endTime !== event.endTime?.slice(0, 5);
+  const earliestStart = timingChanged && form.studyDate === planningNow().date
+    ? nextPlanningMinute().slice(11, 16) : "07:00";
   async function save(e) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     setConflicts([]);
     try {
+      if (timingChanged) assertFutureDateTime(`${form.studyDate}T${form.startTime}`, "Giờ bắt đầu học");
       if (minutes(form.endTime) <= minutes(form.startTime))
         throw new Error("Giờ kết thúc phải sau giờ bắt đầu.");
       const result = await scheduleApi.checkConflicts({
@@ -51,8 +59,12 @@ export default function ScheduleEditor({ event, onSaved, onClose }) {
         );
       }
       const body = {
-        ...form,
+        title: form.title,
         subjectId: form.subjectId ? Number(form.subjectId) : null,
+        studyDate: form.studyDate,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        notes: form.notes,
       };
       if (kind === "class" && !body.subjectId)
         throw new Error("Vui lòng chọn môn học cho tiết học.");
@@ -61,7 +73,11 @@ export default function ScheduleEditor({ event, onSaved, onClose }) {
         await (kind === "study"
           ? scheduleApi.create(body)
           : scheduleApi.createClass({
-              ...body,
+              subjectId: body.subjectId,
+              className: form.className,
+              room: form.room,
+              startTime: body.startTime,
+              endTime: body.endTime,
               startDate: body.studyDate,
               endDate: body.studyDate,
               dayOfWeek:
@@ -101,20 +117,21 @@ export default function ScheduleEditor({ event, onSaved, onClose }) {
       <Field label="Môn học">
         <select {...field("subjectId")} required={kind === "class"}>
           <option value="">Chưa phân loại</option>
-          {responseList(subjects.data, "subjects").map((s) => (
+          {subjects.subjects.map((s) => (
             <option key={s.subject_id ?? s.id} value={s.subject_id ?? s.id}>
               {s.subject_name || s.name}
             </option>
           ))}
         </select>
       </Field>
-      <Field label="Ngày học" type="date" required {...field("studyDate")} />
+      <CurrentCourseHint state={subjects} />
+      <Field label="Ngày học" type="date" required min={timingChanged ? planningNow().date : undefined} {...field("studyDate")} />
       <div className="form-grid">
         <Field
           label="Bắt đầu"
           type="time"
           required
-          min="07:00"
+          min={earliestStart > "07:00" ? earliestStart : "07:00"}
           max="21:59"
           {...field("startTime")}
         />

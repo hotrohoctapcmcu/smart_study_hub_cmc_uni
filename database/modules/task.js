@@ -195,7 +195,7 @@ async function layChecklist(studentId) {
     return await executeQuery(`
         SELECT c.checklist_id, c.student_id, c.subject_id,
                sub.subject_code, sub.subject_name,
-               c.assignment_id, c.title, c.description,
+               c.assignment_id, c.title, c.description, c.estimated_minutes, c.done_when,
                c.priority, c.deadline, c.is_completed,
                c.completed_at, c.created_at
         FROM Checklists c
@@ -215,13 +215,14 @@ async function themChecklist(studentId, data = {}) {
     if (!sid) throw new Error('Không tìm thấy sinh viên');
 
     await executeQuery(`
-        INSERT INTO Checklists (student_id, subject_id, assignment_id, title, description, priority, deadline)
-        VALUES (@sid, @subId, @asgId, @title, @desc, @pr, @dl)
+        INSERT INTO Checklists (student_id, subject_id, assignment_id, title, description, priority, deadline,estimated_minutes,done_when)
+        VALUES (@sid, @subId, @asgId, @title, @desc, @pr, @dl,@estimate,@output)
     `, {
         sid,
         subId: data.subjectId ? parseInt(data.subjectId, 10) : null,
         asgId: data.assignmentId ? parseInt(data.assignmentId, 10) : null,
         title: data.title,
+        estimate: data.minutes ?? null, output: data.doneWhen ?? null,
         desc: data.description || null,
         pr: data.priority || 'MEDIUM',
         dl: data.deadline instanceof Date ? data.deadline.toISOString() : (data.deadline || null)
@@ -240,6 +241,7 @@ async function capNhatChecklist(checklistId, data = {}, studentId = null) {
         ds: data.description || null,
         pr: data.priority || null,
         dl: data.deadline || null,
+        estimate: data.minutes ?? null, output: data.doneWhen ?? null,
         cid: parseInt(checklistId, 10)
     };
 
@@ -249,6 +251,8 @@ async function capNhatChecklist(checklistId, data = {}, studentId = null) {
             description = COALESCE(@ds, description),
             priority = COALESCE(@pr, priority),
             deadline = COALESCE(@dl, deadline),
+            estimated_minutes = COALESCE(@estimate, estimated_minutes),
+            done_when = COALESCE(@output, done_when),
             updated_at = datetime('now')
         WHERE checklist_id = @cid`;
 

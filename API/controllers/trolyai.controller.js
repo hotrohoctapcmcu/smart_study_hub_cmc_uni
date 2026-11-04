@@ -1,15 +1,16 @@
 'use strict';
 
-const { dataHandler } = require('../utils/response');
+const { dataHandler, cancellableDataHandler } = require('../utils/response');
 
 function createTrolyaiController(service) {
     return {
         status: dataHandler(req => service.status()),
-        ask: dataHandler(req => service.ask(req.body)),
-        plan: dataHandler(req => service.plan(req.body)),
+        ask: cancellableDataHandler((req, options) => service.ask(req.body, options)),
+        plan: cancellableDataHandler((req, options) => service.plan(req.body, options)),
         confirmPlan: dataHandler(req => service.confirmPlan(req.body)),
-        examPlan: dataHandler(req => service.examPlan(req.body)),
-        check: dataHandler(req => service.check(req.body)),
+        pomodoroGoals: cancellableDataHandler((req, options) => service.pomodoroGoals(req.body, options)),
+        examPlan: cancellableDataHandler((req, options) => service.examPlan(req.body, options)),
+        check: cancellableDataHandler((req, options) => service.check(req.body, options)),
         summarize: async (req, res, next) => {
             const controller = new AbortController();
             const close = () => { if (!res.writableEnded) controller.abort(); };
@@ -20,9 +21,9 @@ function createTrolyaiController(service) {
         },
         summaryJob: dataHandler(req => service.summaryJob(req.params.id)),
         cancelSummary: dataHandler(req => service.cancelSummary(req.params.id)),
-        draftLeave: dataHandler(req => service.draftLeave(req.body)),
-        progressAdvice: dataHandler(req => service.progressAdvice(req.body)),
-        difficultNotes: dataHandler(req => service.difficultNotes(req.body))
+        draftLeave: cancellableDataHandler((req, options) => service.draftLeave(req.body, options)),
+        progressAdvice: cancellableDataHandler((req, options) => service.progressAdvice(req.body, options)),
+        difficultNotes: cancellableDataHandler((req, options) => service.difficultNotes(req.body, options))
     };
 }
 

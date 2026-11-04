@@ -22,6 +22,7 @@ import {
   isToday,
   parseDate,
 } from "../../utils/date";
+import { assertPlanningDate, planningNow } from "../../utils/planning";
 import {
   PageHeader,
   Card,
@@ -47,8 +48,10 @@ export default function Schedule() {
     [editor, setEditor] = useState(null),
     [selected, setSelected] = useState(null),
     [deleting, setDeleting] = useState(null);
-  const [slotDate, setSlotDate] = useState(formatDateISO()),
+  const [slotDate, setSlotDate] = useState(() => planningNow().date),
     [duration, setDuration] = useState(60);
+  const [slotRequest, setSlotRequest] = useState(null);
+  const slotKey = `${slotDate}:${duration}`;
   const { run, busy } = useAction();
   useEffect(() => {
     if (params.get("action") !== "create") return;
@@ -82,7 +85,10 @@ export default function Schedule() {
       (a.studyDate + a.startTime).localeCompare(b.studyDate + b.startTime),
     );
   });
-  const slots = useApi(() => scheduleApi.getFreeSlots(slotDate, duration), {
+  const slots = useApi(() => {
+    assertPlanningDate(slotDate, "Ngày tìm giờ trống");
+    return scheduleApi.getFreeSlots(slotDate, duration);
+  }, {
     immediate: false,
   });
   useEffect(() => {
@@ -268,8 +274,9 @@ export default function Schedule() {
               <Field
                 label="Ngày"
                 type="date"
+                min={planningNow().date}
                 value={slotDate}
-                onChange={(e) => setSlotDate(e.target.value)}
+                onChange={(e) => { setSlotDate(e.target.value); setSlotRequest(null); }}
               />
               <Field
                 label="Thời lượng (phút)"
@@ -277,17 +284,17 @@ export default function Schedule() {
                 min="15"
                 max="900"
                 value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
+                onChange={(e) => { setDuration(Number(e.target.value)); setSlotRequest(null); }}
               />
               <Button
                 variant="outline"
-                onClick={slots.refetch}
-                disabled={slots.loading || !parseDate(slotDate) || duration < 15 || duration > 900}
+                onClick={() => { setSlotRequest(slotKey); slots.refetch(); }}
+                disabled={slots.loading || !parseDate(slotDate) || slotDate < planningNow().date || !Number.isInteger(duration) || duration < 15 || duration > 900}
               >
                 <Clock size={14} />
                 Tìm giờ trống
               </Button>
-              {slots.loading || slots.response || slots.error ? (
+              {slotRequest === slotKey && (slots.loading || slots.response || slots.error) ? (
                 <ApiContent state={slots}>
                   {(() => {
                     const data =

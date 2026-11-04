@@ -1,0 +1,54 @@
+{
+  "date": "2026-11-05",
+  "timezone": "Asia/Saigon",
+  "frontendTests": {
+    "passed": 46,
+    "failed": 0
+  },
+  "apiAndPersistenceTests": {
+    "passed": 24,
+    "failed": 0
+  },
+  "chromiumChecks": {
+    "passed": 25,
+    "failed": 0,
+    "history": [
+      {
+        "name": "History lists the completed conversation from the API",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "History drawer fits on mobile without covering its close control",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "History search accepts Vietnamese titles without accents",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "Opening history restores messages and keeps the unsent question",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "name": "Starting a new conversation keeps saved history",
+        "passed": true,
+        "detail": ""
+      }
+    ],
+    "errors": []
+  },
+  "build": {
+    "passed": true,
+    "seconds": 12.24
+  },
+  "source": "Existing GET /ai/conversations and GET /ai/conversations/:id",
+  "applicationDatabaseModified": false,
+  "screenshots": [
+    "tests/artifacts/ai-qa/ai-history-desktop.png",
+    "tests/artifacts/ai-qa/ai-history-mobile.png"
+  ]
+}

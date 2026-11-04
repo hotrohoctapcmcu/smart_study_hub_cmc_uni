@@ -120,7 +120,7 @@ async function main() {
         const service = require('../../API/routes/learning').service;
         const deadline = Date.now() + 5000;
         while (Date.now() < deadline) {
-            if (['completed', 'failed'].includes(service.job(learningJobId).status)) return;
+            if (['completed', 'partial', 'failed'].includes(service.job(learningJobId).status)) return;
             await new Promise(resolve => setTimeout(resolve, 10));
         }
         throw new Error('Background learning sync did not finish before test cleanup.');

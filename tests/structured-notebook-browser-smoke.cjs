@@ -93,13 +93,13 @@ function run({ app, BrowserWindow }) {
         for (const item of (catalog?.courses || []).slice(0, 4)) {
           const course = (await (await fetch(`http://127.0.0.1:3001/api/v1/learning/courses/${encodeURIComponent(item.id)}`, { signal: AbortSignal.timeout(5000) })).json()).data;
           for (const chapter of course.chapters || []) {
-            const slide = (chapter.documents || chapter.slides || []).find(slide => slide.image_base64 || slide.imageBase64 || slide.images?.length || slide.imageUrl || slide.image_url);
+            const slide = (chapter.documents || chapter.slides || []).find(slide => slide.content || slide.rawContent);
             if (slide) { seed.lecture = { id: course.id, subject: course.subject, chapters: [{ id: chapter.id, title: chapter.title, documents: [slide] }] }; report.liveCourseRead.sourceImagesFound = true; report.liveCourseRead.imageSource = { course: course.subject, chapter: chapter.title, slide: slide.title }; break; }
           }
           if (seed.lecture) break;
         }
       } catch (error) { report.liveCourseRead.message = error.message; }
-      report.lectureMode = seed.lecture ? 'Real read-only source slide snapshot reused through isolated adapter' : 'No live raster image available; labelled canvas QA fixture verifies existing image_base64 pipeline';
+      report.lectureMode = seed.lecture ? 'Real read-only text slide snapshot reused through isolated adapter' : 'Legacy image fields are ignored; EDUX slides cannot insert persisted images';
       const seedFile = path.join(profile, 'seed.json'); fs.writeFileSync(seedFile, JSON.stringify(seed));
       vite = spawn(process.execPath, [__filename, '--vite-worker', seedFile], { cwd: frontend, windowsHide: true, stdio: 'pipe', env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } });
       let log = ''; vite.stdout.on('data', chunk => { log += chunk; }); vite.stderr.on('data', chunk => { log += chunk; });
@@ -165,11 +165,11 @@ function run({ app, BrowserWindow }) {
       check('AI flashcard preview inserts a real revealable flashcard block', await js(`document.querySelector('textarea[aria-label="Câu hỏi flashcard"]').value==='QA fixture: Foreign Key là gì?' && document.querySelector('textarea[aria-label="Đáp án flashcard"]').value.includes('Khóa tham chiếu')`));
       await click('Chèn từ bài giảng'); await wait(`!!document.querySelector('select[aria-label="Chọn môn bài giảng"] option:nth-child(2)')`);
       const lecture = await js(`({id:window.__nwQA.state.lecture.id,chapter:window.__nwQA.state.lecture.chapters[0].id})`);
-      await set('select[aria-label="Chọn môn bài giảng"]', String(lecture.id)); await set('select[aria-label="Chọn chương bài giảng"]', String(lecture.chapter)); await wait(`!!document.querySelector('.nw-lecture-grid button')`); await js(`document.querySelector('.nw-lecture-grid button').click()`); await click('Chèn slide vào trang'); await wait(`!!document.querySelector('.nw-prosemirror img')`);
-      await wait(`document.querySelector('.nw-prosemirror img')?.naturalWidth>0`);
-      check('Lecture picker reuses source image_base64 and preserves citation', await js(`(()=>{const image=document.querySelector('.nw-prosemirror img');return image.src.startsWith('data:image/')&&image.naturalWidth>0&&document.querySelector('.nw-image-caption').value.includes('Slide 1')})()`), report.lectureMode);
+      await set('select[aria-label="Chọn môn bài giảng"]', String(lecture.id)); await set('select[aria-label="Chọn chương bài giảng"]', String(lecture.chapter)); await wait(`!!document.querySelector('.nw-lecture-grid button')`); await js(`document.querySelector('.nw-lecture-grid button').click()`);
+      check('EDUX text slides cannot insert or persist legacy images', await js(`![...document.querySelectorAll('.nw-lecture-grid img')].length && [...document.querySelectorAll('[role=dialog] button')].find(button=>button.textContent.includes('Chèn slide vào trang')).disabled`), report.lectureMode);
+      await click('Hủy');
       await saved();
-      await screenshot('editor-slide-insertion');
+      await screenshot('editor-edux-text');
       await js(`document.querySelector('.nw-document-scroll').scrollTop=0`); await screenshot('editor-desktop');
       for (const [width, height, suffix] of [[834, 1100, 'tablet'], [390, 844, 'mobile']]) { viewport(width, height); await sleep(250); check(`Editor no document overflow at ${width}px`, await js(`innerWidth===${width} && document.documentElement.scrollWidth<=innerWidth && document.querySelector('.nw-editor').getBoundingClientRect().right<=innerWidth`)); await screenshot(`editor-${suffix}`); }
       await click('Focus'); await wait(`!!document.querySelector('.nw-editor.nw-focus')`); check('Focus hides app chrome and fits viewport', await js(`(()=>{const rect=document.querySelector('.nw-editor').getBoundingClientRect();return getComputedStyle(document.querySelector('.sidebar')).display==='none'&&rect.left===0&&rect.top===0&&rect.width===innerWidth&&rect.height===innerHeight})()`)); await screenshot('editor-focus-mobile');

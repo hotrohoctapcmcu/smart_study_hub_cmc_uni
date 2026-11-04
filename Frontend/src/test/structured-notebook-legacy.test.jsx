@@ -32,7 +32,7 @@ describe('legacy note compatibility with structured notebook pages', () => {
     mount();
     expect(await screen.findByText('Khóa ngoại tham chiếu bảng khác.')).toBeTruthy();
     expect(screen.queryByText(/ssh-notebook/)).toBeNull();
-    fireEvent.change(screen.getByPlaceholderText('Tìm môn học, chương, slide, tài liệu...'), { target: { value: 'tham chiếu' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Tìm ghi chú...' }), { target: { value: 'tham chiếu' } });
     expect(screen.getByText('CSDL')).toBeTruthy();
     expect(screen.queryByText('Ghi chú cũ')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Xuất TXT' }));

@@ -48,6 +48,8 @@ function migrateSprint3(db) {
             PRIMARY KEY(user_id, request_id)
         );
     `);
+    const columns = db.exec('PRAGMA table_info(AiQuizzes)')[0]?.values.map(row => row[1]) || [];
+    if (!columns.includes('source_json')) db.run('ALTER TABLE AiQuizzes ADD COLUMN source_json TEXT');
 }
 
 module.exports = { migrateSprint3 };

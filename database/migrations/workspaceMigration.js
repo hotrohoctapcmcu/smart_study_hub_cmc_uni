@@ -18,15 +18,18 @@ function migrateWorkspace(db) {
         PomodoroSessions: {
             client_id: 'TEXT',
             actual_study_seconds: 'INTEGER',
-            focus_segments: 'TEXT'
+            focus_segments: 'TEXT',
+            learning_context: "TEXT NOT NULL DEFAULT '{}'"
         },
+        Checklists: { estimated_minutes: 'INTEGER', done_when: 'TEXT' },
         Assignments: { tags: "TEXT NOT NULL DEFAULT '[]'" },
         EduxAssignments: {
             tags: "TEXT NOT NULL DEFAULT '[]'",
             deadline: 'TEXT',
             deadline_source: 'TEXT',
             subject_deadline: 'TEXT',
-            subject_start_time: 'TEXT'
+            subject_start_time: 'TEXT',
+            completed_at: 'TEXT'
         }
     };
     db.run('BEGIN');

@@ -1,0 +1,262 @@
+{
+  "checkedAt": "2026-11-04T15:36:24.738028+00:00",
+  "status": "archived",
+  "scope": "generated test logs at workspace root and tests/artifacts",
+  "fileCount": 43,
+  "totalBytes": 1131766,
+  "files": [
+    {
+      "path": "ai-final-tests.log",
+      "bytes": 18888,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/ai-final-tests.log"
+    },
+    {
+      "path": "ai-learning-tests.log",
+      "bytes": 18852,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/ai-learning-tests.log"
+    },
+    {
+      "path": "api-final-tests.log",
+      "bytes": 49532,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/api-final-tests.log"
+    },
+    {
+      "path": "api-learning-tests.log",
+      "bytes": 45902,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/api-learning-tests.log"
+    },
+    {
+      "path": "api-new-tests.log",
+      "bytes": 3468,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/api-new-tests.log"
+    },
+    {
+      "path": "frontend-final-build.log",
+      "bytes": 30748,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/frontend-final-build.log"
+    },
+    {
+      "path": "frontend-final-tests.log",
+      "bytes": 76718,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/frontend-final-tests.log"
+    },
+    {
+      "path": "frontend-new-tests.log",
+      "bytes": 858,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/frontend-new-tests.log"
+    },
+    {
+      "path": "frontend-targeted-tests.log",
+      "bytes": 77446,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/frontend-targeted-tests.log"
+    },
+    {
+      "path": "learning-integration-tests.log",
+      "bytes": 69568,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-integration-tests.log"
+    },
+    {
+      "path": "learning-length-ai-final.log",
+      "bytes": 22498,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-length-ai-final.log"
+    },
+    {
+      "path": "learning-length-api-final.log",
+      "bytes": 49870,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-length-api-final.log"
+    },
+    {
+      "path": "learning-length-build.log",
+      "bytes": 30748,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-length-build.log"
+    },
+    {
+      "path": "learning-length-frontend-final.log",
+      "bytes": 76760,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-length-frontend-final.log"
+    },
+    {
+      "path": "learning-length-live.log",
+      "bytes": 1096,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-length-live.log"
+    },
+    {
+      "path": "learning-length-targeted.log",
+      "bytes": 17580,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-length-targeted.log"
+    },
+    {
+      "path": "learning-length-ui.log",
+      "bytes": 776,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-length-ui.log"
+    },
+    {
+      "path": "learning-parallel-ai-final.log",
+      "bytes": 23536,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-parallel-ai-final.log"
+    },
+    {
+      "path": "learning-parallel-api-final.log",
+      "bytes": 49916,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-parallel-api-final.log"
+    },
+    {
+      "path": "learning-parallel-benchmark.log",
+      "bytes": 1274,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-parallel-benchmark.log"
+    },
+    {
+      "path": "learning-parallel-build.log",
+      "bytes": 30748,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-parallel-build.log"
+    },
+    {
+      "path": "learning-parallel-frontend-final.log",
+      "bytes": 25398,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-parallel-frontend-final.log"
+    },
+    {
+      "path": "learning-parallel-http.log",
+      "bytes": 8996,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-parallel-http.log"
+    },
+    {
+      "path": "learning-parallel-targeted.log",
+      "bytes": 12780,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-parallel-targeted.log"
+    },
+    {
+      "path": "learning-queue-ai-final.log",
+      "bytes": 19126,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-queue-ai-final.log"
+    },
+    {
+      "path": "learning-queue-api-final.log",
+      "bytes": 49862,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-queue-api-final.log"
+    },
+    {
+      "path": "learning-queue-api-tests.log",
+      "bytes": 8380,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-queue-api-tests.log"
+    },
+    {
+      "path": "learning-queue-build.log",
+      "bytes": 30746,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-queue-build.log"
+    },
+    {
+      "path": "learning-queue-design-build.log",
+      "bytes": 31088,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-queue-design-build.log"
+    },
+    {
+      "path": "learning-queue-design-tests.log",
+      "bytes": 916,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-queue-design-tests.log"
+    },
+    {
+      "path": "learning-queue-design-visual.log",
+      "bytes": 3632,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-queue-design-visual.log"
+    },
+    {
+      "path": "learning-queue-frontend-final.log",
+      "bytes": 76730,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-queue-frontend-final.log"
+    },
+    {
+      "path": "learning-queue-source-final.log",
+      "bytes": 1844,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-queue-source-final.log"
+    },
+    {
+      "path": "learning-queue-ui-tests.log",
+      "bytes": 75700,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/learning-queue-ui-tests.log"
+    },
+    {
+      "path": "live-learning-tests.log",
+      "bytes": 644,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/root/live-learning-tests.log"
+    },
+    {
+      "path": "tests/artifacts/structured-notebook-build.log",
+      "bytes": 29728,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/artifacts/structured-notebook-build.log"
+    },
+    {
+      "path": "tests/artifacts/structured-notebook-vitest.log",
+      "bytes": 1094,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/artifacts/structured-notebook-vitest.log"
+    },
+    {
+      "path": "tests/artifacts/workbook-canvas-smoke.log",
+      "bytes": 11788,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/artifacts/workbook-canvas-smoke.log"
+    },
+    {
+      "path": "tests/artifacts/workbook-frontend-recheck.log",
+      "bytes": 1384,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/artifacts/workbook-frontend-recheck.log"
+    },
+    {
+      "path": "tests/artifacts/workbook-frontend-tests.log",
+      "bytes": 9498,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/artifacts/workbook-frontend-tests.log"
+    },
+    {
+      "path": "tests/artifacts/workbook-ui-qa-extended.log",
+      "bytes": 3460,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/artifacts/workbook-ui-qa-extended.log"
+    },
+    {
+      "path": "tests/artifacts/workbook-ui-qa-recheck.log",
+      "bytes": 8008,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/artifacts/workbook-ui-qa-recheck.log"
+    },
+    {
+      "path": "tests/artifacts/workbook-ui-qa-run.log",
+      "bytes": 24182,
+      "archivedPath": "tests/artifacts/logs/2026-11-04/artifacts/workbook-ui-qa-run.log"
+    }
+  ],
+  "verifiedBeforeCleanup": {
+    "learning-parallel-ai-final.log": {
+      "passed": 94,
+      "failed": 0
+    },
+    "learning-parallel-api-final.log": {
+      "passed": 139,
+      "failed": 0
+    },
+    "learning-parallel-frontend-final.log": {
+      "passed": 428
+    },
+    "learning-queue-design-tests.log": {
+      "passed": 23
+    },
+    "learning-queue-design-build.log": {
+      "passed": true,
+      "seconds": 14.41
+    }
+  },
+  "preserved": [
+    "docs/evidence/*.json",
+    "tests/artifacts screenshots and JSON reports",
+    "source, tests and application data"
+  ],
+  "newTestRuns": 0,
+  "action": "reversible archive",
+  "deletionReview": "Permanent deletion rejected: blocked by policy; used reversible archive instead.",
+  "cleanedAt": "2026-11-04T15:38:18.3846950Z",
+  "deletedCount": 0,
+  "archiveDirectory": "tests/artifacts/logs/2026-11-04",
+  "remainingRootLogs": 0,
+  "movedCount": 43,
+  "verification": {
+    "all43FilesPreservedAtOriginalSize": true,
+    "originalPathsNoLongerExist": true,
+    "rootLogCount": 0
+  }
+}

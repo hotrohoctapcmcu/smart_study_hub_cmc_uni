@@ -79,7 +79,7 @@ describe("Document deep links and previews", () => {
     fireEvent.click(screen.getByRole("button", { name: "Đóng hộp thoại" }));
     expect(screen.getByLabelText("Đường dẫn hiện tại").textContent).toBe("/documents?tab=notes");
     expect(screen.getByRole("tab", { name: "Ghi chú" }).getAttribute("aria-selected")).toBe("true");
-    fireEvent.change(screen.getByPlaceholderText("Tìm môn học, chương, slide, tài liệu..."), { target: { value: "Ghi chú B" } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Tìm ghi chú...' }), { target: { value: "Ghi chú B" } });
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 

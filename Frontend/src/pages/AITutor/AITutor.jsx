@@ -11,11 +11,19 @@ import {
   ChevronDown,
   SlidersHorizontal,
   LoaderCircle,
+  Maximize2,
+  Minimize2,
+  History,
 } from "lucide-react";
-import { aiApi, progressApi } from "../../api";
-import { unwrapResponse } from "../../api/apiClient";
+import { aiApi, progressApi, examApi } from "../../api";
+import { useLocation, useSearchParams } from 'react-router-dom';
+import { unwrapResponse, responseList } from "../../api/apiClient";
+import { useCurrentCourses } from '../../hooks/useCurrentCourses';
+import CurrentCourseHint from '../../components/common/CurrentCourseHint';
+import { mapExam } from '../../utils/examAdapter';
 import { useApi } from "../../hooks/useApi";
 import { formatTime } from "../../utils/date";
+import { planningNow, validateAIPlanningOptions, isFutureStart } from "../../utils/planning";
 import { textContent } from "../../utils/files";
 import {
   defaultAIOptions,
@@ -26,6 +34,7 @@ import { Button, Field, useAction } from "../../components/common/ui";
 import foxAssets from "../../assets/foxAssets";
 import AIContent, { EditableAIContent } from '../../components/common/AIContent';
 import { hasAIText } from '../../utils/aiText';
+import ConversationHistory from './ConversationHistory';
 import "./AITutor.css";
 
 const quick = [
@@ -45,6 +54,14 @@ const tools = [
   ["progressAdvice", "Tư vấn tiến độ"],
   ["difficultNotes", "Phân tích phần khó"],
 ];
+function waitForAI(work, signal) {
+  if (signal.aborted) return Promise.reject(signal.reason);
+  return new Promise((resolve, reject) => {
+    const abort = () => reject(signal.reason);
+    signal.addEventListener('abort', abort, { once: true });
+    Promise.resolve().then(work).then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
+  });
+}
 export function AIQuickActions({ onSelect }) {
   return (
     <div className="ai-welcome-actions" aria-label="Gợi ý học tập">
@@ -58,6 +75,7 @@ export function AIQuickActions({ onSelect }) {
   );
 }
 export function ChatMessage({ message, onConfirm, busy }) {
+  const [draft, setDraft] = useState(message.plan?.data);
   return (
     <div className={"message " + message.role}>
       {message.role !== "user" && (
@@ -77,10 +95,14 @@ export function ChatMessage({ message, onConfirm, busy }) {
                 ? "Đã xác nhận kế hoạch"
                 : "Xem lại kế hoạch trước khi lưu vào hệ thống."}
             </p>
+            {!message.confirmed && <fieldset disabled={busy} className="stack" style={{ border: 0, padding: 0 }}>{(draft?.sessions || []).map((s, i) => <div key={i} className="stack schedule-note">
+              {['title', 'date', 'start', 'end', ...(message.plan.kind === 'examPlan' ? ['objective', 'selfTest'] : [])].map(key => <Field key={key} label={`${({ title: 'Nội dung', date: 'Ngày', start: 'Bắt đầu', end: 'Kết thúc', objective: 'Mục tiêu', selfTest: 'Tự kiểm tra' })[key]} buổi ${i + 1}`} type={key === 'date' ? 'date' : ['start', 'end'].includes(key) ? 'time' : 'text'} value={s[key] || ''} onChange={e => setDraft(d => ({ ...d, sessions: d.sessions.map((row, index) => index === i ? { ...row, [key]: e.target.value } : row) }))} />)}
+              <Button size="sm" variant="ghost" onClick={() => setDraft(d => ({ ...d, sessions: d.sessions.filter((_, index) => index !== i) }))}>Bỏ buổi {i + 1}</Button>
+            </div>)}</fieldset>}
             <Button
               size="sm"
-              disabled={busy || message.confirmed}
-              onClick={() => onConfirm(message)}
+              disabled={busy || message.confirmed || !(draft?.sessions?.length || draft?.phases?.length)}
+              onClick={() => onConfirm({ ...message, plan: { ...message.plan, data: draft } })}
             >
               Xác nhận kế hoạch
             </Button>
@@ -91,7 +113,7 @@ export function ChatMessage({ message, onConfirm, busy }) {
     </div>
   );
 }
-export function ChatInput({ value, onChange, onSend, busy, mode = "ask" }) {
+export function ChatInput({ value, onChange, onSend, busy, mode = "ask", visible = true }) {
   const textarea = useRef(null);
   const limit = mode === 'summarize' ? 500000 : mode === 'draftLeave' ? 1000 : mode === 'check' ? 8000 : 32000;
   const count = Array.from(value).length, tooLong = count > limit;
@@ -101,10 +123,11 @@ export function ChatInput({ value, onChange, onSend, busy, mode = "ask" }) {
     Sparkles,
   ];
   useEffect(() => {
+    if (!visible) return;
     const field = textarea.current;
     field.style.height = "auto";
     field.style.height = Math.min(field.scrollHeight, 160) + "px";
-  }, [value]);
+  }, [value, visible]);
   return (
     <form
       className="chat-input"
@@ -165,11 +188,12 @@ export function AITutorChat({
   mode = "ask",
   progress,
   onCancel,
+  reading = false,
 }) {
   const end = useRef(null);
   useEffect(() => {
     end.current?.scrollIntoView({ block: "nearest" });
-  }, [messages, busy]);
+  }, [messages, busy, error]);
   return (
     <section
       className="ai-chat-workspace"
@@ -224,45 +248,53 @@ export function AITutorChat({
                 <i />
               </span>
               <span>{progress || 'AI Tutor đang xử lý...'}</span>
-              {onCancel && <Button size="sm" variant="outline" onClick={onCancel}>Dừng tóm tắt</Button>}
+              {onCancel && <Button size="sm" variant="outline" onClick={onCancel}>{mode === 'summarize' ? 'Dừng tóm tắt' : 'Dừng yêu cầu'}</Button>}
+            </div>
+          )}
+          {error && (
+            <div className="chat-error" role="alert">
+              {error} · Nội dung vẫn được giữ để bạn thử lại.
             </div>
           )}
           <div ref={end} />
         </div>
       </div>
-      <div className="ai-composer-dock">
-        {error && (
-          <div className="chat-error" role="alert">
-            {error} · Nội dung vẫn được giữ để bạn thử lại.
-          </div>
-        )}
+      <div className="ai-composer-dock" hidden={reading}>
         <ChatInput
           value={input}
           onChange={setInput}
           onSend={onSend}
           busy={busy}
           mode={mode}
+          visible={!reading}
         />
       </div>
     </section>
   );
 }
 export default function AITutor() {
+  const [params] = useSearchParams(), location = useLocation();
+  const sourceContext = location.state?.learningContext || {};
+  const currentCourses = useCurrentCourses(), examsState = useApi(examApi.list);
+  const upcomingExams = responseList(examsState.data, 'exams').map(mapExam).filter(e => isFutureStart(String(e.examDate).slice(0, 10), e.startTime) && !['CANCELLED', 'CANCELED'].includes(e.exam_status));
   const status = useApi(aiApi.status),
     { run, busy: confirming } = useAction();
   const [messages, setMessages] = useState([]),
-    [input, setInput] = useState(""),
+    [input, setInput] = useState(sourceContext.prompt || params.get('prompt') || ''),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [conversationId, setConversationId] = useState(null),
-    [tool, setTool] = useState("ask");
+    [tool, setTool] = useState(params.get('tool') === 'examPlan' ? 'examPlan' : 'ask');
   const [activeMode, setActiveMode] = useState("ask");
-  const [options, setOptions] = useState(defaultAIOptions);
+  const [reading, setReading] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [conversationTitle, setConversationTitle] = useState('');
+  const [options, setOptions] = useState(() => ({ ...defaultAIOptions(), subject: sourceContext.subject || params.get('subject') || '', topic: sourceContext.topic || params.get('topic') || '', context: String(sourceContext.text || '').slice(0, 8000), examId: params.get('examId') || '' }));
   const lock = useRef(false);
-  const summaryController = useRef(null);
+  const requestController = useRef(null);
   const mounted = useRef(true);
   const [progress, setProgress] = useState('');
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; summaryController.current?.abort(); }; }, []);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; requestController.current?.abort(new Error('Đã dừng yêu cầu AI.')); }; }, []);
   async function send() {
     const text = input.trim();
     if (!hasAIText(text) || lock.current) return;
@@ -270,6 +302,10 @@ export default function AITutor() {
     setBusy(true);
     setError("");
     setProgress('');
+    const controller = new AbortController();
+    requestController.current = controller;
+    const deadline = tool === 'summarize' ? null : setTimeout(() => controller.abort(new Error('AI chưa phản hồi trong thời gian chờ. Hãy thử lại.')), 120000);
+    const slow = setTimeout(() => { if (mounted.current) setProgress('AI đang phản hồi chậm. Bạn có thể dừng yêu cầu và thử lại.'); }, 15000);
     const id = Date.now();
     setMessages((m) => [
       ...m,
@@ -277,11 +313,13 @@ export default function AITutor() {
     ]);
     setInput("");
     try {
+      if (tool === 'examPlan' && options.examId && !upcomingExams.some(e => String(e.id) === String(options.examId))) throw new Error('Kỳ thi đã chọn không còn sắp tới. Hãy tải lại danh sách.');
+      if (tool === "plan") validateAIPlanningOptions(options);
       if (tool === "check" && !options.question.trim())
         throw new Error("Nhập câu hỏi cần kiểm tra trong Tùy chọn công cụ.");
       const progress =
         tool === "progressAdvice"
-          ? unwrapResponse(await progressApi.getProgress())
+          ? unwrapResponse(await waitForAI(() => progressApi.getProgress(), controller.signal))
           : {};
       const request = buildAIRequest(
         tool,
@@ -290,14 +328,11 @@ export default function AITutor() {
         conversationId,
         progress,
       );
-      let response;
-      if (tool === 'summarize') {
-        summaryController.current = new AbortController();
-        response = await aiApi.summarize(request, { signal: summaryController.current.signal, onProgress: setProgress });
-      } else response = await aiApi[tool](request);
+      const response = await waitForAI(() => aiApi[tool](request, { signal: controller.signal, ...(tool === 'summarize' ? { onProgress: setProgress } : {}) }), controller.signal);
       if (!mounted.current) return;
       const data = unwrapResponse(response);
       if (data?.conversationId) setConversationId(data.conversationId);
+      if (!messages.length) setConversationTitle(text);
       const answer = formatAIResult(data);
       setMessages((m) => [
         ...m,
@@ -315,16 +350,21 @@ export default function AITutor() {
     } catch (err) {
       if (!mounted.current) return;
       setError(
-        err.response?.data?.message || err.message || "Không thể gửi tin nhắn",
+        controller.signal.aborted ? controller.signal.reason?.message || 'Đã dừng yêu cầu AI.'
+          : err.response?.data?.message || err.message || "Không thể gửi tin nhắn",
       );
       setInput(current => current || text);
     } finally {
       lock.current = false;
-      summaryController.current = null;
-      if (mounted.current) { setBusy(false); setProgress(''); }
+      clearTimeout(deadline);
+      clearTimeout(slow);
+      requestController.current = null;
+      if (mounted.current) { setBusy(false); setProgress(''); status.refetch(); }
     }
   }
   function onQuick(key) {
+    if (lock.current) return;
+    setReading(false);
     setActiveMode(key);
     if (key === "plan") {
       setTool("plan");
@@ -343,7 +383,7 @@ export default function AITutor() {
     }
   }
   return (
-    <div className="page ai-page ai-workspace">
+    <div className={'page ai-page ai-workspace' + (reading ? ' is-reading' : '')} onKeyDown={event => { if (reading && !historyOpen && event.key === 'Escape') setReading(false); }}>
       <header className="ai-workspace-header" data-region="A">
         <div className="ai-workspace-title">
           <span className="ai-title-icon" aria-hidden="true">
@@ -351,16 +391,32 @@ export default function AITutor() {
           </span>
           <h1>AI Tutor</h1>
           {messages.length > 0 && (
-            <span className="ai-conversation-title" title={messages[0].text}>
-              {messages[0].text}
+            <span className="ai-conversation-title" title={conversationTitle || messages[0].text}>
+              {conversationTitle || messages[0].text}
             </span>
           )}
         </div>
         <div className="ai-header-actions">
+          <Button size="sm" variant="outline" className="ai-history-toggle" aria-label="Lịch sử trò chuyện" aria-haspopup="dialog" disabled={busy || confirming} onClick={() => setHistoryOpen(true)}>
+            <History size={16} /><span>Lịch sử</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="ai-reading-toggle"
+            aria-label={reading ? 'Thoát chế độ đọc' : 'Chế độ đọc'}
+            aria-pressed={reading}
+            title={reading ? 'Thoát chế độ đọc (Esc)' : 'Mở rộng vùng đọc câu trả lời'}
+            onClick={() => setReading(value => !value)}
+          >
+            {reading ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            <span>{reading ? 'Tiếp tục hỏi' : 'Chế độ đọc'}</span>
+          </Button>
           <div className="ai-tool-picker">
             <SlidersHorizontal size={16} aria-hidden="true" />
             <select
               aria-label="Công cụ AI"
+              disabled={busy}
               value={tool}
               onChange={(e) => {
                 setTool(e.target.value);
@@ -397,6 +453,10 @@ export default function AITutor() {
                 <AIToolOptions
                   tool={tool}
                   options={options}
+                  currentCourses={currentCourses}
+                  exams={upcomingExams}
+                  examsState={examsState}
+                  disabled={busy}
                   onChange={(key, value) =>
                     setOptions((o) => ({ ...o, [key]: value }))
                   }
@@ -413,6 +473,7 @@ export default function AITutor() {
             onClick={() => {
               setMessages([]);
               setConversationId(null);
+              setConversationTitle('');
               setError("");
             }}
           >
@@ -421,6 +482,15 @@ export default function AITutor() {
           </Button>
         </div>
       </header>
+      <div className="ai-controls" hidden={reading}>
+      <div className="ai-course-bar">
+        <Field label="Môn kỳ hiện tại">
+          <select disabled={busy} value={options.subject} onChange={e => setOptions(o => ({ ...o, subject: e.target.value, context: '', topic: '' }))}>
+            <option value="">Chọn môn (tùy chọn)</option>
+            {currentCourses.subjects.map(s => <option key={s.subject_id}>{s.subject_name}</option>)}
+          </select>
+        </Field>
+      </div>
       <div className="ai-mode-bar" data-region="B">
         <div
           className="ai-mode-tabs"
@@ -442,6 +512,7 @@ export default function AITutor() {
                   : -1
               }
               onClick={() => {
+                if (lock.current) return;
                 if (key === "ask") {
                   setTool("ask");
                   setActiveMode("ask");
@@ -477,6 +548,8 @@ export default function AITutor() {
               ? "is-unavailable"
               : status.loading
                 ? "is-checking"
+                : status.data?.connection === 'unchecked'
+                  ? 'is-checking'
                 : "")
           }
           role={status.loading ? "status" : undefined}
@@ -490,9 +563,37 @@ export default function AITutor() {
               : status.data?.available === false ||
                   status.data?.online === false
                 ? "AI chưa sẵn sàng"
-                : "Sẵn sàng cùng bạn học tập"}
+                : status.data?.connection === 'unchecked'
+                  ? 'Chưa kiểm tra kết nối AI'
+                  : "Sẵn sàng cùng bạn học tập"}
         </div>
       </div>
+      {(currentCourses.message || options.topic || options.context) && <div className="ai-context-hints">
+        <CurrentCourseHint state={currentCourses} />
+        {options.topic && <p className="hint">Chủ đề: {options.topic}</p>}
+        {options.context && <p className="hint">Đã điền ngữ cảnh từ màn hình nguồn ({options.context.length} ký tự). Bạn có thể sửa câu hỏi trước khi gửi.</p>}
+      </div>}
+      </div>
+      <ConversationHistory
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        conversationId={conversationId}
+        busy={busy || confirming}
+        onSelect={data => {
+          if (lock.current || confirming) return;
+          setMessages(data.messages.map((message, index) => ({
+            id: `${data.id}:${index}`,
+            role: message.role === 'user' ? 'user' : 'ai',
+            text: message.text || '',
+            createdAt: message.createdAt,
+          })));
+          setConversationId(data.id);
+          setConversationTitle(data.title || data.messages[0]?.text || 'Cuộc trò chuyện');
+          setTool('ask'); setActiveMode('ask');
+          setOptions(current => ({ ...current, subject: '', topic: '', context: '' }));
+          setError(''); setHistoryOpen(false);
+        }}
+      />
       <AITutorChat
         messages={messages}
         input={input}
@@ -502,11 +603,12 @@ export default function AITutor() {
         error={error}
         mode={tool === 'ask' ? activeMode : tool}
         progress={progress}
-        onCancel={tool === 'summarize' ? () => summaryController.current?.abort() : undefined}
+        reading={reading}
+        onCancel={busy ? () => requestController.current?.abort(new Error(tool === 'summarize' ? 'Đã dừng tóm tắt.' : 'Đã dừng yêu cầu AI.')) : undefined}
         onQuick={onQuick}
         onConfirm={(m) =>
           run(async () => {
-            await (m.plan.kind === "examPlan"
+            const saved = unwrapResponse(await (m.plan.kind === "examPlan"
               ? aiApi.confirmExamPlan({
                   confirmed: true,
                   requestId: String(m.id),
@@ -516,7 +618,8 @@ export default function AITutor() {
               : aiApi.confirmPlan({
                   confirmed: true,
                   sessions: m.plan.data.sessions || [],
-                }));
+                })));
+            if (saved?.persisted !== true) throw new Error('Máy chủ chưa xác nhận đã lưu kế hoạch. Hãy kiểm tra lại.');
             setMessages((rows) =>
               rows.map((x) => (x.id === m.id ? { ...x, confirmed: true } : x)),
             );
@@ -528,17 +631,17 @@ export default function AITutor() {
   );
 }
 
-function AIToolOptions({ tool, options, onChange }) {
+function AIToolOptions({ tool, options, onChange, currentCourses, exams = [], examsState, disabled }) {
   const field = (key) => ({
     value: options[key],
     onChange: (e) => onChange(key, e.target.value),
   });
   return (
-    <div className="form-grid" style={{ paddingTop: 12 }}>
+    <fieldset disabled={disabled} className="form-grid" style={{ paddingTop: 12, border: 0 }}>
       {tool === "plan" ? (
         <>
-          <Field label="Từ ngày" type="date" {...field("startDate")} />
-          <Field label="Đến ngày" type="date" {...field("endDate")} />
+          <Field label="Từ ngày" type="date" min={planningNow().date} {...field("startDate")} />
+          <Field label="Đến ngày" type="date" min={options.startDate > planningNow().date ? options.startDate : planningNow().date} {...field("endDate")} />
           <Field label="Bắt đầu học" type="time" {...field("freeStartTime")} />
           <Field label="Kết thúc học" type="time" {...field("freeEndTime")} />
           <Field
@@ -548,7 +651,7 @@ function AIToolOptions({ tool, options, onChange }) {
             max="240"
             {...field("durationMinutes")}
           />
-          <Field label="Môn ưu tiên (tùy chọn)" {...field("subject")} />
+          <Field label="Môn ưu tiên (tùy chọn)"><select {...field('subject')}><option value="">Chọn môn kỳ hiện tại</option>{currentCourses.subjects.map(s => <option key={s.subject_id}>{s.subject_name}</option>)}</select></Field>
         </>
       ) : tool === "check" ? (
         <Field label="Câu hỏi cần kiểm tra" {...field("question")} />
@@ -556,15 +659,15 @@ function AIToolOptions({ tool, options, onChange }) {
         <>
           <Field label="Ngày nghỉ" type="date" {...field("date")} />
           <Field label="Người nhận (tùy chọn)" {...field("recipient")} />
-          <Field label="Môn học (tùy chọn)" {...field("subject")} />
+          <Field label="Môn học (tùy chọn)"><select {...field('subject')}><option value="">Chọn môn kỳ hiện tại</option>{currentCourses.subjects.map(s => <option key={s.subject_id}>{s.subject_name}</option>)}</select></Field>
         </>
       ) : tool === "examPlan" ? (
-        <Field label="Mã kỳ thi (để trống để ôn tất cả)" {...field("examId")} />
+        <><Field label="Kỳ thi sắp tới"><select {...field('examId')}><option value="">Tất cả kỳ thi sắp tới</option>{exams.map(e => <option key={e.id} value={e.id}>{e.subjectName} · {e.examName} · {String(e.examDate).slice(0, 10)} {e.startTime}</option>)}</select></Field>{examsState?.loading ? <p role="status">Đang tải kỳ thi…</p> : (examsState?.error || !exams.length) && <p role="status">{examsState?.error ? 'Chưa tải được kỳ thi.' : 'Chưa có kỳ thi sắp tới.'} <button type="button" onClick={examsState?.refetch}>Tải lại kỳ thi</button></p>}</>
       ) : (
         <p className="hint">
           Phân tích dựa trên dữ liệu thực đã lưu trong hệ thống.
         </p>
       )}
-    </div>
+    </fieldset>
   );
 }

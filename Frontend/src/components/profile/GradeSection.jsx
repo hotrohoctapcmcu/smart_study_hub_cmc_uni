@@ -13,7 +13,7 @@ function downloadGradeCsv(rows) {
     row.score ?? "",
     row.grade || "",
     row.semester,
-    row.score === null || row.score === undefined ? "Đang học" : "Đã hoàn thành",
+    (row.score === null || row.score === undefined) && !['P', 'NP'].includes(row.grade) ? "Đang học" : "Đã hoàn thành",
   ]);
   const csv = [header, ...body]
     .map((line) => line.map((cell) => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(","))
@@ -35,9 +35,9 @@ export default function GradeSection({ state, rows, semesters, semester, onSemes
     const score = asNumber(row.score);
     const matchesScore = scoreFilter === "all"
       || (scoreFilter === "great" && score >= 8)
-      || (scoreFilter === "passed" && score >= 5 && score < 8)
+      || (scoreFilter === "passed" && isPassed(row))
       || (scoreFilter === "risk" && score !== null && score < 5)
-      || (scoreFilter === "pending" && (row.score === null || row.score === undefined));
+      || (scoreFilter === "pending" && score === null && !['P', 'NP'].includes(row.grade));
     return matchesQuery && matchesScore;
   }), [query, rows, scoreFilter]);
 
@@ -109,7 +109,7 @@ export default function GradeSection({ state, rows, semesters, semester, onSemes
             </thead>
             <tbody>
               {filteredRows.map((row, index) => {
-                const pending = asNumber(row.score) === null;
+                const pending = asNumber(row.score) === null && !['P', 'NP'].includes(row.grade);
                 const tone = getScoreTone(row.score);
                 return (
                   <tr key={row.id || `${row.subjectCode}-${index}`}>
@@ -117,7 +117,7 @@ export default function GradeSection({ state, rows, semesters, semester, onSemes
                     <td><strong className="grade-subject">{row.subject || "Môn học chưa đặt tên"}</strong></td>
                     <td><span className="grade-code">{row.subjectCode || "—"}</span></td>
                     <td>{row.credits ?? "—"}</td>
-                    <td><span className={`grade-score grade-score-${tone}`}>{pending ? "—" : row.score}</span></td>
+                    <td><span className={`grade-score grade-score-${tone}`}>{row.score ?? '—'}</span></td>
                     <td><span className={`grade-letter grade-letter-${tone}`}>{row.grade || "—"}</span></td>
                     <td>{row.semester || "—"}</td>
                     <td><span className={`grade-status ${pending ? "is-studying" : isPassed(row) ? "is-complete" : "is-failed"}`}><i />{pending ? "Đang học" : isPassed(row) ? "Đã hoàn thành" : "Chưa đạt"}</span></td>

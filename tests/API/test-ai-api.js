@@ -4,7 +4,7 @@
  * Dựng HTTP server giả lập Gemini (trang /app + StreamGenerate), trỏ
  * GEMINI_ORIGIN vào đó rồi chạy toàn bộ luồng qua Express thật:
  *
- *   không cần cấu hình key/cookie -> /ai/status ready=true (phiên khách)
+ *   không cần key/cookie; status phân biệt chưa kiểm tra và kết nối thành công
  *   thiếu câu hỏi  -> 400
  *   hỏi thành công -> 200 + câu trả lời bóc từ payload Gemini
  *   Gemini lỗi 403 -> 503 cho FE (phiên khách chưa truy cập được)
@@ -122,7 +122,7 @@ async function main() {
         // 1. Trạng thái dịch vụ
         let r = await goi("GET", "/ai/status");
         ok(r.status === 200 && r.json.success === true, "GET /ai/status -> 200 success");
-        ok(r.json.data.ready === true, "không cấu hình key/cookie -> ready=true (phiên khách)");
+        ok(r.json.data.ready === false && r.json.data.connection === 'unchecked', "chưa gọi AI -> chưa xác nhận kết nối");
         ok(r.json.data.guest === true, "không có cookie -> dùng phiên khách");
         ok(!JSON.stringify(r.json).includes("gia-lap-phien"), "status không lộ cookie");
 
@@ -140,6 +140,8 @@ async function main() {
         ok(r.status === 200 && r.json.success === true, "POST /ai/ask -> 200 success");
         ok(r.json.data.answer === CAU_TRA_LOI, "bóc đúng câu trả lời từ payload Gemini");
         ok(lanHoi === 1, "gọi Gemini đúng 1 lần");
+        const connected = await goi('GET', '/ai/status');
+        ok(connected.json.data.available === true && connected.json.data.ready === true, 'AI chỉ sẵn sàng sau khi provider trả lời');
         ok(!nhanDuoc[0].cookie.includes("__Secure-1PSID"), "phiên khách không gửi cookie đăng nhập");
         ok(nhanDuoc[0].query.includes("bl=bl-gia-lap"), "dùng bl lấy từ trang /app");
         ok(nhanDuoc[0].at === "token-gia-lap", "gửi kèm token at lấy từ trang /app");

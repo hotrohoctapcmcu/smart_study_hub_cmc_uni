@@ -1,11 +1,12 @@
 import { SearchBox, EmptyState } from '../common/ui';
 import { ArrowUpRight, BookOpen, Layers, Presentation, FileText, Search } from 'lucide-react';
 import { normalizeSearch } from '../../utils/studyMaterials';
+import { documentTerm } from '../../utils/learningFlow';
 
-export function DocumentFilters({ courses, value, onChange }) {
+export function DocumentFilters({ courses, documents = [], value, onChange }) {
   const options = [
     ['subject', 'Lọc môn học', 'Tất cả môn học', courses.map(c => [c.id, c.title])],
-    ['semester', 'Học kỳ', 'Tất cả học kỳ', [...new Set(courses.map(c => c.semester).filter(Boolean))].map(s => [s, s])],
+    ['semester', 'Học kỳ', 'Tất cả học kỳ', [...new Set([...courses.map(c => c.semester), ...documents.map(documentTerm)].filter(Boolean))].map(s => [s, s]).concat([['__unclassified', 'Chưa phân loại']])],
     ['category', 'Loại tài liệu', 'Tất cả loại tài liệu', [['slides', 'Bài giảng'], ['pdf', 'PDF'], ['word', 'Word'], ['presentation', 'PowerPoint'], ['image', 'Ảnh']]],
     ['status', 'Trạng thái học', 'Tất cả trạng thái', [['learning', 'Đang học'], ['completed', 'Đã hoàn thành'], ['new', 'Chưa học']]],
   ];

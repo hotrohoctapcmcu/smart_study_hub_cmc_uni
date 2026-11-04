@@ -9,12 +9,14 @@ const { stringifyForAi, compactContext, contextOptions } = require('../utils/tro
 const { createTrolyaiScheduleService } = require('./trolyai-schedule.service');
 const { generateProgressAdvice, analyzeDifficultNotes } = require('./trolyai-insights.service');
 const { createSummaryService } = require('./ai-summary.service');
+const { createPomodoroGoalService } = require('./pomodoro-goals.service');
 
 function createTrolyaiService(options) {
     const schedule = createTrolyaiScheduleService(options);
     const summaries = createSummaryService();
+    const pomodoroGoals = createPomodoroGoalService(options);
 
-    async function check(body) {
+    async function check(body, options = {}) {
         const question = requiredText(body?.question, "question", MAX_QUESTION_LENGTH);
         const answer = requiredText(body?.answer, "answer", 8000);
         const context = await studyContext.buildStudyContext(NGUOI_DUNG_ID, contextOptions(body));
@@ -25,6 +27,7 @@ function createTrolyaiService(options) {
             `Câu trả lời:\n${answer}`,
             `Ngữ cảnh học tập có sẵn:\n${stringifyForAi(compactContext(context))}`
         ].join("\n\n"), {
+            signal: options.signal,
             validate: objectSchema({ verdict: "string", feedback: "string", corrections: "array", revisionSuggestions: "array" }),
             schemaDescription: stringifyForAi({
                 verdict: "correct|partially-correct|incorrect|unknown",
@@ -43,7 +46,7 @@ function createTrolyaiService(options) {
         };
     }
 
-    async function draftLeave(body) {
+    async function draftLeave(body, options = {}) {
         const date = validDate(body?.date, "date");
         const reason = requiredText(body?.reason, "reason", 1000);
         const session = optionalText(body?.session || body?.period, 120);
@@ -71,16 +74,21 @@ function createTrolyaiService(options) {
             `Lý do do người học cung cấp: ${reason}`,
             `Hồ sơ có sẵn:\n${stringifyForAi(context.profile)}`,
             `Lớp khớp ngày/môn:\n${stringifyForAi(matchingClasses)}`
-        ].filter(Boolean).join("\n\n"), { maxOutputTokens: 1200 });
+        ].filter(Boolean).join("\n\n"), { maxOutputTokens: 1200, signal: options.signal });
 
         return { draft, matchedClasses: matchingClasses.length };
     }
 
-    return { ...schedule, ...summaries, check, draftLeave,
+    return { ...schedule, ...summaries, check, draftLeave, pomodoroGoals: pomodoroGoals.breakdown,
         status: () => gemini.getStatus(),
-        ask: body => options.getHocTapAiService().ask(body),
-        progressAdvice: body => generateProgressAdvice(body?.progress),
-        difficultNotes: body => analyzeDifficultNotes(NGUOI_DUNG_ID, contextOptions(body))
+        ask: (body, requestOptions) => options.getHocTapAiService().ask(body, requestOptions),
+        progressAdvice: async (body, requestOptions) => {
+            if (!body?.progress || typeof body.progress !== 'object' || Array.isArray(body.progress)) return generateProgressAdvice(body?.progress, requestOptions);
+            const context = await studyContext.buildStudyContext(NGUOI_DUNG_ID, { limits: { timetable: 0, studySchedules: 0, assignments: 0, exams: 0, grades: 0, documents: 0, notes: 0 } });
+            const { academicHistory: ignoredClientHistory, ...metrics } = body.progress;
+            return generateProgressAdvice(context.academicHistory.gradeCount ? { ...metrics, academicHistory: context.academicHistory } : metrics, requestOptions);
+        },
+        difficultNotes: (body, requestOptions) => analyzeDifficultNotes(NGUOI_DUNG_ID, { ...contextOptions(body), ...requestOptions })
     };
 }
 

@@ -38,7 +38,7 @@ async function createProvider() {
                     const exam = exams[0];
                     const slot = slots.find(s => s.date > today() && s.date <= exam.date && s.start <= '18:00' && s.end >= '19:00');
                     reply = JSON.stringify({ phases: [{ examId: exam.id, title: 'Ôn JOIN <img src=x onerror=window.__xss=1>', target: 'Luyện JOIN theo điểm yếu', startDate: today(), endDate: exam.date, priority: 'HIGH' }],
-                        sessions: slot ? [{ examId: exam.id, title: 'Luyện JOIN', subject: exam.subject, date: slot.date, start: '18:00', end: '19:00', reason: 'Ôn nội dung còn sai' }] : [] });
+                        sessions: slot ? [{ examId: exam.id, title: 'Luyện JOIN', subject: exam.subject, date: slot.date, start: '18:00', end: '19:00', reason: 'Ôn nội dung còn sai', objective: 'Viết được 3 truy vấn JOIN', selfTest: 'Giải thích sự khác nhau giữa INNER JOIN và LEFT JOIN' }] : [] });
                 } else if (prompt.includes('Soạn một đơn xin nghỉ học')) {
                     reply = 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc\n\nĐƠN XIN PHÉP NGHỈ HỌC\nKính gửi: [Điền thông tin]\nEm xin phép nghỉ theo ngày và lý do đã cung cấp.\nEm sẽ bổ sung bài học.\n<img src=x onerror=window.__xss=1>';
                 }

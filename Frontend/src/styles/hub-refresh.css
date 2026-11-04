@@ -13,12 +13,12 @@
 .sidebar .sidebar-group-toggle { width: 100%; text-align: left; }
 .sidebar-group-toggle .nav-chevron { opacity: .75; transition: transform .2s; }
 .sidebar-group-toggle[aria-expanded="true"] .nav-chevron { transform: rotate(90deg); }
-.sidebar a[href="/textbook"]:not(.active) { color: var(--primary); background: var(--primary-soft); border: 1px solid color-mix(in srgb, var(--primary) 10%, transparent); }
+.sidebar a[href="/textbook"]:not(.active) { color: var(--primary-ink); background: var(--primary-soft); border: 1px solid color-mix(in srgb, var(--primary) 10%, transparent); }
 .sidebar a[href="/textbook"].active { border: 1px solid transparent; }
 .sidebar-submenu { padding: 3px 0 6px 34px; display: grid; gap: 1px; }
 .sidebar-subitem { position: relative; display: flex; align-items: center; gap: 9px; min-height: 28px; padding: 4px 8px; color: var(--text-secondary); font-size: 10px; border-radius: 7px; }
 .sidebar-subitem > span { width: 4px; height: 4px; border-radius: 50%; background: var(--text-light); opacity: .5; }
-.sidebar-subitem:hover, .sidebar-subitem.active { color: var(--primary); background: var(--primary-soft); }
+.sidebar-subitem:hover, .sidebar-subitem.active { color: var(--primary-ink); background: var(--primary-soft); }
 .sidebar-subitem.active { font-weight: 600; }
 .sidebar-subitem.active > span { background: var(--primary); opacity: 1; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent); }
 .sidebar .sidebar-mascot { margin-top: 12px; min-height: 125px; flex-shrink: 0; padding-top: 12px; }
@@ -32,11 +32,11 @@
 .topbar-search > span { min-width: 0; }
 .topbar-profile { text-align: left; padding-top: 4px; padding-bottom: 4px; border-radius: 0; }
 .topbar-profile > svg { color: var(--text-light); }
-.topbar-profile:hover strong { color: var(--primary); }
+.topbar-profile:hover strong { color: var(--primary-ink); }
 .profile-menu-wrap { position: relative; }
 .profile-dropdown { position: absolute; top: calc(100% + 14px); right: 0; z-index: 70; min-width: 198px; padding: 6px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); box-shadow: var(--shadow-md); }
 .profile-dropdown a { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 8px; font-size: 11px; }
-.profile-dropdown a:hover { background: var(--primary-soft); color: var(--primary); }
+.profile-dropdown a:hover { background: var(--primary-soft); color: var(--primary-ink); }
 .sync-indicator.sync-offline svg { color: var(--danger); }
 .sync-indicator .spinning { animation: hub-spin 1.6s linear infinite; }
 .dashboard-page .dashboard-grid .card { align-self: stretch; }
@@ -44,8 +44,8 @@
 .dashboard-activity-legend span { display: flex; align-items: center; gap: 6px; }
 .dashboard-activity-legend i { width: 8px; height: 8px; border-radius: 3px; background: var(--primary); }
 .dashboard-activity-legend span + span i { background: var(--success); }
-.dashboard-shortcuts-card .dashboard-shortcuts > a:nth-child(4) .shortcut-icon { color: #d678a0; background: var(--danger-soft); }
-.mobile-navigation a[href="/textbook"] svg { color: var(--primary); }
+.dashboard-shortcuts-card .dashboard-shortcuts > a:nth-child(4) .shortcut-icon { color: var(--danger); background: var(--danger-soft); }
+.mobile-navigation a[href="/textbook"] svg { color: var(--primary-ink); }
 @keyframes hub-spin { to { transform: rotate(360deg); } }
 @media (min-width: 1200px) and (max-width: 1399px) {
   .topbar-ai { display: none; }

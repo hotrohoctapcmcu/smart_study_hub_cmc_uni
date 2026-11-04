@@ -1,0 +1,21 @@
+{
+  "checkedAt": "2026-11-04T16:30:16.117Z",
+  "provider": "real",
+  "data": "synthetic",
+  "databaseWrites": 0,
+  "checks": [
+    {
+      "name": "summary",
+      "passed": false,
+      "code": "GEMINI_TIMEOUT",
+      "message": "AI không phản hồi trong thời gian chờ. Hãy thử lại.",
+      "elapsedMs": 25013
+    },
+    {
+      "name": "cards",
+      "skipped": true,
+      "reason": "No real summary returned."
+    }
+  ],
+  "mode": "web-guest"
+}

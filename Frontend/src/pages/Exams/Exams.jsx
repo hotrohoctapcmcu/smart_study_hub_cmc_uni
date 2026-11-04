@@ -9,7 +9,10 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { examApi, studentApi } from "../../api";
+import { examApi } from "../../api";
+import { useCurrentCourses } from "../../hooks/useCurrentCourses";
+import CurrentCourseHint from "../../components/common/CurrentCourseHint";
+import AIExamPlanner from '../../components/learning/AIExamPlanner';
 import { useApi } from "../../hooks/useApi";
 import { responseList } from "../../api/apiClient";
 import { mapExam } from "../../utils/examAdapter";
@@ -23,6 +26,7 @@ import {
   addDays,
   isToday,
 } from "../../utils/date";
+import { assertFutureDateTime, assertPlanningDate, isFutureStart, nextDateForTime, nextPlanningMinute, planningNow } from "../../utils/planning";
 import {
   PageHeader,
   Card,
@@ -37,6 +41,12 @@ import {
   ErrorState,
   useAction,
 } from "../../components/common/ui";
+function examHasStarted(exam) {
+  const date = formatDateISO(exam.examDate);
+  const now = planningNow();
+  return date < now.date || (date === now.date && Boolean(exam.startTime) && exam.startTime.slice(0, 5) <= now.time);
+}
+
 export default function Exams() {
   const state = useApi(examApi.list),
     plans = useApi(examApi.getStudyPlans);
@@ -48,7 +58,7 @@ export default function Exams() {
     [removePlan, setRemovePlan] = useState(null);
   const { run, busy } = useAction();
   const exams = responseList(state.data, "exams").map(mapExam),
-    rows = exams.filter((e) => tab !== "upcoming" || daysAgo(e.examDate) >= 0),
+    rows = exams.filter((e) => tab !== "upcoming" || !examHasStarted(e)),
     studyPlans = responseList(plans.data, "studyPlans");
   const firstCalendarDate = startOfWeek(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1));
   return (
@@ -148,7 +158,7 @@ export default function Exams() {
                     <Badge
                       variant={daysAgo(e.examDate) < 4 ? "warning" : "primary"}
                       label={
-                        daysAgo(e.examDate) < 0
+                        examHasStarted(e)
                           ? "Đã diễn ra"
                           : daysAgo(e.examDate) === 0
                             ? "Hôm nay"
@@ -178,6 +188,8 @@ export default function Exams() {
                     <Button
                       size="sm"
                       variant="outline"
+                      disabled={!isFutureStart(formatDateISO(e.examDate), e.startTime)}
+                      title={!isFutureStart(formatDateISO(e.examDate), e.startTime) ? "Kỳ thi đã bắt đầu hoặc chưa có giờ thi hợp lệ." : undefined}
                       onClick={() => setPlan(e)}
                     >
                       Lên lịch ôn
@@ -254,6 +266,7 @@ export default function Exams() {
       />
       <Modal
         isOpen={!!plan}
+        size="lg"
         onClose={() => setPlan(null)}
         title={"Lên lịch ôn: " + (plan?.subjectName || "")}
       >
@@ -272,10 +285,10 @@ export default function Exams() {
   );
 }
 function ExamEditor({ exam, onClose, onSaved }) {
-  const subjects = useApi(studentApi.getSubjects);
+  const subjects = useCurrentCourses(exam.subjectId, exam.subjectName);
   const [form, setForm] = useState({
       subjectId: exam.subjectId || "",
-      examDate: formatDateISO(exam.examDate) || formatDateISO(),
+      examDate: formatDateISO(exam.examDate || null) || nextDateForTime("08:00"),
       startTime: exam.startTime?.slice(0, 5) || "08:00",
       endTime: exam.endTime?.slice(0, 5) || "",
       room: exam.room || "",
@@ -287,6 +300,8 @@ function ExamEditor({ exam, onClose, onSaved }) {
     value: form[k],
     onChange: (e) => setForm((v) => ({ ...v, [k]: e.target.value })),
   });
+  const timingChanged = !exam.id || form.examDate !== formatDateISO(exam.examDate)
+    || form.startTime !== exam.startTime?.slice(0, 5) || form.endTime !== (exam.endTime?.slice(0, 5) || "");
   return (
     <form
       className="stack"
@@ -295,6 +310,7 @@ function ExamEditor({ exam, onClose, onSaved }) {
         setBusy(true);
         setError(null);
         try {
+          if (timingChanged) assertFutureDateTime(`${form.examDate}T${form.startTime}`, "Giờ bắt đầu thi");
           if (form.endTime && minutes(form.endTime) <= minutes(form.startTime))
             throw new Error("Giờ kết thúc phải sau giờ bắt đầu.");
           const body = {
@@ -323,16 +339,17 @@ function ExamEditor({ exam, onClose, onSaved }) {
       <Field label="Môn học">
         <select required {...f("subjectId")}>
           <option value="">Chọn môn học</option>
-          {responseList(subjects.data, "subjects").map((s) => (
+          {subjects.subjects.map((s) => (
             <option key={s.subject_id ?? s.id} value={s.subject_id ?? s.id}>
               {s.subject_name || s.name}
             </option>
           ))}
         </select>
       </Field>
-      <Field label="Ngày thi" type="date" required {...f("examDate")} />
+      <CurrentCourseHint state={subjects} />
+      <Field label="Ngày thi" type="date" required min={timingChanged ? planningNow().date : undefined} {...f("examDate")} />
       <div className="form-grid">
-        <Field label="Bắt đầu" type="time" required {...f("startTime")} />
+        <Field label="Bắt đầu" type="time" required min={timingChanged && form.examDate === planningNow().date ? nextPlanningMinute().slice(11, 16) : undefined} {...f("startTime")} />
         <Field label="Kết thúc" type="time" {...f("endTime")} />
       </div>
       <Field label="Phòng thi" required {...f("room")} />
@@ -350,7 +367,9 @@ function ExamEditor({ exam, onClose, onSaved }) {
 function StudyPlanEditor({ exam, onClose, onSaved }) {
   const [error, setError] = useState(null),
     [busy, setBusy] = useState(false);
+  const [startDate, setStartDate] = useState(planningNow().date);
   return (
+    <><AIExamPlanner exam={exam} onSaved={onSaved} />
     <form
       className="stack"
       onSubmit={async (e) => {
@@ -359,8 +378,12 @@ function StudyPlanEditor({ exam, onClose, onSaved }) {
         setBusy(true);
         setError(null);
         try {
+          if (!isFutureStart(formatDateISO(exam.examDate), exam.startTime)) throw new Error("Kỳ thi đã bắt đầu, không thể lên lịch ôn.");
+          assertPlanningDate(form.get("startDate"), "Ngày bắt đầu ôn");
+          assertPlanningDate(form.get("endDate"), "Ngày kết thúc ôn");
           if (form.get("endDate") < form.get("startDate"))
-            throw new Error("Ngày kết thúc phải sau ngày bắt đầu.");
+            throw new Error("Ngày kết thúc không được trước ngày bắt đầu.");
+          if (form.get("endDate") > formatDateISO(exam.examDate)) throw new Error("Ngày kết thúc ôn không được sau ngày thi.");
           await examApi.createStudyPlan({
             examId: exam.id,
             phaseTitle: form.get("title"),
@@ -389,7 +412,9 @@ function StudyPlanEditor({ exam, onClose, onSaved }) {
           type="date"
           name="startDate"
           required
-          defaultValue={formatDateISO()}
+          value={startDate}
+          onChange={event => setStartDate(event.target.value)}
+          min={planningNow().date}
           max={formatDateISO(exam.examDate)}
         />
         <Field
@@ -398,6 +423,7 @@ function StudyPlanEditor({ exam, onClose, onSaved }) {
           name="endDate"
           required
           defaultValue={formatDateISO(exam.examDate)}
+          min={startDate > planningNow().date ? startDate : planningNow().date}
           max={formatDateISO(exam.examDate)}
         />
       </div>
@@ -412,6 +438,6 @@ function StudyPlanEditor({ exam, onClose, onSaved }) {
           Lưu kế hoạch
         </Button>
       </div>
-    </form>
+    </form></>
   );
 }

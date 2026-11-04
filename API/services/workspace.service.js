@@ -7,6 +7,7 @@ const { NGUOI_DUNG_ID } = require('../utils/nguoiDung');
 const { pomodoro } = require('../validators/workspace.validator');
 const { createWorkspaceEmail } = require('./workspace.email.service');
 const { exportNotes } = require('./workspace.export.service');
+const { getCurrentCourseScope } = require('../utils/current-courses');
 
 const { loi: fail } = require('../utils/error');
 const parse = (value, fallback = []) => { try { return JSON.parse(value) ?? fallback; } catch { return fallback; } };
@@ -19,7 +20,7 @@ function createWorkspaceService({ getDb, userId = NGUOI_DUNG_ID, storageDir, out
     const root = path.resolve(storageDir || process.env.DOCUMENTS_PATH || path.join(path.dirname(process.env.DB_PATH || path.resolve(__dirname, '../../data/unistudy.db')), 'documents'));
     let queue = Promise.resolve();
     // Serialize read/modify/write operations and transactions on the shared sql.js handle.
-    const mutate = fn => { const result = queue.then(fn); queue = result.catch(() => {}); return result; };
+    const mutate = fn => { const result = queue.then(fn); queue = result.catch(() => { }); return result; };
     const db = () => { const value = getDb(); if (!value) throw fail('Database chưa sẵn sàng.', 503); return value; };
     const query = (sql, params) => db().executeQuery(sql, params);
     async function owner() {
@@ -33,7 +34,8 @@ function createWorkspaceService({ getDb, userId = NGUOI_DUNG_ID, storageDir, out
         return rows[0];
     }
     const documentView = row => ({
-        id: String(row.document_id), title: row.title, subject: row.subject_label || row.subject_name || 'Chung',
+        id: String(row.document_id), title: row.title, subject: row.subject_label || row.subject_name || '',
+        subjectId: row.subject_id || null, semester: row.semester || '', academicYear: row.academic_year || '',
         category: Object.keys(CATEGORIES).find(key => CATEGORIES[key] === row.category) || 'Tài liệu tham khảo',
         fileType: text(row.file_type).toUpperCase(), size: row.file_size || 0,
         sizeStr: row.file_size ? `${(row.file_size / 1024 / 1024).toFixed(2)} MB` : 'Chưa có tệp',
@@ -51,7 +53,7 @@ function createWorkspaceService({ getDb, userId = NGUOI_DUNG_ID, storageDir, out
         id: row.client_id || `pomo-db-${row.session_id}`, createdAt: row.started_at, startTime: row.started_at,
         endTime: row.ended_at, actualStudySeconds: row.actual_study_seconds ?? row.total_focus_minutes * 60,
         workDurationMinutes: row.focus_duration, status: row.status === 'COMPLETED' ? 'Hoàn thành' : 'Kết thúc sớm',
-        focusSegments: parse(row.focus_segments), synced: true
+        focusSegments: parse(row.focus_segments), learningContext: parse(row.learning_context, {}), synced: true
     });
     async function documents() {
         const sid = await owner();
@@ -63,21 +65,27 @@ function createWorkspaceService({ getDb, userId = NGUOI_DUNG_ID, storageDir, out
         const filename = path.basename(text(meta.filename)).replace(/[\x00-\x1f]/g, '');
         const extension = path.extname(filename).toLowerCase();
         if (!MIME[extension]) throw fail('Hỗ trợ PDF, DOCX, PPTX, TXT, MD, PNG và JPG.');
-        if (!text(meta.title) || !text(meta.subject)) throw fail('Tên tài liệu và môn học là bắt buộc.');
+        if (!text(meta.title)) throw fail('Tên tài liệu là bắt buộc.');
         return mutate(async () => {
             const sid = await owner();
+            const subjectId = meta.subjectId == null || meta.subjectId === '' ? null : Number(meta.subjectId);
+            if (subjectId !== null && (!Number.isSafeInteger(subjectId) || subjectId <= 0)) throw fail('Môn học không hợp lệ.');
+            const scope = subjectId ? await getCurrentCourseScope(db(), userId) : null;
+            const subject = scope?.courses.find(course => Number(course.subjectId) === subjectId);
+            if (subjectId && !subject) throw fail(scope?.resolved ? 'Môn học không thuộc kỳ hiện tại.' : scope?.message, 409);
             const key = randomUUID() + extension;
             await fs.mkdir(root, { recursive: true });
             await fs.writeFile(path.join(root, key), bytes, { flag: 'wx' });
             try {
-                const [row] = await query(`INSERT INTO EduxDocuments(student_id,title,subject_label,category,file_type,file_size,source,storage_key,original_name,mime_type,tags,is_textbook)
-                    VALUES(@sid,@title,@subject,@category,@type,@size,'LOCAL',@key,@filename,@mime,@tags,@book) RETURNING *`, {
-                    sid, title: text(meta.title).slice(0, 300), subject: text(meta.subject).slice(0, 200), category: CATEGORIES[meta.category] || 'REFERENCE',
+                const [row] = await query(`INSERT INTO EduxDocuments(student_id,title,subject_id,subject_label,semester,academic_year,category,file_type,file_size,source,storage_key,original_name,mime_type,tags,is_textbook)
+                    VALUES(@sid,@title,@subjectId,@subject,@semester,@year,@category,@type,@size,'LOCAL',@key,@filename,@mime,@tags,@book) RETURNING *`, {
+                    sid, title: text(meta.title).slice(0, 300), subjectId, subject: text(subject?.subjectName || meta.subject).slice(0, 200),
+                    semester: subject ? scope.semester : text(meta.semester).slice(0, 50) || null, year: subject ? scope.academicYear : text(meta.academicYear).slice(0, 50) || null, category: CATEGORIES[meta.category] || 'REFERENCE',
                     type: extension.slice(1), size: bytes.length, key, filename, mime: MIME[extension], tags: JSON.stringify(tags(meta.tags)), book: meta.isTextbook === true ? 1 : 0
                 });
                 return documentView(row);
             } catch (error) {
-                await fs.unlink(path.join(root, key)).catch(() => {});
+                await fs.unlink(path.join(root, key)).catch(() => { });
                 throw error;
             }
         });
@@ -148,18 +156,38 @@ function createWorkspaceService({ getDb, userId = NGUOI_DUNG_ID, storageDir, out
     }
     async function pomodoros() { return (await query("SELECT * FROM PomodoroSessions WHERE student_id=@sid AND status IN ('COMPLETED','CANCELLED') ORDER BY started_at DESC", { sid: await owner() })).map(pomoView); }
     async function savePomodoro(data) {
-        const { start, seconds, end, segments } = pomodoro(data);
-        return mutate(async () => {
+        const { start, seconds, end, segments, learningContext } = pomodoro(data);
+        return mutate(() => db().withTransaction(async () => {
             const sid = await owner();
-            const row = (await query(`INSERT INTO PomodoroSessions(student_id,client_id,focus_duration,started_at,ended_at,session_date,status,completed_cycles,total_focus_minutes,actual_study_seconds,focus_segments)
-                VALUES(@sid,@client,@duration,@start,@end,@date,@status,@cycles,@minutes,@seconds,@segments)
+            const existing = (await query('SELECT * FROM PomodoroSessions WHERE student_id=@sid AND client_id=@client', { sid, client: data.id }))[0];
+            if (existing) return pomoView(existing);
+            const context = { ...learningContext };
+            if (context.taskId) {
+                const task = context.taskSource === 'EDUX'
+                    ? (await query('SELECT title,subject_name FROM EduxAssignments WHERE user_id=@sid AND external_id=@id AND is_hidden=0', { sid: userId, id: context.taskId }))[0]
+                    : (await query('SELECT a.title,a.subject_id,s.subject_name FROM Assignments a JOIN Subjects s ON s.subject_id=a.subject_id WHERE a.student_id=@sid AND CAST(a.assignment_id AS TEXT)=@id', { sid, id: context.taskId }))[0];
+                if (!task) throw fail('Công việc đã bị xóa hoặc không thuộc hồ sơ hiện tại.', 404);
+                context.taskTitle = task.title;
+                context.subjectId = task.subject_id ?? null;
+                context.subjectName = task.subject_name || 'Học phần EDUX';
+            } else if (context.subjectId !== null) {
+                const subject = (await query('SELECT subject_name FROM Subjects WHERE subject_id=@id', { id: context.subjectId }))[0];
+                if (!subject) throw fail('Môn học đã chọn không tồn tại.', 404);
+                context.subjectName = subject.subject_name;
+            }
+            const row = (await query(`INSERT INTO PomodoroSessions(student_id,client_id,focus_duration,started_at,ended_at,session_date,status,completed_cycles,total_focus_minutes,actual_study_seconds,focus_segments,learning_context)
+                VALUES(@sid,@client,@duration,@start,@end,@date,@status,@cycles,@minutes,@seconds,@segments,@context)
                 ON CONFLICT(student_id,client_id) DO UPDATE SET client_id=excluded.client_id RETURNING *`, {
                 sid, client: data.id, duration: Math.max(1, Math.min(1440, Number(data.workDurationMinutes) || 25)), start: new Date(start).toISOString(), end: new Date(end).toISOString(),
                 date: new Date(start + 7 * 3600000).toISOString().slice(0, 10), status: data.status === 'Hoàn thành' ? 'COMPLETED' : 'CANCELLED', cycles: data.status === 'Hoàn thành' ? 1 : 0,
-                minutes: seconds / 60, seconds: Math.round(seconds), segments: JSON.stringify(segments)
+                minutes: seconds / 60, seconds: Math.round(seconds), segments: JSON.stringify(segments), context: JSON.stringify(context)
             }))[0];
+            if (data.completeTask) {
+                if (context.taskSource === 'EDUX') await query("UPDATE EduxAssignments SET status='Hoàn thành',updated_at=datetime('now') WHERE user_id=@sid AND external_id=@id", { sid: userId, id: context.taskId });
+                else await query("UPDATE Assignments SET status='COMPLETED',completed_at=datetime('now'),updated_at=datetime('now') WHERE student_id=@sid AND CAST(assignment_id AS TEXT)=@id", { sid, id: context.taskId });
+            }
             return pomoView(row);
-        });
+        }));
     }
     async function clearPomodoros() { return mutate(async () => { await query("DELETE FROM PomodoroSessions WHERE student_id=@sid AND status IN ('COMPLETED','CANCELLED')", { sid: await owner() }); return true; }); }
     async function setTaskTags(kind, id, data) {
@@ -194,8 +222,10 @@ function createWorkspaceService({ getDb, userId = NGUOI_DUNG_ID, storageDir, out
     }
     const { emails, storeEmails, readEmail, processEmail, syncEmails, readAllEmails, refreshEmail, emailStatus, logoutEmail } =
         createWorkspaceEmail({ db, getDb, query, mutate, owner, one, userId, outlook });
-    return { documents, upload, documentFile, removeDocument, setDocumentTags, notebooks, saveNotebook, removeNotebook, notes, saveNote, removeNote, pomodoros, savePomodoro, clearPomodoros, search, setTaskTags, emails, storeEmails, readEmail, processEmail, syncEmails, readAllEmails, refreshEmail,
-        emailStatus, logoutEmail, exportNotes: async (id, notebook = false) => exportNotes(await notes(), id, notebook) };
+    return {
+        documents, upload, documentFile, removeDocument, setDocumentTags, notebooks, saveNotebook, removeNotebook, notes, saveNote, removeNote, pomodoros, savePomodoro, clearPomodoros, search, setTaskTags, emails, storeEmails, readEmail, processEmail, syncEmails, readAllEmails, refreshEmail,
+        emailStatus, logoutEmail, exportNotes: async (id, notebook = false) => exportNotes(await notes(), id, notebook)
+    };
 }
 
 module.exports = { createWorkspaceService, fail, tags };

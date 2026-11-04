@@ -15,7 +15,6 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   if (
     config.url?.startsWith("/ai/") ||
-    (config.url === "/quizzes" && config.method === "post") ||
     config.url?.includes("/pull") ||
     config.url === "/email/sync"
   )

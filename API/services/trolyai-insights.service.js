@@ -7,7 +7,7 @@ const MAX_PROGRESS_LENGTH = 30000;
 const { optionalText, sanitizeProgress, stringList, objectSchema } = require('../validators/trolyai.validator');
 const { stringifyForAi, progressAvailability } = require('../utils/trolyai-context');
 
-async function generateProgressAdvice(progress) {
+async function generateProgressAdvice(progress, options = {}) {
     if (!progress || typeof progress !== "object" || Array.isArray(progress)) {
         throw loi("progress phải là một object.");
     }
@@ -32,8 +32,10 @@ async function generateProgressAdvice(progress) {
         "Chỉ nhận xét điều được chứng minh trực tiếp bởi dữ liệu. Giá trị null hoặc trường vắng mặt là không có dữ liệu, không phải 0.",
         "Không tính, đoán hoặc nêu bất kỳ tỷ lệ, điểm số, thời lượng hay số phiên nào không xuất hiện trong input.",
         "Đưa ra nhận xét ngắn và gợi ý ôn tập có thể hành động.",
+        'Đối chiếu academicHistory.semesters, comparison và retakes khi có: nêu kỳ cũ/kỳ mới và phạm vi dữ liệu. Phân biệt điểm hệ 10/hệ 4, trung bình/tích lũy. Không suy diễn năng lực chỉ từ một môn hay dự đoán điểm chưa có.',
         `Dữ liệu tiến độ:\n${stringifyForAi(cleanProgress)}`
     ].join("\n\n"), {
+        signal: options.signal,
         validate: objectSchema({ overview: "string", comments: "array", revisionSuggestions: "array" }),
         schemaDescription: stringifyForAi({
             overview: "string",
@@ -42,8 +44,8 @@ async function generateProgressAdvice(progress) {
         })
     });
 
-    const numbers = new Set(serialized.match(/\d+(?:[.,]\d+)?/g) || []);
-    const supported = text => (text.match(/\d+(?:[.,]\d+)?/g) || []).every(number => numbers.has(number));
+    const numbers = new Set((serialized.match(/\d+(?:[.,]\d+)?/g) || []).map(number => number.replace(',', '.')));
+    const supported = text => (text.match(/\d+(?:[.,]\d+)?/g) || []).every(number => numbers.has(number.replace(',', '.')));
     const overview = optionalText(output?.overview, 1000);
     return {
         overview: overview && supported(overview) ? overview : "Hãy xem lại dữ liệu tiến độ đã ghi nhận và ưu tiên các nội dung còn chưa hoàn thành.",
@@ -83,6 +85,7 @@ async function analyzeDifficultNotes(studentId, options = {}) {
         "Chỉ nêu chủ đề xuất hiện trong ghi chú. Không bịa nội dung học tập còn thiếu.",
         `Ghi chú khó:\n${stringifyForAi(difficultNotes)}`
     ].join("\n\n"), {
+        signal: options.signal,
         validate: objectSchema({ topics: "array", suggestions: "array" }),
         schemaDescription: stringifyForAi({
             topics: [{ topic: "string", reason: "string", noteIds: ["id"] }],

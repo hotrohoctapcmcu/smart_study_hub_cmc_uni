@@ -1,5 +1,13 @@
 # Sprint 3 — AI học tập và tích hợp tổng thể
 
+## Lịch và deadline được bổ sung — 05/11/2026
+
+**Lịch Sprint 3: 23/10/2026–29/10/2026. Báo cáo thứ Năm 29/10/2026. Deadline: 23:59:59 ngày 29/10/2026 (Asia/Saigon, UTC+7).**
+
+Quy ước deadline cuối ngày vì lịch yêu cầu chưa ấn định giờ báo cáo; không phải giờ họp. Ngày triển khai/kiểm thử thực tế trong bằng chứng được giữ nguyên.
+
+Milestone: [Sprint 3](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/4). Giữ nguyên nhiệm vụ, phân công và trạng thái lịch sử bên dưới.
+
 Tổng hợp ngày **02/11/2026** từ đợt hoàn thiện **28/10/2026**, các issue Sprint 3 và lịch sử main đến `faecc05`. Đây là mốc triển khai trên cấu trúc trước refactor; phiên bản kế tiếp được ghi ở [Sprint 4](SPRINT_4.md).
 
 ## Mục tiêu và phạm vi

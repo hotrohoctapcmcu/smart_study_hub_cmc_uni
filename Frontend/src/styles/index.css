@@ -91,7 +91,7 @@ a:focus-visible {
 }
 ::selection {
   background: var(--primary-soft);
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .app-layout {
   height: 100dvh;
@@ -167,7 +167,7 @@ a:focus-visible {
   margin: 12px 0;
 }
 .text-primary {
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .pre-wrap {
   white-space: pre-wrap;
@@ -207,7 +207,7 @@ a:focus-visible {
   color: var(--text-secondary);
 }
 .icon-button:hover {
-  color: var(--primary);
+  color: var(--primary-ink);
   background: var(--primary-soft);
 }
 .sidebar {
@@ -230,7 +230,7 @@ a:focus-visible {
   padding: 0 8px 25px;
 }
 .brand-icon {
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .brand strong {
   font-size: 13px;
@@ -267,11 +267,11 @@ a:focus-visible {
 }
 .sidebar-item:hover {
   background: var(--purple-50);
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .sidebar-item.active {
   background: var(--primary-soft);
-  color: var(--primary);
+  color: var(--primary-ink);
   font-weight: 700;
 }
 .sidebar-item.nav-divider {
@@ -280,7 +280,7 @@ a:focus-visible {
 .ai-label {
   margin-left: auto;
   background: var(--primary-soft);
-  color: var(--primary);
+  color: var(--primary-ink);
   padding: 0 5px;
   border-radius: 4px;
   font-size: 8px;
@@ -370,7 +370,7 @@ a:focus-visible {
   white-space: nowrap;
 }
 .topbar-title svg {
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .topbar-search {
   max-width: 370px;
@@ -508,7 +508,7 @@ a:focus-visible {
 .btn-outline:hover,
 .btn-secondary:hover {
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .btn-ghost {
   color: var(--text-secondary);
@@ -516,7 +516,7 @@ a:focus-visible {
 }
 .btn-ghost:hover {
   background: var(--primary-soft);
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .btn-danger {
   background: var(--danger-soft);
@@ -538,7 +538,7 @@ a:focus-visible {
   line-height: 1.5;
 }
 .badge-primary {
-  color: var(--primary);
+  color: var(--primary-ink);
   background: var(--primary-soft);
 }
 .badge-default {
@@ -546,19 +546,19 @@ a:focus-visible {
   background: var(--background);
 }
 .badge-success {
-  color: #16946b;
+  color: var(--success);
   background: var(--success-soft);
 }
 .badge-danger {
-  color: #e65070;
+  color: var(--danger);
   background: var(--danger-soft);
 }
 .badge-warning {
-  color: #b57c04;
+  color: var(--warning);
   background: var(--warning-soft);
 }
 .badge-info {
-  color: #488fe6;
+  color: var(--info);
   background: var(--info-soft);
 }
 .tabs {
@@ -575,10 +575,10 @@ a:focus-visible {
   border: 1px solid transparent;
 }
 .tabs button:hover {
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .tabs button.active {
-  color: var(--primary);
+  color: var(--primary-ink);
   background: var(--primary-soft);
   border-color: color-mix(in srgb, var(--primary) 15%, transparent);
 }
@@ -752,7 +752,7 @@ a:focus-visible {
   border-radius: var(--radius-md);
   overflow: hidden;
   background: linear-gradient(110deg, #ebe7ff, #e9e5ff 55%, #d7cbff);
-  color: #34245c;
+  color: var(--text);
 }
 .hero:after {
   content: "";
@@ -771,11 +771,11 @@ a:focus-visible {
 .hero h1 {
   font-size: 29px;
   font-weight: 800;
-  color: #30254c;
+  color: var(--text);
 }
 .hero p {
   font-size: 12px;
-  color: #77689a;
+  color: var(--text-secondary);
   margin-top: 8px;
 }
 .hero .hero-date {
@@ -784,7 +784,7 @@ a:focus-visible {
   align-items: center;
   gap: 7px;
   margin-top: 21px;
-  color: #887aa5;
+  color: var(--text-secondary);
 }
 .hero-image {
   position: absolute;
@@ -797,7 +797,7 @@ a:focus-visible {
   font-size: 8px;
   font-weight: 700;
   letter-spacing: 2px;
-  color: #9885c3;
+  color: var(--primary-ink);
   margin-bottom: 10px;
 }
 .stats-grid {
@@ -823,7 +823,7 @@ a:focus-visible {
   flex-shrink: 0;
   border-radius: 11px;
   background: var(--primary-soft);
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .stat-card strong {
   font-size: 24px;
@@ -917,7 +917,7 @@ a:focus-visible {
   padding: 0;
 }
 .task-title:hover {
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .task-meta {
   display: flex;
@@ -982,7 +982,7 @@ a:focus-visible {
   flex-shrink: 0;
   height: 47px;
   background: var(--primary-soft);
-  color: var(--primary);
+  color: var(--primary-ink);
   border-radius: 9px;
   display: flex;
   flex-direction: column;
@@ -1025,7 +1025,7 @@ a:focus-visible {
   background: var(--primary-soft);
   padding: 15px;
   border-radius: 14px;
-  color: var(--primary);
+  color: var(--primary-ink);
   font-size: 11px;
 }
 .mascot-tip img {
@@ -1056,7 +1056,7 @@ a:focus-visible {
   font-size: 9px;
 }
 .calendar-day.today {
-  color: var(--primary);
+  color: var(--primary-ink);
   background: var(--primary-soft);
 }
 .hour-label {
@@ -1084,9 +1084,9 @@ a:focus-visible {
   right: 4px;
   border-radius: 7px;
   padding: 7px 6px;
-  background: #eee8ff;
-  border-left: 3px solid #9c80ed;
-  color: #684ca8;
+  background: var(--primary-soft);
+  border-left: 3px solid var(--primary);
+  color: var(--primary-ink);
   font-size: 9px;
   text-align: left;
   overflow: hidden;
@@ -1103,9 +1103,9 @@ a:focus-visible {
   margin-top: 3px;
 }
 .calendar-event.study {
-  background: #e4f7ee;
-  border-color: #67c99b;
-  color: #32805e;
+  background: var(--success-soft);
+  border-color: var(--success);
+  color: var(--success);
 }
 .calendar-event:hover {
   filter: brightness(0.97);
@@ -1146,7 +1146,7 @@ a:focus-visible {
   text-align: left;
   font-size: 8px;
   background: var(--primary-soft);
-  color: var(--primary);
+  color: var(--primary-ink);
   padding: 4px;
   border-radius: 4px;
   width: 100%;
@@ -1204,7 +1204,7 @@ a:focus-visible {
 .file-icon.ppt,
 .file-icon.pptx {
   background: var(--warning-soft);
-  color: #e69b35;
+  color: var(--warning);
 }
 .document-card h3 {
   overflow-wrap: anywhere;
@@ -1235,7 +1235,7 @@ a:focus-visible {
   background: var(--primary-soft);
   display: grid;
   place-items: center;
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .course-card .summary-line {
   padding: 0;
@@ -1265,7 +1265,7 @@ a:focus-visible {
   font-size: 20px;
 }
 .flashcard small {
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .quiz-question {
   padding: 22px;
@@ -1359,7 +1359,7 @@ a:focus-visible {
 }
 .quick-actions button {
   background: var(--primary-soft);
-  color: var(--primary);
+  color: var(--primary-ink);
   padding: 6px 9px;
   border-radius: 7px;
   font-size: 9px;
@@ -1416,7 +1416,7 @@ a:focus-visible {
   border-radius: 7px;
   display: grid;
   place-items: center;
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .message-bubble {
   background: var(--purple-50);
@@ -1489,7 +1489,7 @@ a:focus-visible {
   background: var(--primary-soft);
 }
 .mail-item.unread h3 {
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .mail-item h3 {
   font-size: 11px;
@@ -1520,7 +1520,7 @@ a:focus-visible {
   height: 46px;
   border-radius: 13px;
   background: var(--primary-soft);
-  color: var(--primary);
+  color: var(--primary-ink);
   display: grid;
   place-items: center;
   font-weight: 800;
@@ -1614,7 +1614,7 @@ a:focus-visible {
 }
 .settings-nav button.active {
   background: var(--primary-soft);
-  color: var(--primary);
+  color: var(--primary-ink);
   font-weight: 700;
 }
 .settings-section {
@@ -1812,7 +1812,7 @@ a:focus-visible {
   border-bottom: 1px solid var(--border);
 }
 .notification-row.unread strong {
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .notification-row p {
   font-size: 11px;
@@ -1857,7 +1857,7 @@ a:focus-visible {
 }
 .search-results section > button svg {
   flex-shrink: 0;
-  color: var(--primary);
+  color: var(--primary-ink);
   margin-left: 12px;
 }
 .workspace-search-input {
@@ -1871,19 +1871,19 @@ a:focus-visible {
   background-color: color-mix(in srgb, var(--primary) 3%, var(--surface));
 }
 .calendar-event.class.event-tone-1 {
-  background: #e5f1ff;
-  border-color: #80abed;
-  color: #3d649d;
+  background: var(--info-soft);
+  border-color: var(--info);
+  color: var(--info);
 }
 .calendar-event.class.event-tone-2 {
-  background: #fff3dd;
-  border-color: #ebbd69;
-  color: #916a23;
+  background: var(--warning-soft);
+  border-color: var(--warning);
+  color: var(--warning);
 }
 .calendar-event.class.event-tone-3 {
-  background: #ffedf3;
-  border-color: #e8a1ba;
-  color: #9c4c6b;
+  background: var(--danger-soft);
+  border-color: var(--danger);
+  color: var(--danger);
 }
 .month-weekdays {
   display: grid;
@@ -2163,7 +2163,7 @@ a:focus-visible {
     padding: 8px;
   }
   .mobile-navigation a.active {
-    color: var(--primary);
+    color: var(--primary-ink);
     font-weight: 700;
   }
   .mobile-navigation a.active svg {
@@ -2367,4 +2367,4 @@ a:focus-visible {
   }
 }
 .ai-tool-options {padding:10px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface);font-size:11px;flex-shrink:0}
-.ai-tool-options summary {cursor:pointer;color:var(--primary);font-weight:600}
+.ai-tool-options summary {cursor:pointer;color:var(--primary-ink);font-weight:600}

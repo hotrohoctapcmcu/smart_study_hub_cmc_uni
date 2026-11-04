@@ -5,6 +5,7 @@ const { aggregateCourseText, fingerprint, documentsOf } = require('../utils/cour
 const { responseFailure } = require('../utils/ai-response');
 const { summaryLimits } = require('../utils/course-summary-ai');
 const { PIPELINE_VERSION } = require('./course-summary.pipeline');
+const { textOnlyChapters } = require('../../database/shared/eduxContent');
 
 const { loi: fail } = require('../utils/error');
 const parse = (value, fallback = []) => { try { return JSON.parse(value) ?? fallback; } catch { return fallback; } };
@@ -31,19 +32,21 @@ function createLearningCatalog({ q, scope, now, jobs, activeJobs }) {
     }
     const cardView = row => ({ id: row.card_id, courseId: row.course_id, front: row.front, back: row.back,
         chapter: row.chapter, sourceIds: parse(row.source_ids_json), dueAt: row.due_at,
-        summaryHash: row.summary_hash, intervalDays: row.interval_days, reviews: row.review_count });
+        summaryHash: row.summary_hash, intervalDays: row.interval_days, reviews: row.review_count, forgottenCount: Number(row.forgotten_count) || 0 });
 
     async function courseView(row, detail = false) {
-        const chapters = parse(row.chapters_json);
+        const chapters = textOnlyChapters(parse(row.chapters_json));
         const sources = documentsOf(chapters);
         const [saved] = await q('SELECT * FROM LearningSummaries WHERE user_id=@uid AND course_id=@id', { id: row.course_id });
         const inputHash = fingerprint(aggregateCourseText({ subject: row.subject_name, chapters }));
-        const stale = Boolean(saved && (responseFailure(saved.content) || saved.content.length > summaryLimits().summaryChars || saved.source_hash !== row.source_hash || !row.complete ||
+        const stale = Boolean(saved && (!saved.content?.trim() || responseFailure(saved.content) || saved.content.length > summaryLimits().storedChars || saved.source_hash !== row.source_hash || !row.complete ||
             saved.pipeline_version !== PIPELINE_VERSION || saved.input_hash !== inputHash));
         const summary = saved ? { content: saved.content, sourceHash: saved.source_hash, createdAt: saved.created_at,
             stale, sourceIds: parse(saved.coverage_json), summaryHash: saved.summary_hash, inputHash: saved.input_hash,
-            pipelineVersion: saved.pipeline_version } : null;
-        const cards = saved && !stale ? (await q(`SELECT * FROM LearningCards WHERE user_id=@uid AND course_id=@id
+            pipelineVersion: saved.pipeline_version, ...parse(saved.format_json, {}), cardsState: parse(saved.cards_state_json, {}) } : null;
+        const cards = saved && !stale ? (await q(`SELECT LearningCards.*,
+            (SELECT COUNT(*) FROM LearningReviews r WHERE r.user_id=LearningCards.user_id AND r.card_id=LearningCards.card_id AND r.rating='again') AS forgotten_count
+            FROM LearningCards WHERE user_id=@uid AND course_id=@id
             AND source_hash=@hash AND summary_hash=@summary ORDER BY created_at,card_id`, {
             id: row.course_id, hash: row.source_hash, summary: saved.summary_hash })).map(cardView) : [];
         const persistedFailures = [...parse(row.failures_json), ...(await syncFailures()).filter(failure => matchesFailure(failure, row))];
@@ -81,7 +84,10 @@ function createLearningCatalog({ q, scope, now, jobs, activeJobs }) {
         return { scope: current, courses: found, jobs: [...activeJobs.values()].map(jobId => {
             const entry = jobs.get(jobId);
             return { jobId, status: entry.status, message: entry.message, progress: entry.progress, phase: entry.phase,
-                materialsUpdatedAt: entry.materialsUpdatedAt };
+                kind: entry.kind, courseId: entry.courseId, subject: entry.subject, queuePosition: entry.queuePosition,
+                currentSubject: entry.currentSubject, materialsUpdatedAt: entry.materialsUpdatedAt,
+                summaryStage: entry.summaryStage, completedParts: entry.completedParts, totalParts: entry.totalParts,
+                activeWorkers: entry.activeWorkers, parallelism: entry.parallelism };
         }) };
     }
     async function course(id) {

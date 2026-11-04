@@ -4,6 +4,7 @@ const { NGUOI_DUNG_ID } = require('../utils/nguoiDung');
 const { getCurrentCourseScope, matchCourse } = require('../utils/current-courses');
 const eduxSessions = require('../utils/edux-session');
 const { collectCourseMaterials } = require('../utils/edux-materials');
+const { textOnlyChapters } = require('../../database/shared/eduxContent');
 const gemini = require('../utils/gemini-client');
 const { aggregateCourseText, documentsOf } = require('../utils/course-material-text');
 const { createCourseSummaryPipeline } = require('./course-summary.pipeline');
@@ -34,23 +35,23 @@ function createLearningService({ getDb, userId = NGUOI_DUNG_ID, getScope = getCu
         for (const incoming of collected.courses || []) {
             if (!matchCourse(current, incoming)) continue;
             const [previous] = await q('SELECT * FROM LearningCourses WHERE user_id=@uid AND course_id=@id', { id: incoming.id });
-            const oldChapters = parse(previous?.chapters_json);
-            let chapters = (incoming.chapters || []).map(chapter => {
+            const oldChapters = textOnlyChapters(parse(previous?.chapters_json));
+            let chapters = textOnlyChapters(incoming.chapters || []).map(chapter => {
                 const old = oldChapters.find(item => String(item.id) === String(chapter.id));
                 // A failed chapter-list request must not erase its stored sources.
                 if (chapter.complete === false && !chapter.documents?.length && old) return { ...old, complete: false,
                     documents: old.documents.map(document => ({ ...document, status: 'error', cached: true, error: 'Chưa cập nhật được chương. Nội dung là bản đã lưu.' })) };
                 return { ...chapter, documents: (chapter.documents || []).map(document => {
                     const cached = old?.documents?.find(item => String(item.id) === String(document.id));
-                    return document.status !== 'ready' && (cached?.content || cached?.images?.length) ? { ...document, content: cached.content,
-                        rawContent: cached.rawContent, images: cached.images, cached: true } : document;
+                    return document.status !== 'ready' && cached?.content ? { ...document, content: cached.content,
+                        rawContent: cached.rawContent, cached: true } : document;
                 }) };
             });
             if (incoming.complete === false && !chapters.length && oldChapters.length) chapters = oldChapters.map(chapter => ({ ...chapter, complete: false,
                 documents: chapter.documents.map(document => ({ ...document, status: 'error', cached: true, error: 'Chưa tải lại được danh sách chương.' })) }));
             const complete = incoming.complete !== false && chapters.length > 0 && chapters.every(chapter => chapter.complete !== false) &&
                 documentsOf(chapters).length > 0 && documentsOf(chapters).every(document => document.status === 'ready' &&
-                    (String(document.content || '').trim() || document.images?.length));
+                    String(document.content || '').trim());
             await q(`INSERT INTO LearningCourses(user_id,course_id,subject_name,subject_code,chapters_json,source_hash,complete,failures_json,updated_at)
                 VALUES(@uid,@id,@subject,@code,@chapters,@hash,@complete,@failures,@updated)
                 ON CONFLICT(user_id,course_id) DO UPDATE SET subject_name=excluded.subject_name,subject_code=excluded.subject_code,
@@ -69,34 +70,34 @@ function createLearningService({ getDb, userId = NGUOI_DUNG_ID, getScope = getCu
         const session = sessions.ensureSession ? await sessions.ensureSession(userId) : sessions.getSession(userId);
         if (!session?.cookie) throw fail('Hãy kết nối EDUX trong Đồng bộ dữ liệu để lấy nội dung bài giảng.', 401);
         if (options.subjectId != null && !nonempty(options.subjectId, 200)) throw fail('Mã môn học không hợp lệ.');
+        const [stored] = options.subjectId ? await q('SELECT subject_name FROM LearningCourses WHERE user_id=@uid AND course_id=@id', { id: options.subjectId }) : [];
         const key = options.subjectId ? `sync:${options.subjectId}` : 'sync';
         return startJob(activeJobs.has('sync') ? 'sync' : key, async update => {
+            // A queued request may start much later. Resolve scope/session again.
+            const current = await scope();
+            if (!current.resolved || !current.courses.length) throw fail(current.message || 'Chưa có môn hiện tại để đồng bộ.', 409);
+            const session = sessions.ensureSession ? await sessions.ensureSession(userId) : sessions.getSession(userId);
+            if (!session?.cookie) throw fail('Hãy kết nối lại EDUX trước khi đồng bộ slide.', 401);
             update('Đang lấy toàn bộ chương và nội dung slide của các môn đang học…', null, { phase: 'materials' });
             let collected;
-            try { collected = await collect(session.cookie, { scope: current, subjectId: options.subjectId }); }
+            try { collected = await collect(session.cookie, { scope: current, subjectId: options.subjectId,
+                onProgress: ({ subject, courseId, done, total }) => update(`Đang quét slide: ${subject} (${done + 1}/${total})`, { done, total }, { phase: 'materials', currentCourseId: courseId, currentSubject: subject }),
+                onCourse: async (course, failures) => {
+                    await mutate(() => saveCollected({ courses: [course], failures }));
+                    update(`Đã lưu slide: ${course.subject}.`, null, { phase: 'materials', materialsUpdatedAt: now() });
+                }
+            }); }
             catch (error) { if ([401, 403].includes(error.statusCode || error.status)) sessions.clearSession(userId); throw error; }
             await mutate(() => saveCollected(collected));
-            update('Đã lưu nội dung slide. Đang chuẩn bị tóm tắt AI…', null, { phase: 'summaries', materialsUpdatedAt: now() });
+            update('Đã lưu nội dung slide. Bạn có thể bấm tóm tắt khi cần.', null, { phase: 'materials', materialsUpdatedAt: now() });
             const failures = [...(collected.failures || [])];
-            await mutate(async () => {
-                const previous = await syncFailures();
-                await saveFailures(options.subjectId ? [...previous.filter(failure => failure.courseId !== options.subjectId), ...failures] : failures);
-            });
-            if (options.summarize !== false) {
-                const ready = (collected.courses || []).filter(incoming => incoming.complete !== false);
-                const results = await Promise.allSettled(ready.map(incoming => summarize(String(incoming.id), update)));
-                results.forEach((result, index) => {
-                    if (result.status === 'rejected') failures.push({ courseId: String(ready[index].id), subject: ready[index].subject,
-                        stage: result.reason.stage || 'summary', message: result.reason.message });
-                });
-            }
             await mutate(async () => {
                 const previous = await syncFailures();
                 await saveFailures(options.subjectId ? [...previous.filter(failure => failure.courseId !== options.subjectId), ...failures] : failures);
             });
             const result = await courses();
             return { ...result, failures };
-        });
+        }, { kind: 'sync', courseId: options.subjectId || null, subject: stored?.subject_name || (options.subjectId ? 'Môn đã chọn' : 'Tất cả môn kỳ hiện tại'), phase: 'materials' });
     }
 
     function summarize(id, update = () => {}) {
@@ -122,7 +123,7 @@ function createLearningService({ getDb, userId = NGUOI_DUNG_ID, getScope = getCu
     async function startSummary(id) {
         const row = await rowFor(id);
         if (!row.complete || !documentsOf(parse(row.chapters_json)).length) throw fail('Cần đồng bộ đủ slide của môn trước khi tạo tóm tắt và Flashcard.', 409);
-        return startJob(`summary:${id}`, update => summarize(id, update));
+        return startJob(`summary:${id}`, update => summarize(id, update), { kind: 'summary', courseId: id, subject: row.subject_name, phase: 'summaries' });
     }
     const review = createLearningReview({ q, mutate, rowFor, courseView, cardView, db, clock, now });
 

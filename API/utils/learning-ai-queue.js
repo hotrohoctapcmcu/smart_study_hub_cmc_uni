@@ -13,6 +13,6 @@ function createWorkQueue(limit = 5) {
     return { run: work => new Promise((resolve, reject) => { pending.push({ work, resolve, reject }); drain(); }) };
 }
 
-// One shared queue across automatic sync and manually started courses.
+// Shared provider cap across manual course workers and AI Tutor summaries.
 const learningAiQueue = createWorkQueue(5);
 module.exports = { createWorkQueue, learningAiQueue };

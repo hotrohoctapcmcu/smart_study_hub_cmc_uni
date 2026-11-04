@@ -1,0 +1,24 @@
+{
+  "checkedAt": "2026-11-04T15:12:27.313Z",
+  "provider": "mock",
+  "fixedRequestLatencyMs": 50,
+  "sourceChars": 67215,
+  "serial": {
+    "parallelism": 1,
+    "parts": 8,
+    "requests": 9,
+    "maximumConcurrentRequests": 1,
+    "elapsedMs": 575,
+    "exactSourceCoverage": true
+  },
+  "parallel": {
+    "parallelism": 4,
+    "parts": 8,
+    "requests": 9,
+    "maximumConcurrentRequests": 4,
+    "elapsedMs": 272,
+    "exactSourceCoverage": true
+  },
+  "observedSpeedup": 2.11,
+  "limitation": "Controlled synthetic latency only; does not measure real provider throughput, rate limits or answer quality."
+}

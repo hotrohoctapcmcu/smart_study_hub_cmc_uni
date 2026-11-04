@@ -14,6 +14,7 @@ function compactContext(context) {
         assignments: context.assignments,
         exams: context.exams,
         grades: context.grades,
+        academicHistory: context.academicHistory,
         documents: context.documents,
         notes: context.notes,
         sources: context.sources

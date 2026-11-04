@@ -25,6 +25,8 @@ function positiveId(id, message) {
 
 function checklist(body) {
     kiemTra(body?.title, 'title là bắt buộc.');
+    if (body.minutes !== undefined) kiemTra(Number.isInteger(body.minutes) && body.minutes >= 1 && body.minutes <= 480, 'Thời lượng bước phải từ 1 đến 480 phút.');
+    if (body.doneWhen !== undefined) kiemTra(typeof body.doneWhen === 'string' && body.doneWhen.trim() && body.doneWhen.length <= 250, 'Đầu ra bước tối đa 250 ký tự và không được trống.');
 }
 
 module.exports = { create, status, eduxStatus, id, positiveId, checklist };

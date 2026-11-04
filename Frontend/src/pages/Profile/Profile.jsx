@@ -3,10 +3,12 @@ import { studentApi } from "../../api";
 import { responseList } from "../../api/apiClient";
 import { useApi } from "../../hooks/useApi";
 import { mapStudent, mapGrades, mapSubjects } from "../../utils/studentAdapter";
+import { assertBirthDate } from "../../utils/planning";
 import { ErrorState, LoadingSkeleton, useAction } from "../../components/common/ui";
 import ProfileHero from "../../components/profile/ProfileHero";
 import ProfileTabs from "../../components/profile/ProfileTabs";
 import StudyStats from "../../components/profile/StudyStats";
+import useIuCredits from "../../components/profile/useIuCredits";
 import GradeSection from "../../components/profile/GradeSection";
 import ProfileSidebar from "../../components/profile/ProfileSidebar";
 import ProfileEditModal from "../../components/profile/ProfileEditModal";
@@ -28,6 +30,7 @@ export default function Profile() {
   const subjects = useApi(studentApi.getSubjects);
   const { run, busy, notify } = useAction();
   const student = useMemo(() => mapStudent(state.data), [state.data]);
+  const creditSync = useIuCredits(student.studentCode, student.totalCredits, student.requiredCredits);
   const gradeRows = useMemo(() => mapGrades(responseList(grades.data, "grades")), [grades.data]);
   const subjectRows = useMemo(() => mapSubjects(responseList(subjects.data, "subjects")), [subjects.data]);
   const profile = { ...student, ...preferences.personal };
@@ -40,6 +43,18 @@ export default function Profile() {
     if (grades.data && !semester) setAllGrades(gradeRows);
   }, [grades.data, gradeRows, semester]);
   useEffect(() => { setPreferences(readProfilePreferences(student.studentCode)); }, [student.studentCode]);
+  useEffect(() => {
+    let active = true;
+    let refreshVersion = 0;
+    const refresh = async () => {
+      const request = ++refreshVersion;
+      const [freshGrades] = await Promise.all([studentApi.getGrades(), state.execute(), subjects.execute(), grades.execute()]);
+      if (active && request === refreshVersion) setAllGrades(mapGrades(responseList(freshGrades, 'grades')));
+    };
+    const onUpdated = () => { void refresh().catch(() => {}); };
+    window.addEventListener('workspace-updated', onUpdated);
+    return () => { active = false; window.removeEventListener('workspace-updated', onUpdated); };
+  }, [state.execute, subjects.execute, grades.execute]);
 
   const openEdit = () => { setForm(profile); setEditing(true); };
   const updatePreferences = (next) => {
@@ -49,6 +64,7 @@ export default function Profile() {
   const saveProfile = async (event) => {
     event.preventDefault();
     const saved = await run(async () => {
+      assertBirthDate(form.dateOfBirth);
       await studentApi.updateProfile({
         fullName: form.fullName.trim(), studentCode: form.studentCode.trim(),
         major: form.major.trim(), email: form.email, phone: form.phone, dob: form.dateOfBirth,
@@ -63,26 +79,26 @@ export default function Profile() {
   };
 
   const gradeSection = <GradeSection state={grades} rows={gradeRows} semesters={semesters} semester={semester} onSemesterChange={setSemester} />;
-  const mainPanel = tab === "subjects" ? <SubjectGrid state={subjects} courses={courses} />
+  const mainPanel = tab === "subjects" ? <SubjectGrid state={subjects} courses={courses} programName={student.programName} />
     : tab === "schedule" ? <SchedulePanel />
-      : tab === "semesters" ? grades.loading && !allGrades.length ? <LoadingSkeleton /> : <SemesterTimeline grades={allGrades} />
+      : tab === "semesters" ? grades.loading && !allGrades.length ? <LoadingSkeleton /> : <SemesterTimeline grades={allGrades} academicSummary={student.academicSummary} />
         : tab === "achievements" ? <Achievements stats={stats} goal={preferences.gpaGoal || 8} />
           : tab === "settings" ? <SettingsPanel onEdit={openEdit} onEditGoal={() => setEditingGoal(true)} />
-            : <>{gradeSection}{tab === "info" && <SemesterTimeline grades={allGrades} compact />}</>;
+            : <>{gradeSection}{tab === "info" && <SemesterTimeline grades={allGrades} academicSummary={student.academicSummary} compact />}</>;
 
   return (
     <div className="page profile-page">
       <ProfileHero profile={profile} loading={state.loading && !state.data} onEdit={openEdit} />
       {state.error && <ErrorState error={state.error} onRetry={state.refetch} title="Chưa thể tải hồ sơ sinh viên" />}
       <ProfileTabs value={tab} onChange={setTab} />
-      <StudyStats stats={stats} loading={grades.loading && !allGrades.length} error={grades.error && !allGrades.length} />
+      <StudyStats stats={stats} loading={grades.loading && !allGrades.length} error={grades.error && !allGrades.length} onEditCredits={() => setEditingGoal(true)} creditSync={creditSync} />
       <div className="profile-body" role="tabpanel" id={`profile-panel-${tab}`} aria-labelledby={`profile-tab-${tab}`}>
         <div className="profile-main">{mainPanel}</div>
         <ProfileSidebar profile={profile} stats={stats} goal={preferences.gpaGoal || 8} onEdit={openEdit} onEditGoal={() => setEditingGoal(true)} onViewProgress={() => setTab("semesters")} />
       </div>
       <p className="profile-data-note">Kết quả học tập được tổng hợp từ dữ liệu đã đồng bộ. Mục tiêu và phần giới thiệu cá nhân được lưu trên thiết bị này.</p>
       <ProfileEditModal isOpen={editing} onClose={() => !busy && setEditing(false)} form={form} setForm={setForm} onSubmit={saveProfile} busy={busy} />
-      <StudyGoalModal isOpen={editingGoal} onClose={() => setEditingGoal(false)} preferences={preferences} onSave={(goal) => {
+      <StudyGoalModal isOpen={editingGoal} onClose={() => setEditingGoal(false)} preferences={preferences} programCredits={student.totalCredits} onSave={(goal) => {
         try { updatePreferences({ ...preferences, ...goal }); setEditingGoal(false); notify?.("Đã lưu mục tiêu học tập"); }
         catch { notify?.("Không thể lưu mục tiêu trên thiết bị này.", "error"); }
       }} />

@@ -1,0 +1,92 @@
+{
+  "date": "2026-11-05",
+  "timezone": "Asia/Saigon",
+  "comparison": {
+    "references": [
+      "IU recap screenshots supplied in the bug report",
+      "Previously synced transcript read into an in-memory sql.js database"
+    ],
+    "authenticatedLivePortalComparison": false,
+    "summarySource": "calculated_from_synced_iu_grades",
+    "previousDisplay": {
+      "value": "6.0 / 10",
+      "cause": "The overall average of 5.95 was rounded to one decimal and labeled as current GPA without distinguishing accumulated results."
+    },
+    "expectedAndRecomputed": {
+      "overallAverage10": 5.95,
+      "overallAverage4": 2.25,
+      "cumulative10": 6.66,
+      "cumulative4": 2.52,
+      "gradedCredits": 28,
+      "earnedGradedCredits": 25
+    },
+    "semesterRecaps": [
+      { "academicYear": "2025-2026", "semester": "2", "average10": 4.96, "average4": 0.81, "cumulative4": 1.3 },
+      { "academicYear": "2025-2026", "semester": "3", "average10": 6.82, "average4": 2.23, "cumulative4": 2.62 }
+    ]
+  },
+  "calculationAndSyncFixes": [
+    "Use one shared calculation for profile, progress and AI context; display both scales and both aggregate scopes to two decimal places.",
+    "Preserve the original numeric IU scale-4 score before falling back to letter conversion.",
+    "Keep P/NP records while excluding them from GPA; allow missing numeric results without inventing a zero score or letter grade.",
+    "Keep learning/exam attempts and select the latest completed result per subject chronologically for accumulated totals.",
+    "Preserve transcript attempts in detailed history; repeated migration and sync do not duplicate results.",
+    "Overall averages include failed graded credits; cumulative means use passed graded credits; the semester scale-10 recap uses passed graded credits.",
+    "Do not infer the total program credits from downloaded subjects or hardcode a program total."
+  ],
+  "aiHistoricalComparison": {
+    "previousLimitation": "Raw grade rows could be limited or removed when chat context was reduced, and prompts did not consistently request earlier-semester comparisons.",
+    "implemented": [
+      "Calculate academicHistory from the full synced transcript before applying raw grade limits.",
+      "Include overall totals, chronological semester summaries, previous/latest term changes, retakes and subjects needing review.",
+      "Retain academicHistory through chat context reduction; bound long arrays and report truncation.",
+      "Request earlier-versus-latest semester comparisons in chat, study/exam planning and progress advice while distinguishing GPA scales and scopes.",
+      "Use server transcript totals rather than client-supplied academicHistory; accept equivalent decimal commas in supported numeric claims.",
+      "Treat grades as historical results rather than a fixed judgment of ability; do not invent scores for ungraded subjects."
+    ],
+    "verifiedUsingMockedProvider": true,
+    "personalTranscriptSentToLiveGemini": false
+  },
+  "verification": {
+    "api": { "command": "npm run test:api", "passed": 143, "failed": 0 },
+    "ai": { "command": "npm run test:ai", "passed": 96, "failed": 0 },
+    "frontendTargeted": {
+      "passed": 53,
+      "failed": 0,
+      "files": ["profile-gpa", "profile-exams", "data-contracts", "contracts", "ai-workspace", "ai-history", "learning-workflows"]
+    },
+    "syncRestoreCurrentCourses": {
+      "command": "node --test tests/unified-sync-integration.cjs tests/API/test-iu-restore.js tests/API/test-current-courses.js",
+      "passed": 10,
+      "failed": 0
+    },
+    "finalServerGuards": { "files": ["API/tests/academic-results.test.cjs", "tests/API/test-ai-sprint2.js"], "passed": 32, "failed": 0 },
+    "finalCalculationInputBounds": { "file": "API/tests/academic-results.test.cjs", "passed": 4, "failed": 0 },
+    "browser": {
+      "command": "node tests/profile-gpa-browser-smoke.cjs",
+      "provider": "local synthetic HTTP fixture",
+      "passed": 6,
+      "failed": 0,
+      "report": "tests/artifacts/profile-gpa/report.json",
+      "screenshots": ["tests/artifacts/profile-gpa/desktop.png", "tests/artifacts/profile-gpa/mobile.png"],
+      "visuallyInspected": true,
+      "coverage": ["four exact values and scales", "main cumulative GPA card", "desktop/mobile page overflow", "semester filtering retains overall totals", "no renderer errors"]
+    },
+    "build": {
+      "command": "npm --prefix Frontend run build",
+      "passed": true,
+      "seconds": 19.95,
+      "remainingWarnings": ["Existing MathJax eval warning", "Existing large chunk warning"]
+    },
+    "scopedDiffCheckPassed": true,
+    "note": "Test groups overlap and must not be summed as a unique test count. Write tests use synthetic fixtures and temporary databases."
+  },
+  "runtime": {
+    "applicationDatabaseModified": false,
+    "runningApplicationRestarted": false,
+    "requiredSteps": [
+      "Reopen the application/API to load the updated backend and academic migration.",
+      "Sync IU once to restore previously discarded P records and original numeric scale-4 scores."
+    ]
+  }
+}

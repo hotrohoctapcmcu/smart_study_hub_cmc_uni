@@ -1,27 +1,26 @@
 import { useState, useRef, useEffect } from "react";
 import { quizApi } from "../../api";
 import AIContent from '../common/AIContent';
+import QuizCreator from './QuizCreator';
 import { useApi } from "../../hooks/useApi";
 import { responseList, unwrapResponse } from "../../api/apiClient";
 import {
   Card,
   Button,
   ApiContent,
-  Field,
   Modal,
   Badge,
   useAction,
-  ErrorState,
 } from "../common/ui";
-export default function QuizPanel() {
+export default function QuizPanel({ initialSubject = "", initialTopic = "", initialCount = 10, initialCreate = false }) {
   const list = useApi(quizApi.list),
     detail = useApi(quizApi.detail, { immediate: false });
   const [quiz, setQuiz] = useState(null),
     [answers, setAnswers] = useState({}),
     [result, setResult] = useState(null),
-    [create, setCreate] = useState(false),
-    [subject, setSubject] = useState(""),
-    [topic, setTopic] = useState("");
+    [create, setCreate] = useState(initialCreate),
+    [subject, setSubject] = useState(initialSubject.slice(0, 120)),
+    [topic, setTopic] = useState(initialTopic.slice(0, 180));
   const { run, busy } = useAction();
   const selection = useRef(0);
   useEffect(() => () => { selection.current++; }, []);
@@ -46,6 +45,7 @@ export default function QuizPanel() {
                 {q.questionCount ?? q.questions?.length ?? "—"} câu hỏi
               </p>
               <Button
+                disabled={busy}
                 onClick={() => {
                   const request = ++selection.current;
                   setQuiz(q);
@@ -72,6 +72,7 @@ export default function QuizPanel() {
         title={quiz?.title || "Làm quiz"}
       >
         <ApiContent state={detail}>
+          <p className="hint">Nguồn: {detail.data?.source?.title || 'Bản cũ: chưa ghi nhận nguồn'}{detail.data?.source?.documents?.length ? ` · ${detail.data.source.documents.map(d => `${d.chapter} / ${d.title}`).join('; ')}` : ''}</p>
           {result ? (
             <div className="stack">
               <h2>
@@ -82,6 +83,7 @@ export default function QuizPanel() {
                   result.message ||
                   "Bạn đã hoàn thành bài kiểm tra."}
               </AIContent>
+              {(result.details ?? result.results ?? []).some(r => !(r.correct || r.isCorrect)) && <Button variant="outline" onClick={() => { setSubject(quiz.subject || initialSubject); setTopic([...new Set((result.details ?? result.results).filter(r => !(r.correct || r.isCorrect)).map(r => r.topic).filter(Boolean))].join(', ').slice(0, 180) || quiz.topic || initialTopic); selection.current++; setQuiz(null); setCreate(true); }}>Luyện lại phần sai</Button>}
               {Array.isArray(result.details ?? result.results) &&
                 (result.details ?? result.results).map((r, i) => (
                   <div className="schedule-note" key={i}>
@@ -99,11 +101,14 @@ export default function QuizPanel() {
               onSubmit={(e) => {
                 e.preventDefault();
                 run(async () => {
+                  const request = selection.current;
                   if (!questions.length)
                     throw new Error("Quiz chưa có câu hỏi.");
                   const response = await quizApi.submit(quiz.id, { answers });
                   const payload = unwrapResponse(response);
-                  setResult(payload.result ?? payload);
+                  const graded = payload?.result ?? payload;
+                  if (!Number.isFinite(graded?.score) && !Number.isInteger(graded?.correctCount)) throw new Error('Máy chủ chưa trả kết quả chấm bài hợp lệ. Hãy thử lại hoặc tải lại bài.');
+                  if (request === selection.current) setResult(graded);
                   await list.refetch();
                 }, "Đã nộp bài");
               }}
@@ -149,37 +154,14 @@ export default function QuizPanel() {
       </Modal>
       <Modal
         isOpen={create}
-        onClose={() => setCreate(false)}
+        onClose={() => { if (!busy) setCreate(false); }}
         title="Tạo quiz ôn tập"
       >
-        <form
-          className="stack"
-          onSubmit={(e) => {
-            e.preventDefault();
-            run(async () => {
-              await quizApi.create({
-                subject,
-                topic,
-                count: 10,
-                difficulty: "medium",
-              });
-              setCreate(false);
-              await list.refetch();
-            }, "Đã tạo quiz");
-          }}
-        >
-          <Field
-            label="Môn học / chủ đề"
-            required
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-          />
-          <Field label="Chủ đề ôn tập" required value={topic} onChange={(e) => setTopic(e.target.value)} />
-          <p className="hint">Tạo 10 câu hỏi ôn tập cho chủ đề bạn chọn.</p>
-          <Button type="submit" disabled={busy}>
-            Tạo quiz
-          </Button>
-        </form>
+        {create && <QuizCreator initialSubject={subject} initialTopic={topic} initialCount={initialCount} busy={busy} onCreate={body => run(async () => {
+          const data = unwrapResponse(await quizApi.create(body));
+          if (!data?.id) throw new Error('Máy chủ chưa trả quiz hợp lệ. Hãy tải lại danh sách trước khi thử lại.');
+          setCreate(false); await list.refetch();
+        }, 'Đã tạo quiz')} />}
       </Modal>
     </div>
   );

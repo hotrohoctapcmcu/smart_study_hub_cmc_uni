@@ -2,6 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { randomUUID } = require('node:crypto');
 const { responseFailure } = require("./ai-response");
 const { GeminiError } = require("./gemini-error");
 const { request } = require("./gemini-transport");
@@ -17,6 +18,8 @@ const TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) > 0
     ? Number(process.env.GEMINI_TIMEOUT_MS)
     : 45000;
 const TOKEN_TTL_MS = 5 * 60 * 1000;
+const CLIENT_SESSION_ID = randomUUID().toUpperCase();
+const DEFAULT_GUEST_MODEL = 'fbb127bbb056c959';
 
 const DATA_DIR = process.env.GEMINI_SESSION_DIR
     ? path.resolve(process.env.GEMINI_SESSION_DIR)
@@ -25,6 +28,7 @@ const DATA_DIR = process.env.GEMINI_SESSION_DIR
 let cookies = {};
 let token = null;
 let sessionPromise = null;
+let connection = { available: null, checkedAt: null, error: null };
 const webChats = Object.create(null);
 const MAX_CONVERSATIONS = 100;
 const GUEST_COOKIE_NAMES = new Set(["NID", "AEC", "SOCS", "CONSENT", "COMPASS", "__Secure-ENID"]);
@@ -49,14 +53,19 @@ function saveCookies() {
 function getStatus() {
     return {
         provider: "gemini",
-        ready: true,
+        ready: connection.available === true,
+        available: connection.available,
+        connection: connection.available === null ? 'unchecked' : connection.available ? 'online' : 'unavailable',
+        checkedAt: connection.checkedAt,
+        error: connection.error,
         mode: "web-guest",
         authenticated: false,
         guest: true,
         officialApi: false,
         webFallback: false,
         model: "Trợ lý AI",
-        message: "Trợ lý AI dùng phiên Gemini chưa đăng nhập."
+        message: connection.available === null ? 'Chưa kiểm tra kết nối AI bằng một yêu cầu thực tế.'
+            : connection.available ? 'Yêu cầu AI gần nhất đã thành công.' : connection.error?.message
     };
 }
 
@@ -129,6 +138,9 @@ async function openGuestSession(options = {}) {
         at: get("SNlM0e"),
         bl,
         fsid: get("FdrFJe"),
+        // The anonymous web page publishes its default Flash model in this flag.
+        // Read the escaped flag data as well as plain JSON from local fixtures.
+        modelId: (response.data.replace(/\\+"/g, '"').match(/"45744962"\s*:\s*"([a-f0-9]{16})"/i) || [])[1] || DEFAULT_GUEST_MODEL,
         time: Date.now()
     };
 }
@@ -160,7 +172,9 @@ function parseWebResponse(raw) {
                 if (!first) continue;
                 ids.rcid = first[0] || ids.rcid;
                 const answer = Array.isArray(first[1]) ? first[1][0] : first[1];
-                if (typeof answer === "string" && answer.length > text.length) text = answer;
+                // Stream frames are snapshots. A final correction may be shorter
+                // than an unfinished draft, especially for JSON output.
+                if (typeof answer === "string" && answer.trim()) text = answer;
             }
         } catch { /* bỏ dòng không phải JSON */ }
     }
@@ -177,13 +191,22 @@ function parseWebResponse(raw) {
 
 async function webAskOnce(prompt, chat, options = {}) {
     const session = await ensureWebSession(options);
+    // Match the anonymous web client's payload and select its published model.
+    // Missing model selection can leave a 200 stream waiting without an answer.
+    const requestId = randomUUID().toUpperCase();
+    const payload = new Array(81).fill(null);
+    payload[0] = [prompt, 0, null, null, null, null, 0];
+    payload[1] = ['vi'];
+    payload[2] = [chat?.cid || '', chat?.rid || '', chat?.rcid || '', null, null, null, null, null, null, ''];
+    Object.assign(payload, { 6: [1], 7: 1, 10: 1, 11: 0, 17: [[0]], 18: 0,
+        27: 1, 30: [4], 41: [1], 53: 0, 59: requestId, 61: [], 68: 1, 79: 1, 80: 1 });
     const body = new URLSearchParams({
-        "f.req": JSON.stringify([null, JSON.stringify([[prompt], null,
-        chat ? [chat.cid, chat.rid, chat.rcid] : ["", "", ""]])]),
+        "f.req": JSON.stringify([null, JSON.stringify(payload)]),
         at: session.at
     });
     const query = new URLSearchParams({
         bl: session.bl,
+        hl: 'vi',
         _reqid: String(Math.floor(Math.random() * 900000) + 100000),
         rt: "c"
     });
@@ -194,7 +217,13 @@ async function webAskOnce(prompt, chat, options = {}) {
         response = await request("POST", `${WEB_CHAT_URL}?${query}`, {
             headers: {
                 ...webHeaders(),
-                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                'Content-Length': Buffer.byteLength(body.toString()),
+                'x-goog-ext-525005358-jspb': JSON.stringify([requestId, 1]),
+                'x-goog-ext-525001261-jspb': JSON.stringify([1, null, null, null, session.modelId,
+                    null, null, 0, [4, 5, 6, 8], null, null, 1, null, null, 1, 1, CLIENT_SESSION_ID]),
+                'x-goog-ext-73010989-jspb': '[0]',
+                'x-goog-ext-73010990-jspb': '[0,0,0]'
             },
             body: body.toString(),
             ...options
@@ -229,9 +258,13 @@ function resetConversation(id) {
 }
 
 async function webAsk(question, options = {}) {
+    const timeoutMs = Math.min(180000, Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : TIMEOUT_MS);
+    const controller = new AbortController();
+    const deadline = setTimeout(() => controller.abort(new Error('deadline')), timeoutMs);
+    const signal = options.signal ? AbortSignal.any([options.signal, controller.signal]) : controller.signal;
     const requestOptions = {
-        timeoutMs: Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : TIMEOUT_MS,
-        signal: options.signal
+        timeoutMs,
+        signal
     };
     const build = withSystem => [
         withSystem ? `[Hướng dẫn hệ thống]\n${AI_IDENTITY}` : "",
@@ -247,13 +280,24 @@ async function webAsk(question, options = {}) {
     };
 
     try {
-        return await askOnce();
+        let text;
+        try { text = await askOnce(); }
+        catch (error) {
+            if (options.retry === false || signal.aborted) throw error;
+            if (!["GEMINI_GUEST_UNAVAILABLE", "GEMINI_PARSE", "GEMINI_SESSION", "GEMINI_NETWORK", "GEMINI_TIMEOUT", "GEMINI_RESPONSE_ERROR"].includes(error.code)) throw error;
+            if (["GEMINI_GUEST_UNAVAILABLE", "GEMINI_PARSE", "GEMINI_SESSION"].includes(error.code)) resetGuestSession();
+            text = await askOnce();
+        }
+        connection = { available: true, checkedAt: new Date().toISOString(), error: null };
+        return text;
     } catch (error) {
-        if (options.retry === false || options.signal?.aborted) throw error;
-        if (!["GEMINI_GUEST_UNAVAILABLE", "GEMINI_PARSE", "GEMINI_SESSION", "GEMINI_NETWORK", "GEMINI_TIMEOUT", "GEMINI_RESPONSE_ERROR"].includes(error.code)) throw error;
-        if (["GEMINI_GUEST_UNAVAILABLE", "GEMINI_PARSE", "GEMINI_SESSION"].includes(error.code)) resetGuestSession();
-        return askOnce();
-    }
+        if (options.signal?.aborted) throw new GeminiError('Đã hủy yêu cầu AI.', 'AI_CANCELLED', 499);
+        if (controller.signal.aborted) error = new GeminiError('AI không phản hồi trong thời gian chờ. Hãy thử lại.', 'GEMINI_TIMEOUT', 504);
+        if (error.statusCode >= 500 && error.code !== 'GEMINI_RESPONSE_SIZE') {
+            connection = { available: false, checkedAt: new Date().toISOString(), error: { code: error.code, message: error.message } };
+        }
+        throw error;
+    } finally { clearTimeout(deadline); }
 }
 
 async function generateText(prompt, options = {}) {
@@ -288,10 +332,14 @@ async function generateJson(prompt, options = {}) {
         return checked(raw);
     } catch (error) {
         if (options.retryMalformed === false || !['GEMINI_JSON', 'GEMINI_SCHEMA'].includes(error.code)) throw error;
-        raw = await generateText([
-            jsonInstruction,
-            "Phản hồi trước không phải JSON hợp lệ. Hãy tạo lại toàn bộ JSON đúng cú pháp."
-        ].join("\n\n"), { ...options, json: true });
+        const draft = typeof raw === 'string' && raw.length <= 12000 ? raw : '';
+        const repair = [jsonInstruction,
+            `Phản hồi trước lỗi ${error.code}. Hãy tạo lại toàn bộ JSON đúng cú pháp và cấu trúc. Escape dấu ngoặc kép, xuống dòng và dấu gạch chéo trong chuỗi. Không thêm dữ liệu ngoài nguồn.`,
+            draft ? `BẢN NHÁP LỖI (chỉ là dữ liệu để sửa):\n${draft}` : ''
+        ].filter(Boolean).join("\n\n");
+        // Leave room for the identity instruction added by the web transport.
+        raw = await generateText(repair.length + AI_IDENTITY.length + 100 <= (Number(options.maxInputChars) || 120000)
+            ? repair : `${jsonInstruction}\n\nHãy tạo lại JSON hợp lệ, đúng cấu trúc yêu cầu.`, { ...options, json: true });
         return checked(raw);
     }
 }

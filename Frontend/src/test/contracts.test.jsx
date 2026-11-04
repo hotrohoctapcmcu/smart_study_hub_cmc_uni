@@ -195,8 +195,9 @@ describe("Compatibility with actual backend request/response fields", () => {
     apiClient.defaults.adapter = spy;
     mount(QuizPanel);
     fireEvent.click(screen.getByRole("button", { name: "Tạo quiz" }));
+    await screen.findByRole('option', { name: 'Lập trình C#' });
     fireEvent.change(screen.getByLabelText("Môn học / chủ đề"), {
-      target: { value: "C#" },
+      target: { value: "Lập trình C#" },
     });
     fireEvent.change(screen.getByLabelText("Chủ đề ôn tập"), {
       target: { value: "OOP" },
@@ -206,16 +207,16 @@ describe("Compatibility with actual backend request/response fields", () => {
     await waitFor(() =>
       expect(
         spy.mock.calls.some(
-          ([c]) => c.method === "post" && c.url === "/quizzes",
+          ([c]) => c.method === "post" && c.url === "/ai/quizzes",
         ),
       ).toBe(true),
     );
     const body = JSON.parse(
       spy.mock.calls.find(
-        ([c]) => c.method === "post" && c.url === "/quizzes",
+        ([c]) => c.method === "post" && c.url === "/ai/quizzes",
       )[0].data,
     );
-    expect(body).toMatchObject({ subject: "C#", topic: "OOP" });
+    expect(body).toMatchObject({ subject: "Lập trình C#", topic: "OOP" });
   });
   it("keeps only active focus segments when saving Pomodoro", async () => {
     const spy = vi.fn(adapter);

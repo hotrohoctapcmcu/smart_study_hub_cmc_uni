@@ -20,7 +20,38 @@ function pomodoro(data) {
         return { start: new Date(a).toISOString(), end: new Date(b).toISOString() };
     });
     if (Math.abs(segmentMs / 1000 - seconds) > 1) throw fail('Thời lượng tập trung không khớp các khoảng học.');
-    return { start, seconds, end, segments };
+    const context = data.learningContext ?? {};
+    if (!context || typeof context !== 'object' || Array.isArray(context)) throw fail('Mục tiêu phiên học không hợp lệ.');
+    const shortText = (key, limit) => {
+        if (context[key] == null) return '';
+        if (typeof context[key] !== 'string' || context[key].trim().length > limit) throw fail(`${key} phải là chuỗi tối đa ${limit} ký tự.`);
+        return context[key].trim();
+    };
+    const subjectId = context.subjectId == null || context.subjectId === '' ? null : Number(context.subjectId);
+    if (subjectId !== null && (!Number.isSafeInteger(subjectId) || subjectId <= 0)) throw fail('Môn học của phiên không hợp lệ.');
+    const taskId = shortText('taskId', 200);
+    const taskSource = taskId ? context.taskSource : null;
+    if (taskId && !['PERSONAL', 'EDUX'].includes(taskSource)) throw fail('Nguồn công việc không hợp lệ.');
+    const outcome = context.outcome || 'UNRECORDED';
+    if (!['DONE', 'CONTINUE', 'UNRECORDED'].includes(outcome)) throw fail('Kết quả phiên học không hợp lệ.');
+    if (data.completeTask !== undefined && typeof data.completeTask !== 'boolean') throw fail('completeTask phải là boolean.');
+    if (data.completeTask && (!taskId || outcome !== 'DONE')) throw fail('Chỉ hoàn thành công việc khi đã xác nhận đạt mục tiêu.');
+    const learningContext = { subjectId, subjectName: shortText('subjectName', 200), taskId, taskSource,
+        goal: shortText('goal', 300), outcome, reflection: shortText('reflection', 1000), nextStep: shortText('nextStep', 500) };
+    if (context.topic !== undefined) learningContext.topic = shortText('topic', 200);
+    if (context.microGoals !== undefined) {
+        if (!Array.isArray(context.microGoals) || context.microGoals.length > 5) throw fail('Các bước của phiên tối đa 5 mục tiêu nhỏ.');
+        let totalMinutes = 0;
+        learningContext.microGoals = context.microGoals.map((step, index) => {
+            if (!step || typeof step.title !== 'string' || !step.title.trim() || step.title.trim().length > 180
+                || !Number.isInteger(step.minutes) || step.minutes < 1 || typeof step.doneWhen !== 'string' || !step.doneWhen.trim() || step.doneWhen.trim().length > 250
+                || typeof step.completed !== 'boolean') throw fail('Mục tiêu nhỏ không hợp lệ.');
+            totalMinutes += step.minutes;
+            return { id: `step-${index + 1}`, title: step.title.trim(), minutes: step.minutes, doneWhen: step.doneWhen.trim(), completed: step.completed };
+        });
+        if (totalMinutes > (Number(data.workDurationMinutes) || 25)) throw fail('Tổng thời gian các bước vượt quá thời lượng phiên.');
+    }
+    return { start, seconds, end, segments, learningContext };
 }
 
 function documentMeta(header) {

@@ -116,6 +116,8 @@ test('Sprint 3: real HTTP provider contract, API, SQLite persistence and failure
     await t.test('exam plan preview is grounded in free slots and does not write records', async () => {
         const result = await call('POST', '/exam-plan', { examId: 1 }); assert.equal(result.status, 200); preview = result.data;
         assert.equal(preview.persisted, false); assert.equal(preview.phases.length, 1); assert.equal(preview.sessions.length, 1);
+        assert.equal(preview.sessions[0].objective, 'Viết được 3 truy vấn JOIN');
+        assert.match(preview.sessions[0].selfTest, /INNER JOIN/);
         assert.ok(state.calls.at(-1).includes('Điểm yếu đo từ bài kiểm tra'));
         assert.equal((await query('SELECT * FROM ExamStudyPlans')).length, 0);
         confirmation = { confirmed: true, requestId: 'confirm-sprint3', phases: preview.phases.map(p => ({ ...p, title: 'Giai đoạn đã chỉnh' })), sessions: preview.sessions };
@@ -138,6 +140,8 @@ test('Sprint 3: real HTTP provider contract, API, SQLite persistence and failure
         assert.ok(results.every(r => r.status === 200 && r.data.persisted));
         assert.equal((await query('SELECT * FROM ExamStudyPlans'))[0].phase_title, 'Giai đoạn đã chỉnh');
         assert.equal((await query('SELECT * FROM StudySchedules')).length, 1);
+        const savedNotes = (await query('SELECT notes FROM StudySchedules'))[0].notes;
+        assert.match(savedNotes, /Mục tiêu: Viết được 3 truy vấn JOIN/); assert.match(savedNotes, /Tự kiểm tra:.*INNER JOIN/);
         assert.equal((await call('POST', '/exam-plan/confirm', { ...confirmation, phases: [{ ...confirmation.phases[0], title: 'Different' }] })).status, 409);
     });
     await t.test('records cannot be read or overwritten through another user scope', async () => {

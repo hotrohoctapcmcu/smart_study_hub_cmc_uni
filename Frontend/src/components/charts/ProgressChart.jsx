@@ -12,11 +12,11 @@ import {
 } from "recharts";
 import { EmptyState } from "../common/ui";
 export const chartColors = [
-  "#9376ee",
-  "#83cdb7",
-  "#9eaff1",
-  "#f0bd84",
-  "#d5a4dc",
+  "var(--primary-ink)",
+  "var(--success)",
+  "var(--info)",
+  "var(--warning)",
+  "var(--danger)",
 ];
 export default function ProgressChart({ data = [], kind = "daily", showTasks = false }) {
   if (!data.length)

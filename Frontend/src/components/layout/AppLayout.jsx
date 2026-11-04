@@ -62,7 +62,7 @@ export default function AppLayout() {
         )}
         <div className="app-workspace" inert={open && compact ? "" : undefined}>
           <Topbar menuOpen={open} onMenuToggle={() => setOpen((v) => !v)} />
-          <main className="main-content" id="main-content" tabIndex={-1}>
+          <main className={"main-content" + (location.pathname === "/tasks" ? " main-content--tasks" : "")} id="main-content" tabIndex={-1}>
             <div key={location.pathname} className="route-view"><Outlet /></div>
           </main>
         </div>

@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Plus, Search, LayoutGrid, List, BookOpen, Files, WholeWord, GraduationCap, ArrowRight, Check } from 'lucide-react';
-import { studentApi } from '../../api';
-import { responseList } from '../../api/apiClient';
-import { useApi } from '../../hooks/useApi';
+import { useCurrentCourses } from '../../hooks/useCurrentCourses';
+import CurrentCourseHint from '../../components/common/CurrentCourseHint';
 import { Button, Modal, Field, EmptyState, ErrorState, LoadingSkeleton, useAction } from '../../components/common/ui';
 import { saveBlob } from '../../utils/files';
 import { pageText, countWords, NOTEBOOK_TEMPLATES, COLORS } from './notebookModel';
@@ -48,8 +47,9 @@ function ColorPicker({ value, onChange }) {
 
 export default function NotebookDashboard({ store, onOpen }) {
   const { notebooks = [], pages = [], loading, error, storageError } = store;
-  const subjectsState = useApi(studentApi.getSubjects);
-  const subjects = useMemo(() => [...new Set([...responseList(subjectsState.data, 'subjects').map(item => item.subject_name || item.subjectName || item.name || item.subject), ...notebooks.map(book => book.subject)].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi')), [subjectsState.data, notebooks]);
+  const subjectsState = useCurrentCourses();
+  const currentNames = subjectsState.subjects.map(item => item.subject_name);
+  const subjects = [...new Set([...currentNames, ...notebooks.map(book => book.subject)].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'));
   const [query, setQuery] = useState(''), [subject, setSubject] = useState(''), [sort, setSort] = useState('recent'), [view, setView] = useState('grid'), [dialog, setDialog] = useState(null);
   const [name, setName] = useState(''), [formSubject, setFormSubject] = useState(''), [template, setTemplate] = useState('blank'), [color, setColor] = useState(COLORS[0]), [formError, setFormError] = useState('');
   const { run, busy } = useAction();
@@ -91,7 +91,7 @@ export default function NotebookDashboard({ store, onOpen }) {
     <Modal isOpen={!!dialog} title={modalTitles[dialog?.action] || ''} onClose={() => { if (!busy) setDialog(null); }} size={dialog?.action === 'create' ? 'lg' : 'md'}><form className="nw-book-form" onSubmit={submit}>
       {dialog?.action === 'delete' ? <p>Xóa “<strong>{dialog.notebook.title}</strong>” và tất cả {pages.filter(page => String(page.notebookId) === String(dialog.notebook.id)).length} trang bên trong? Thao tác này không thể hoàn tác.</p> : <>
         {['create', 'rename'].includes(dialog?.action) && <Field label="Tên sổ tay"><input data-autofocus required maxLength={200} value={name} placeholder="Ví dụ: Database Notes" onChange={event => setName(event.target.value)} /></Field>}
-        {['create', 'move'].includes(dialog?.action) && <><Field label="Môn học"><input required list="nw-subject-options" maxLength={200} value={formSubject} placeholder="Chọn hoặc nhập môn học" onChange={event => setFormSubject(event.target.value)} /></Field><datalist id="nw-subject-options">{subjects.map(item => <option key={item} value={item} />)}</datalist></>}
+        {['create', 'move'].includes(dialog?.action) && <><Field label="Môn học"><select required value={formSubject} onChange={event => setFormSubject(event.target.value)}><option value="">Chọn môn kỳ hiện tại</option>{[...new Set([...currentNames, dialog?.notebook?.subject].filter(Boolean))].map(item => <option key={item}>{item}</option>)}</select></Field><CurrentCourseHint state={subjectsState} /><p className="hint">Sổ tay các kỳ trước vẫn có trong danh sách và bộ lọc môn học.</p></>}
         {['create', 'color'].includes(dialog?.action) && <div><span className="nw-form-label">Màu bìa</span><ColorPicker value={color} onChange={setColor} /></div>}
         {dialog?.action === 'create' && <fieldset className="nw-template-fieldset"><legend>Chọn template</legend><div className="nw-template-grid">{NOTEBOOK_TEMPLATES.map(item => <label key={item.id} className={template === item.id ? 'selected' : ''}><input type="radio" name="notebook-template" value={item.id} checked={template === item.id} onChange={() => setTemplate(item.id)} /><span><strong>{item.label}</strong><small>{item.description}</small></span></label>)}</div></fieldset>}
       </>}

@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-05",
+  "timezone": "Asia/Saigon",
+  "scope": "IU program credits and full curriculum collection, persistence and profile display",
+  "fixtures": {
+    "kind": "synthetic; screenshot values and test field aliases, not an authenticated response",
+    "programCredits": 126,
+    "availableBlockCredits": 203,
+    "requiredBlockCredits": 129,
+    "gradedEarnedCredits": 25,
+    "cumulativeGpa4": 2.52
+  },
+  "verification": {
+    "api": { "passed": 149, "failed": 0 },
+    "aiAndSync": { "passed": 56, "failed": 0 },
+    "frontend": { "passed": 447, "failed": 0, "files": 49 },
+    "chromium": { "passed": 10, "failed": 0, "widths": [1440, 390], "rendererErrors": 0 },
+    "productionBuild": { "passed": true, "seconds": 32.14, "existingWarnings": ["MathJax eval", "large chunks"] },
+    "countsOverlap": true
+  },
+  "live": {
+    "localApiPort": 3001,
+    "localApiAvailable": false,
+    "savedIuSessionAvailable": false,
+    "authenticatedResponseVerified": false,
+    "programTotalFieldNamesVerified": false,
+    "realDatabaseModified": false,
+    "credentialsOrRawResponsesPersisted": false
+  },
+  "artifacts": "tests/artifacts/profile-curriculum/ and tests/artifacts/iu-curriculum-*.log (gitignored)"
+}

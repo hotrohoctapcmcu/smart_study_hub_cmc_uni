@@ -1,0 +1,62 @@
+{
+  "checkedAt": "2026-11-04T20:32:00.863062+07:00",
+  "environment": {
+    "node": "v24.16.0",
+    "timezone": "Asia/Saigon",
+    "os": "Windows"
+  },
+  "checks": [
+    {
+      "command": "npm --prefix Frontend test -- --reporter=dot",
+      "kind": "mock/jsdom",
+      "pass": 420,
+      "files": 46,
+      "fail": 0
+    },
+    {
+      "command": "npm run test:api",
+      "kind": "HTTP/contracts/temporary SQLite",
+      "tests": 137,
+      "pass": 137,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run test:ai",
+      "kind": "mock HTTP AI provider/temporary SQLite",
+      "tests": 74,
+      "pass": 74,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "node --test tests/frontend-api-integration.cjs tests/API/test-sprint2-complete.js tests/API/test-current-courses.js",
+      "kind": "real local HTTP/temporary SQLite/fixture IU",
+      "tests": 27,
+      "pass": 27,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm --prefix Frontend run build",
+      "passed": true,
+      "warnings": {
+        "mathjaxEval": true,
+        "largeChunks": true
+      }
+    },
+    {
+      "command": "git diff --check",
+      "passed": true
+    }
+  ],
+  "liveEvidence": "learning-flows-live.json",
+  "liveResult": "GEMINI_TIMEOUT; 0/1 passed; synthetic input; no application database writes",
+  "limitations": [
+    "No direct Electron/browser/device acceptance in this run",
+    "No live IU/EDUX/Outlook sync",
+    "Quiz upload source extraction supports TXT/Markdown; unsupported formats return an explicit error",
+    "Integration harness logged Vite dependency scan errors while closing the server; HTTP assertions passed"
+  ],
+  "countsOverlap": true
+}

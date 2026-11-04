@@ -154,12 +154,14 @@ async function main() {
         assertPass(updatedStudy.status === 200 && updatedStudy.body.data.title === 'Buổi tự học đã sửa',
             'cập nhật buổi tự học');
 
-        const weeklyStudy = await request('POST', '/schedules/study', {
+        // Completed history is a fixture, not a new plan: 18:00 may already
+        // have passed when this test runs. The public API correctly rejects it.
+        const weeklyStudy = await db.xepLichTuHoc(studentId, {
             title: 'Buổi học hoàn thành trong tuần',
             studyDate: datePlusDays(0), startTime: '18:00', endTime: '19:30', subjectId
         });
-        assertPass(weeklyStudy.status === 201, 'tạo buổi học để kiểm tra tổng giờ tuần');
-        const weeklyStudyId = weeklyStudy.body.data.schedule_id;
+        assertPass(Number.isInteger(weeklyStudy.schedule_id), 'tạo dữ liệu buổi học để kiểm tra tổng giờ tuần');
+        const weeklyStudyId = weeklyStudy.schedule_id;
         const completedStudy = await request('PATCH', `/schedules/study/${weeklyStudyId}/status`, {
             status: 'COMPLETED'
         });

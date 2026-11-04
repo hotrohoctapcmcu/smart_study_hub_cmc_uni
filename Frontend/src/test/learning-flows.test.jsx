@@ -26,7 +26,7 @@ afterEach(() => {
 describe("Learning flows", () => {
   it("joins weakness advice to its measured topic by key", async () => {
     apiClient.defaults.adapter = async (config) => {
-      if (config.url === "/weaknesses") return response(config, {
+      if (config.url === "/ai/weaknesses") return response(config, {
         topics: [{ key: "cs-oop", subject: "C#", topic: "Kế thừa", priority: "high", latestScore: 25 }],
         advice: [{ key: "cs-oop", recommendation: "Ôn lại lớp cơ sở và lớp dẫn xuất.", exercise: "Viết hai lớp có kế thừa." }],
       });
@@ -68,13 +68,13 @@ describe("Learning flows", () => {
   it("ignores an old quiz result after another quiz is opened", async () => {
     let resolveFirst;
     apiClient.defaults.adapter = async (config) => {
-      if (config.url === "/quizzes") return response(config, [
+      if (config.url === "/ai/quizzes") return response(config, [
         { id: "first", title: "Quiz trước" }, { id: "second", title: "Quiz sau" },
       ]);
-      if (config.url === "/quizzes/first") return new Promise((resolve) => {
+      if (config.url === "/ai/quizzes/first") return new Promise((resolve) => {
         resolveFirst = () => resolve(response(config, { result: { score: 99 }, questions: [] }));
       });
-      if (config.url === "/quizzes/second") return response(config, {
+      if (config.url === "/ai/quizzes/second") return response(config, {
         questions: [{ id: "q1", question: "Câu hỏi của quiz sau", options: ["A", "B"] }],
       });
       return adapter(config);

@@ -9,13 +9,6 @@ function routerFromRuntime({ service, setDb, backgroundSync }) {
     const controller = createLearningController(service);
     router.setDb = setDb;
 
-    // Cached raster files keep course JSON small even for thousands of slides.
-    router.get('/images/:file', (req, res, next) => {
-        if (!/^[a-f0-9]{64}\.(png|jpg|gif|webp)$/.test(req.params.file)) return res.sendStatus(404);
-        res.sendFile(req.params.file, { root: require('../utils/edux-slide-images').imageDirectory(),
-            dotfiles: 'deny', maxAge: '1y', immutable: true }, error => { if (error) next(error); });
-    });
-
     router.get('/courses', controller.courses);
     router.get('/courses/:id', controller.course);
     router.get('/courses/:id/source', controller.source);

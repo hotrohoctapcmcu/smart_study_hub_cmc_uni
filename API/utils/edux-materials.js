@@ -3,7 +3,7 @@
 const DEFAULT_CONCURRENCY = 5;
 const DEFAULT_TIMEOUT_MS = 20000;
 const text = value => value == null ? '' : String(value);
-const { cacheSlideImages } = require('./edux-slide-images');
+const { withoutEduxImages } = require('../../database/shared/eduxContent');
 
 function decodeEntities(value) {
     const entities = { nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
@@ -29,6 +29,7 @@ function htmlText(value) {
 
 /** Convert HTML or common editor JSON to readable text; retain rawContent too. */
 function materialText(value, depth = 0) {
+    if (depth === 0) value = withoutEduxImages(value);
     if (depth > 40 || value == null) return '';
     if (typeof value === 'string') {
         const trimmed = value.trim();
@@ -85,7 +86,7 @@ async function collectCourseMaterials(cookie, options = {}) {
     const concurrency = Math.max(1, Math.min(6, Math.floor(Number(options.concurrency) || DEFAULT_CONCURRENCY)));
     const timeoutMs = Math.max(1, Number(options.timeoutMs) || DEFAULT_TIMEOUT_MS);
     const retryDelayMs = Math.max(0, Number(options.retryDelayMs ?? 250));
-    const config = { cookie, strict: true, timeoutMs, retry: false, includeImages: true };
+    const config = { cookie, strict: true, timeoutMs, retry: false };
     const failures = [];
     let cancelled = false;
 
@@ -131,6 +132,7 @@ async function collectCourseMaterials(cookie, options = {}) {
     for (const subject of selected) {
         const course = { id: text(subject.id), subject: text(subject.name), subjectCode: text(subject.subject_code), chapters: [], complete: true };
         courses.push(course);
+        options.onProgress?.({ courseId: course.id, subject: course.subject, done: courses.length - 1, total: selected.length });
         let models;
         try {
             models = await read(() => edux.layChuongTrinhHoc(subject.id, config));
@@ -139,6 +141,7 @@ async function collectCourseMaterials(cookie, options = {}) {
             if (authenticationError(error)) throw error;
             course.complete = false;
             course.error = failure(error, { courseId: course.id, subject: course.subject });
+            await options.onCourse?.(course, failures.filter(item => item.courseId === course.id));
             continue;
         }
 
@@ -168,12 +171,11 @@ async function collectCourseMaterials(cookie, options = {}) {
                 try {
                     if (!document.id) throw Object.assign(new Error('Slide thiếu mã tài liệu.'), { status: 502 });
                     const payload = await read(() => edux.layNoiDungSlide(document.id, config));
-                    const cached = await cacheSlideImages(payload, options.imageCache);
-                    const raw = cached.content && typeof cached.content === 'object' && Object.hasOwn(cached.content, 'content')
-                        ? cached.content.content : cached.content;
-                    document.images = cached.images;
+                    const cleaned = withoutEduxImages(payload);
+                    const raw = cleaned && typeof cleaned === 'object' && Object.hasOwn(cleaned, 'content')
+                        ? cleaned.content : cleaned;
                     document.content = materialText(raw).trim();
-                    if (!document.content && !document.images.length) throw Object.assign(new Error('Slide chưa có nội dung.'), { code: 'EMPTY_MATERIAL' });
+                    if (!document.content) throw Object.assign(new Error('Slide chưa có nội dung văn bản.'), { code: 'EMPTY_MATERIAL' });
                     document.rawContent = typeof raw === 'string' ? raw : JSON.stringify(raw) || '';
                     document.status = 'ready';
                 } catch (error) {
@@ -183,6 +185,7 @@ async function collectCourseMaterials(cookie, options = {}) {
                 }
             }
         }));
+        await options.onCourse?.(course, failures.filter(item => item.courseId === course.id));
     }
     return { courses, failures, complete: failures.length === 0 && courses.every(course => course.complete) };
 }

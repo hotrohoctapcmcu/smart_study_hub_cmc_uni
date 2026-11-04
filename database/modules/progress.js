@@ -2,6 +2,7 @@
 
 const { executeQuery } = require('../connection/db');
 const { layStudentId } = require('../shared/studyStudent');
+const { resolveEnrollmentYear } = require('../shared/student-identity');
 
 async function layBangDiemTheoNamHoc(studentId, academicYear) {
     if (!studentId) throw new Error('studentId là bắt buộc');
@@ -103,7 +104,7 @@ async function layTienDoHocTap(studentId) {
         { sid }
     );
 
-    return rows.length > 0 ? rows[0] : null;
+    return rows.length > 0 ? { ...rows[0], enrollment_year: resolveEnrollmentYear(rows[0].student_code, rows[0].enrollment_year) } : null;
 }
 
 module.exports = {

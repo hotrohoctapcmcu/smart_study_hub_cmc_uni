@@ -76,22 +76,21 @@ app.whenReady().then(async () => {
     await click('Đóng hộp thoại'); await click('Tài liệu');
     await win.reload(); await wait(`!!document.querySelector('.study-continue')`);
     check('Progress survives reload', true);
-    // A clearly labeled test-only EDUX response proves image_base64 reaches all
-    // views. It does not pretend the disconnected live EDUX was inspected.
+    // A legacy EDUX fixture verifies image fields are ignored in all views.
     await js(`(async()=>{const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=675;const ctx=canvas.getContext('2d');ctx.fillStyle='#f8fafc';ctx.fillRect(0,0,1200,675);ctx.fillStyle='#1e3a8a';ctx.fillRect(0,0,1200,150);ctx.fillStyle='white';ctx.font='bold 44px sans-serif';ctx.fillText('EDUX image_base64 — TEST FIXTURE',55,95);ctx.fillStyle='#172554';ctx.font='32px sans-serif';ctx.fillText('Original raster response rendered as a slide image',55,245);ctx.fillStyle='#2563eb';ctx.fillRect(55,315,460,220);ctx.fillStyle='#93c5fd';ctx.fillRect(565,315,570,220);const source=canvas.toDataURL('image/png');const fixture={id:'qa-edux-base64',subject:'EDUX Base64 QA',chapters:[{id:'chapter',title:'Base64 response',documents:[{id:'slide',title:'Original image field',content:'Text extraction remains separate.',image_base64:source.split(',')[1]}]}]};const {default:client}=await import('/src/api/apiClient.js');window.__docsQAAdapter=client.defaults.adapter;window.__docsQAImage=source;client.defaults.adapter=async config=>{const ok=data=>({config,status:200,statusText:'OK',headers:{},data:{success:true,data}});if(config.url==='/learning/courses')return ok({courses:[fixture],scope:{}});if(config.url==='/learning/courses/qa-edux-base64')return ok(fixture);if(config.url==='/documents')return ok([]);return client.request({...config,adapter:window.__docsQAAdapter})};const {router}=await import('/src/App.jsx');await router.navigate('/')})()`);
     await wait(`!document.querySelector('.study-documents-page')`);
     await js(`(async()=>{const {router}=await import('/src/App.jsx');await router.navigate('/documents')})()`);
-    await wait(`document.querySelector('.subject-cover img')?.naturalWidth===1200`);
-    check('EDUX image_base64 renders the subject cover', await js(`document.querySelector('.subject-cover img').src===window.__docsQAImage`));
+    await wait(`!!document.querySelector('.subject-cover .slide-text-preview')`);
+    check('EDUX subject cover uses text and ignores legacy image fields', await js(`!document.querySelector('.subject-cover img')`));
     await click('Mở môn EDUX Base64 QA');
-    await wait(`document.querySelector('.chapter-cover img')?.naturalWidth===1200`);
+    await wait(`!!document.querySelector('.chapter-cover .slide-text-preview')`);
     await click('Mở Base64 response');
-    await wait(`document.querySelector('.study-slide-card img')?.naturalWidth===1200`);
-    check('EDUX image_base64 renders chapter and slide thumbnails', true);
+    await wait(`!!document.querySelector('.study-slide-card .slide-text-preview')`);
+    check('EDUX chapter and slide previews use text', await js(`!document.querySelector('.study-slide-card img')`));
     await click('Mở slide 1: Original image field');
-    await wait(`document.querySelector('.study-slide-page img')?.naturalWidth===1200`);
-    check('EDUX image_base64 renders the original image in Study Viewer', await js(`document.querySelector('.study-slide-page img').src===window.__docsQAImage && !document.querySelector('.study-slide-page .slide-text-preview')`));
-    await screenshot('viewer-edux-base64-fixture');
+    await wait(`!!document.querySelector('.study-slide-page .slide-text-preview')`);
+    check('EDUX viewer shows source text without rendering an image', await js(`!document.querySelector('.study-slide-page img') && document.querySelector('.study-slide-page').textContent.includes('Text extraction remains separate.')`));
+    await screenshot('viewer-edux-text-fixture');
     await click('Đóng hộp thoại');
     await js(`(async()=>{const {default:client}=await import('/src/api/apiClient.js');client.defaults.adapter=window.__docsQAAdapter;delete window.__docsQAAdapter;delete window.__docsQAImage;const {router}=await import('/src/App.jsx');await router.navigate('/')})()`);
     await wait(`!document.querySelector('.study-documents-page')`);

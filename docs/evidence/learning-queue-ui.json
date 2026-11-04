@@ -1,0 +1,101 @@
+{
+  "checkedAt": "2026-11-04T15:29:39.954973+00:00",
+  "mode": "Isolated Electron/Chromium, React source, mock queue only",
+  "checks": [
+    {
+      "name": "Three queue rows fit in a compact desktop panel",
+      "passed": true,
+      "detail": {
+        "x": 258,
+        "y": 212,
+        "width": 1146,
+        "height": 246
+      }
+    },
+    {
+      "name": "Waiting messages are not repeated in the compact view",
+      "passed": true
+    },
+    {
+      "name": "Details reveal complete server messages",
+      "passed": true
+    },
+    {
+      "name": "Queue collapses to its header",
+      "passed": true,
+      "detail": {
+        "x": 258,
+        "y": 212,
+        "width": 1156,
+        "height": 56
+      }
+    },
+    {
+      "name": "mobile has no horizontal overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 392,
+        "document": 392,
+        "queue": 350,
+        "scroll": 348,
+        "client": 348
+      }
+    },
+    {
+      "name": "narrow has no horizontal overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 322,
+        "document": 322,
+        "queue": 280,
+        "scroll": 278,
+        "client": 278
+      }
+    },
+    {
+      "name": "A refresh error preserves all queue rows",
+      "passed": true
+    },
+    {
+      "name": "Queue controls do not send writes or AI requests",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "No renderer errors",
+      "passed": true,
+      "detail": []
+    }
+  ],
+  "screenshots": [
+    "desktop.png",
+    "collapsed.png",
+    "mobile.png",
+    "narrow.png",
+    "dark.png",
+    "refresh-error.png"
+  ],
+  "errors": [],
+  "applicationDatabaseWrites": 0,
+  "newLiveProviderCalls": 0,
+  "scope": "LearningQueue presentation only; shared by Learning and Documents",
+  "reactTests": {
+    "passed": 23,
+    "failed": 0,
+    "files": 2,
+    "kind": "Vitest/jsdom, mock data"
+  },
+  "build": {
+    "passed": true,
+    "seconds": 14.41,
+    "warnings": [
+      "existing MathJax eval",
+      "large chunks"
+    ]
+  },
+  "artifactDirectory": "tests/artifacts/learning-queue-ui",
+  "limitations": [
+    "Queue fixture only; no live provider calls or real app DB",
+    "Existing user window was not restarted"
+  ]
+}

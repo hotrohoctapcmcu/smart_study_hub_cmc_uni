@@ -200,8 +200,8 @@ async function layNoiDungSlide(documentId, opts = {}) {
     `/api/v1/presentation/document/${id}`,
     `/presentation/document/${id}`,
   ], opts);
-  // Lecture sync needs the original image as well as the extracted text.
-  // Keep the old text-only contract for other crawler consumers.
+  // Optional image retrieval remains available to callers in memory only.
+  // Material sync uses the default text-only contract and never persists images.
   if (opts.includeImages) {
     const document = raw?.data ?? raw;
     return typeof document === "object" && document !== null

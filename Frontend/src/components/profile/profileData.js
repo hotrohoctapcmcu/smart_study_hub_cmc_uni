@@ -5,9 +5,9 @@ export const asNumber = (value) => {
 };
 
 export const subjectKey = (row) => String(row.subjectCode || row.code || row.subjectId || row.id || row.subject || row.name);
-export const isPassed = (grade) => grade.passed !== null && grade.passed !== undefined
-  ? Boolean(Number(grade.passed))
-  : asNumber(grade.score) !== null && Number(grade.score) >= 5;
+export const isPassed = (grade) => ['F', 'NP'].includes(grade.grade) ? false : grade.grade === 'P' ? true
+  : grade.passed !== null && grade.passed !== undefined ? Boolean(Number(grade.passed))
+    : asNumber(grade.score) !== null && Number(grade.score) >= 4;
 
 export function getScoreTone(score) {
   const value = asNumber(score);
@@ -15,7 +15,7 @@ export function getScoreTone(score) {
 }
 
 function weightedGpa(grades) {
-  const scored = grades.filter((grade) => asNumber(grade.score) !== null);
+  const scored = grades.filter((grade) => !['P', 'NP'].includes(grade.grade) && asNumber(grade.score) !== null);
   if (!scored.length) return null;
   const hasAllCredits = scored.every((grade) => asNumber(grade.credits) > 0);
   const weight = (grade) => hasAllCredits ? Number(grade.credits) : 1;
@@ -23,18 +23,27 @@ function weightedGpa(grades) {
     / scored.reduce((total, grade) => total + weight(grade), 0);
 }
 
-export function buildStudyStats(grades = [], subjects = [], profile = {}, targetCredits) {
-  // Accumulated statistics use one result per subject; the table retains every attempt.
+function latestGradeMap(grades) {
   const latest = new Map();
   grades.forEach((grade) => {
     const key = subjectKey(grade);
     const previous = latest.get(key);
-    if (!previous || Number(grade.attempt || 1) > Number(previous.attempt || 1)) latest.set(key, grade);
+    const term = row => `${row.academicYear || String(row.semester).match(/20\d{2}\D+20\d{2}/)?.[0] || ''} ${String(row.semester).match(/^(\d+)/)?.[1] || row.semester}`;
+    const newer = previous && term(grade).localeCompare(term(previous), 'vi', { numeric: true });
+    if (!previous || newer > 0 || newer === 0 && Number(grade.attempt || 1) > Number(previous.attempt || 1)) latest.set(key, grade);
   });
+  return latest;
+}
+
+export function buildStudyStats(grades = [], subjects = [], profile = {}, targetCredits) {
+  // Display the backend's shared academic summary; preserve every attempt in the table.
+  const latest = latestGradeMap(grades);
   const results = [...latest.values()];
   const completed = results.filter((grade) => asNumber(grade.score) !== null);
   const passed = results.filter(isPassed);
-  const gpa = weightedGpa(results);
+  const summary = profile.academicSummary;
+  const gpa = summary ? summary.overall.cumulative10 : asNumber(profile.gpa10) ?? weightedGpa(results.filter(isPassed));
+  const gpa4 = summary ? summary.overall.cumulative4 : asNumber(profile.gpa4);
   const uniqueSubjects = new Set([...subjects.map(subjectKey), ...results.map(subjectKey)]);
   const creditByCode = new Map(subjects.map((subject) => [subjectKey(subject), asNumber(subject.credit)]));
   const creditFor = (grade) => {
@@ -43,29 +52,32 @@ export function buildStudyStats(grades = [], subjects = [], profile = {}, target
   };
   const creditsKnown = passed.every((grade) => creditFor(grade) !== null);
   const completedCredits = asNumber(profile.completedCredits)
+    ?? asNumber(summary?.overall.earnedCredits)
     ?? (creditsKnown ? passed.reduce((total, grade) => total + creditFor(grade), 0) : null);
-  const registeredCredits = subjects.length && subjects.every((subject) => asNumber(subject.credit) > 0)
-    ? subjects.reduce((total, subject) => total + Number(subject.credit), 0)
-    : results.length && results.every((grade) => creditFor(grade) > 0)
-      ? results.reduce((total, grade) => total + creditFor(grade), 0) : null;
-  const totalCredits = asNumber(targetCredits) ?? asNumber(profile.totalCredits) ?? registeredCredits;
-  const orderedTerms = buildSemesterRows(grades).filter((term) => term.gpa !== null).sort((a, b) =>
+  const subjectTotal = Math.max(uniqueSubjects.size, summary?.overall.subjectCount || 0);
+  const programCredits = asNumber(profile.totalCredits);
+  const personalCredits = asNumber(targetCredits);
+  const totalCredits = programCredits > 0 ? programCredits : personalCredits > 0 ? personalCredits : null;
+  const orderedTerms = buildSemesterRows(grades, summary).filter((term) => term.gpa !== null).sort((a, b) =>
     `${a.academicYear} ${a.semester}`.localeCompare(`${b.academicYear} ${b.semester}`, "vi", { numeric: true }));
-  const gpaDelta = orderedTerms.length >= 2 ? orderedTerms.at(-1).gpa - orderedTerms.at(-2).gpa : null;
+  const gpaDelta = summary?.comparison?.average10Delta ?? (orderedTerms.length >= 2 ? orderedTerms.at(-1).gpa - orderedTerms.at(-2).gpa : null);
   return {
-    gpa, gpaText: gpa === null ? "—" : gpa.toFixed(1), gpaDelta,
-    subjectCompleted: completed.length, subjectTotal: uniqueSubjects.size,
-    subjectPercent: uniqueSubjects.size ? Math.round(completed.length / uniqueSubjects.size * 100) : 0,
+    gpa, gpaText: gpa === null ? "—" : gpa.toFixed(2), gpa4, gpa4Text: gpa4 === null ? '—' : gpa4.toFixed(2), gpaDelta,
+    academicSummary: summary,
+    subjectCompleted: summary?.overall.completedSubjects ?? completed.length, subjectTotal,
+    subjectPercent: subjectTotal ? Math.round((summary?.overall.completedSubjects ?? completed.length) / subjectTotal * 100) : 0,
     classification: gpa === null ? "Chưa xếp loại" : gpa >= 9 ? "Xuất sắc" : gpa >= 8 ? "Giỏi" : gpa >= 6.5 ? "Khá" : gpa >= 5 ? "Trung bình" : "Cần cải thiện",
     completedCredits, totalCredits,
+    requiredCredits: asNumber(profile.requiredCredits),
+    availableBlockCredits: asNumber(profile.availableBlockCredits), blockEarnedCredits: asNumber(profile.blockEarnedCredits),
     creditPercent: totalCredits > 0 && completedCredits !== null ? Math.min(100, Math.round(completedCredits / totalCredits * 100)) : null,
-    creditScope: targetCredits || profile.totalCredits ? "chương trình" : "tín chỉ đã đồng bộ",
-    passed: passed.length,
+    creditScope: programCredits > 0 ? "chương trình" : personalCredits > 0 ? "chương trình (tự nhập)" : "bảng điểm đã đồng bộ",
+    passed: summary?.overall.passedSubjects ?? passed.length,
   };
 }
 
 export function buildCourseRows(subjects = [], grades = []) {
-  const gradesByCode = new Map(grades.map((grade) => [subjectKey(grade), grade]));
+  const gradesByCode = latestGradeMap(grades);
   const merged = subjects.map((subject) => ({ subject, grade: gradesByCode.get(subjectKey(subject)) }));
   const knownCodes = new Set(subjects.map(subjectKey));
   grades.forEach((grade) => {
@@ -76,8 +88,10 @@ export function buildCourseRows(subjects = [], grades = []) {
   });
   return merged.map(({ subject, grade }) => {
     const score = grade?.score ?? subject.score ?? null;
-    const completed = asNumber(score) !== null;
-    const status = completed ? "Đã hoàn thành" : subject.status === "PLANNED" ? "Chưa bắt đầu" : "Đang học";
+    const completed = asNumber(score) !== null || ['P', 'NP'].includes(grade?.grade || subject.grade);
+    const status = completed ? isPassed(grade || subject) ? "Đã hoàn thành" : "Chưa đạt"
+      : subject.status === "COMPLETED" ? "Đã hoàn thành" : subject.status === "PLANNED" ? "Chưa bắt đầu"
+        : subject.status === "DROPPED" ? "Đã hủy" : "Đang học";
     return {
       ...subject, score, status,
       grade: grade?.grade || subject.grade || "",
@@ -88,7 +102,9 @@ export function buildCourseRows(subjects = [], grades = []) {
   });
 }
 
-export function buildSemesterRows(grades = []) {
+export function buildSemesterRows(grades = [], summary) {
+  if (summary?.semesters) return summary.semesters.map(row => ({ ...row, subjects: row.subjectCount, credits: row.gradedCredits,
+    gpa: row.average10, gpa4: row.average4, passed: row.passedSubjects, failed: row.failedSubjects }));
   const groups = new Map();
   grades.forEach((grade) => {
     const key = `${grade.academicYear || ""}|${grade.semester || "Chưa xác định"}`;

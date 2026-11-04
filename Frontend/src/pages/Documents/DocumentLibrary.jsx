@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  Upload,
   Plus,
   Download,
   Trash2,
@@ -12,12 +11,14 @@ import {
 import { documentApi, workspaceApi } from "../../api";
 import { responseList } from "../../api/apiClient";
 import { useApi } from "../../hooks/useApi";
+import { useCurrentCourses } from "../../hooks/useCurrentCourses";
+import CurrentCourseHint from "../../components/common/CurrentCourseHint";
+import { documentTerm } from "../../utils/learningFlow";
 import { formatDate } from "../../utils/date";
 import { saveBlob, fileSize } from "../../utils/files";
 import DocumentPreview from "../../components/documents/DocumentPreview";
 import { normalizePage, pageText } from "../Notebooks/notebookModel";
 import {
-  PageHeader,
   Card,
   Button,
   Tabs,
@@ -92,6 +93,7 @@ export function DocumentCard({
         {doc.type.toUpperCase()} · {fileSize(doc.size)}
       </p>
       <p>{doc.subject || "Chưa phân loại"}</p>
+      <p className="hint">{documentTerm(doc) || 'Học kỳ: Chưa phân loại'}</p>
       <div className="tag-list">
         {doc.tags.map((t) => (
           <Badge key={t} label={t} />
@@ -133,8 +135,9 @@ export default function DocumentLibrary() {
   const tab = ["notes", "notebooks"].includes(params.get("tab"))
     ? params.get("tab")
     : "files";
-  const [query, setQuery] = useState(""),
+  const [query, setQuery] = useState(params.get('q') || ''),
     [subject, setSubject] = useState(""),
+    [semester, setSemester] = useState(""),
     [filter, setFilter] = useState("all"),
     [upload, setUpload] = useState(false),
     [editor, setEditor] = useState(null),
@@ -196,32 +199,23 @@ export default function DocumentLibrary() {
     (d) =>
       [d.title, d.subject, d.chapter, d.displayContent ?? d.content, ...(d.tags || [])].filter(Boolean).join(" ").toLowerCase().includes(query.toLowerCase()) &&
       (!subject || d.subject === subject) &&
+      (!semester || (semester === '__unclassified' ? !documentTerm(d) : documentTerm(d) === semester)) &&
       (filter === "all" || d.category === filter),
   );
   return (
     <div className="document-library">
-      {tab !== "files" && <PageHeader
-        eyebrow="THƯ VIỆN CÁ NHÂN"
-        title="Tài liệu học tập"
-        description="Một góc gọn gàng cho mọi kiến thức của bạn."
-      >
-        {tab === "files" ? (
-          <Button onClick={() => setUpload(true)}>
-            <Upload size={15} />
-            Tải tài liệu
-          </Button>
-        ) : (
-          <Button onClick={() => { if (noteId !== null) clearTarget("note"); setEditor({}); }}>
-            <Plus size={15} />
-            Tạo {tab === "notes" ? "ghi chú" : "sổ tay"}
-          </Button>
-        )}
-      </PageHeader>}
+      {tab !== "files" && <header className="document-library-header">
+        <h2>{tab === "notes" ? "Ghi chú cá nhân" : "Sổ tay cá nhân"}</h2>
+        <Button onClick={() => { if (noteId !== null) clearTarget("note"); setEditor({}); }}>
+          <Plus size={15} />
+          Tạo {tab === "notes" ? "ghi chú" : "sổ tay"}
+        </Button>
+      </header>}
       <div className="filter-bar" data-region="B" aria-label="B. Tìm kiếm và lọc tài liệu">
         <SearchBox
           value={query}
           onChange={setQuery}
-          placeholder="Tìm môn học, chương, slide, tài liệu..."
+          placeholder={tab === "notes" ? "Tìm ghi chú..." : "Tìm môn học, chương, slide, tài liệu..."}
         />
         {tab === "files" && (
           <select
@@ -238,6 +232,9 @@ export default function DocumentLibrary() {
           </select>
         )}
       </div>
+      {tab === "files" && (
+        <Field label="Lọc học kỳ file"><select value={semester} onChange={e => setSemester(e.target.value)}><option value="">Tất cả học kỳ</option>{[...new Set(docs.map(documentTerm).filter(Boolean))].map(term => <option key={term}>{term}</option>)}<option value="__unclassified">Chưa phân loại</option></select></Field>
+      )}
       {tab === "files" && (
         <Tabs
           items={[
@@ -452,6 +449,7 @@ export default function DocumentLibrary() {
   );
 }
 export function UploadForm({ onSaved, onClose }) {
+  const current = useCurrentCourses();
   const [file, setFile] = useState(null),
     [title, setTitle] = useState(""),
     [subject, setSubject] = useState(""),
@@ -469,7 +467,7 @@ export function UploadForm({ onSaved, onClose }) {
           if (file.size > 25 * 1024 * 1024) throw new Error("Tập tin vượt quá giới hạn 25 MB.");
           await documentApi.upload(file, {
             title: title.trim() || file.name,
-            subject,
+            subjectId: subject || null,
             filename: file.name,
             mimeType: file.type,
           });
@@ -500,12 +498,9 @@ export function UploadForm({ onSaved, onClose }) {
         onChange={(e) => setTitle(e.target.value)}
         required
       />
-      <Field
-        label="Môn học"
-        value={subject}
-        required
-        onChange={(e) => setSubject(e.target.value)}
-      />
+      <Field label="Môn học"><select value={subject} onChange={e => setSubject(e.target.value)}><option value="">Chưa phân loại</option>{current.subjects.map(s => <option key={s.subject_id} value={s.subject_id}>{s.subject_name}</option>)}</select></Field>
+      <CurrentCourseHint state={current} />
+      <p className="hint">Học kỳ: {subject && current.data?.semester ? documentTerm({ semester: current.data.semester, academicYear: current.data.academicYear }) : 'Chưa phân loại'}. Có thể tải file chưa phân loại khi chưa đồng bộ IU.</p>
       <p className="hint">
         Hỗ trợ PDF, DOCX, PPTX, TXT, Markdown và hình ảnh, tối đa 25 MB.
       </p>

@@ -27,6 +27,8 @@ const {
     mapVanBang,
     mapDiemRenLuyen,
     mapChuongTrinhHoc,
+    mapThongTinChuongTrinh,
+    mapKhoiKienThuc,
     mapPhucKhao,
     mapLichHoc,
     mapLichThi,
@@ -140,7 +142,40 @@ async function layChuongTrinhHoc(session, cookie, opts = {}) {
     const tichLuy = await goiThat(session, cookie, "LayKetQuaTichLuyTheoKhoi",
         chuongTrinhId ? { strDaoTao_ChuongTrinh_Id: chuongTrinhId } : {},
         "LayKetQuaTichLuyTheoKhoi");
-    return mapChuongTrinhHoc(Array.isArray(cth) ? cth : [], tichLuy ? tichLuy.rsChiTiet : []);
+    return mapChuongTrinhHoc([], tichLuy?.rsChiTiet);
+}
+
+// A profile refresh only needs program metadata and its catalog. Keep unrelated
+// schedules, exams and grade attempts out of this snapshot.
+async function layDuLieuChuongTrinh(session, cookie, opts = {}) {
+    const programs = await goiThat(session, cookie, 'LayThongTinChuongTrinhHoc', {});
+    const selected = Array.isArray(programs) ? programs[0] : null;
+    const id = opts.chuongTrinhId || selected?.DAOTAO_TOCHUCCHUONGTRINH_ID || selected?.ID || selected?.DAOTAO_CHUONGTRINH_ID;
+    if (!id) throw Object.assign(new Error('IU chưa trả chương trình học của sinh viên.'), { statusCode: 502 });
+    const patch = { strDaoTao_ChuongTrinh_Id: id };
+    const [results, catalog] = await Promise.allSettled([
+        goiThat(session, cookie, 'KetQuaHocTapCaNhan', patch),
+        goiThat(session, cookie, 'LayKetQuaTichLuyTheoKhoi', patch),
+    ]);
+    for (const response of [results, catalog]) {
+        if (response.status === 'rejected' && [401, 403].includes(response.reason?.statusCode)) throw response.reason;
+    }
+    if (results.status === 'rejected') throw results.reason;
+    const kq = results.value;
+    const accumulated = catalog.status === 'fulfilled' ? catalog.value : null;
+    const program = mapThongTinChuongTrinh(programs, kq, accumulated, id);
+    const warnings = [];
+    if (!program?.tong_tin_chi) warnings.push('IU chưa cung cấp tổng tín chỉ chương trình.');
+    if (!Array.isArray(accumulated?.rsChiTiet)) warnings.push('Chưa tải được danh sách học phần từ IU.');
+    return { data: { IU: {
+        ho_so_sinh_vien: { thong_tin_ca_nhan: mapThongTinCaNhan(kq?.rsThongTinNguoiHoc, null) },
+        goc_hoc_tap: {
+            chuong_trinh: program,
+            chuong_trinh_fetched: Array.isArray(accumulated?.rsChiTiet),
+            chuong_trinh_hoc_tap: mapChuongTrinhHoc([], accumulated?.rsChiTiet),
+            khoi_kien_thuc: Array.isArray(accumulated?.rsTongHop) ? mapKhoiKienThuc(accumulated.rsTongHop) : null,
+        },
+    } }, thatBai: warnings };
 }
 
 async function layLichHoc(session, cookie, opts = {}) {
@@ -279,8 +314,13 @@ async function layTatCaIU(session, cookie, opts = {}) {
     const tichLuy = await goi("LayKetQuaTichLuyTheoKhoi",
         chuongTrinhId ? { strDaoTao_ChuongTrinh_Id: chuongTrinhId } : {});
     out.IU.goc_hoc_tap.chuong_trinh_hoc_tap = mapChuongTrinhHoc(
-        Array.isArray(cth) ? cth : [],
-        tichLuy ? tichLuy.rsChiTiet : []);
+        [], tichLuy?.rsChiTiet);
+    out.IU.goc_hoc_tap.chuong_trinh_fetched = Array.isArray(tichLuy?.rsChiTiet);
+    out.IU.goc_hoc_tap.chuong_trinh = mapThongTinChuongTrinh(cth, kq, tichLuy, chuongTrinhId);
+    if (chuongTrinhId && kq && !out.IU.goc_hoc_tap.chuong_trinh?.tong_tin_chi) {
+        thatBai.push('Chương trình học: chưa xác định được tổng tín chỉ chính thức từ IU; giữ tổng đã lưu nếu có.');
+    }
+    if (Array.isArray(tichLuy?.rsTongHop)) out.IU.goc_hoc_tap.khoi_kien_thuc = mapKhoiKienThuc(tichLuy.rsTongHop);
 
     // 7. Ho so chi tiet (chinh + tab du phong).
     const ctHoSo = await goi("LayThongTinChiTietHoSo", {});
@@ -354,6 +394,7 @@ module.exports = {
     layVanBang,
     layDiemRenLuyen,
     layChuongTrinhHoc,
+    layDuLieuChuongTrinh,
     layLichHoc,
     layLichThi,
     layPhucKhao,
