@@ -391,3 +391,16 @@ Biên bản: [github-sprint-sync.json](evidence/github-sprint-sync.json), [sprin
 Sau phản ánh ảnh trang Milestones, REST xác nhận các issue đã gắn đúng milestone nhưng bộ đếm issue đóng của Sprint 1–3 vẫn trả 0. Lượt đồng bộ trước đã xác minh liên kết issue, chưa đối chiếu bộ đếm này. Đã tháo/gắn lại liên kết milestone của một issue sẵn có mỗi sprint (#1, #13, #19); giữ nguyên trạng thái, `closed_at`, nội dung, tên và assignee. Đọc lại endpoint từng milestone và danh sách với dữ liệu mới xác nhận Sprint 1 có **0 mở / 12 đóng**, Sprint 2 **0 mở / 5 đóng**, Sprint 3 **0 mở / 5 đóng**, Sprint 4 **5 mở / 0 đóng**. Đã bỏ marker nội bộ hiện thừa trong mô tả milestone 1–2.
 
 Cảnh báo quá hạn vẫn có ở Sprint 1/3 vì milestone còn mở và đã qua ngày hạn; phần trăm chỉ phản ánh số issue đóng, không thay bằng chứng nghiệm thu. Giữ nguyên ngày hạn/trạng thái milestone và lịch sử nghiệm thu theo yêu cầu. Đây là sửa metadata GitHub và bổ sung biên bản, không thay mã ứng dụng hay chạy lại bộ test. Báo cáo: [github-milestone-counters.json](evidence/github-milestone-counters.json).
+
+## Logo và nhận diện Electron — 05/11/2026
+
+Kết quả của bản bổ sung logo tại commit 1d7ada6, không thay số liệu các lượt trước:
+
+| Phạm vi | Kết quả | Môi trường |
+| --- | --- | --- |
+| npm run test:electron | **31/31 đạt** | Startup/IPC/nguồn giả lập; thêm kiểm tra icon, tên cửa sổ và AppUserModelID/relaunch. |
+| React routes.test.jsx | **37/37 đạt** | Vitest/jsdom, một file được chọn. |
+| Smoke logo trong Electron | **8/8 đạt** | Profile tạm và mock adapter; ICO/PNG, cấu hình cửa sổ, sidebar 40 px, favicon, dark theme và giới hạn viewport. |
+| Build production | **Đạt, 33,66 giây** | Còn cảnh báo MathJax eval/chunk lớn đã có. |
+
+Đã xem ảnh sidebar sáng/tối ở tests/artifacts/branding; báo cáo gọn [app-branding.json](evidence/app-branding.json). Không restart ứng dụng người dùng, không sửa DB/đổi userData hoặc chạy lại toàn bộ API/AI/React trong lượt logo. Việc bổ sung mục tài liệu này không chạy test lần nữa. Icon electron.exe và nghiệm thu bộ cài chưa thuộc kết quả trên; cần mở lại ứng dụng để nạp nhận diện mới.

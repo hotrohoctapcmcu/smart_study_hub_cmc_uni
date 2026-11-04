@@ -376,6 +376,16 @@ Xác minh: **23/23** ca backend liên quan, **13/13** frontend và **12/12** ki�
 
 Đã nghiệm thu lượt này với phiên IU thật: luồng cập nhật riêng lưu tổng chương trình **126**, bắt buộc **129**, tổng các khối **203**, tích lũy theo khối **28**; tích lũy bảng điểm **25** và GPA **2,52/4** được giữ. Đã thấy trực tiếp **129 tín chỉ** trong mục Tín chỉ theo khối IU trên Electron và đọc lại file SQLite xác nhận đã persist. [Bằng chứng phạm vi](evidence/iu-credit-refresh.json); không lưu cookie/token hay phản hồi cá nhân thô.
 
+## Logo và nhận diện ứng dụng — 05/11/2026
+
+Bổ sung theo yêu cầu người dùng tại commit [1d7ada6](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/commit/1d7ada6): logo cáo kết hợp cuốn sách/ngôi sao trên nền tím; PNG gốc trong suốt, ICO Windows chín cỡ từ 16 đến 256 px, PNG sidebar 512 px, favicon 32 px và touch icon 180 px. Đã tích hợp icon cửa sổ/thanh tác vụ Electron, AppUserModelID/relaunch, logo sidebar và HTML favicon.
+
+Thiết kế được công cụ imagegen hỗ trợ và trợ lý tích hợp trong phiên làm việc theo yêu cầu người dùng. **Văn Tuấn** là đầu mối rà soát/nhận bàn giao phần Electron/tài nguyên; **Huyền Trang** là đầu mối rà soát/nhận bàn giao sidebar/favicon và hiển thị sáng/tối theo vai trò hiện có. Phân công này không ghi nhận các thành viên đã tự vẽ logo khi chưa có xác nhận.
+
+Lượt riêng đạt **31/31 test Electron**, **37/37 routes**, **8/8 smoke trong Electron profile riêng** và build production **33,66 giây**; đã xem ảnh sáng/tối. Không chạy lại toàn bộ API/AI hoặc toàn bộ 455 test React trong lượt logo. Dữ liệu/đường dẫn userData và phiên đăng nhập được giữ; cần mở lại ứng dụng để nạp icon mới. Icon của chính file electron.exe chưa đổi; bộ cài vẫn thuộc PB-49/PB-50 còn mở.
+
+Tài nguyên và prompt: [assets/branding](../assets/branding/README.md). Bằng chứng: [app-branding.json](evidence/app-branding.json). Đối chiếu nghiệm thu: [S4-23, mục 5.1 và 7.4 của báo cáo nghiệm thu](BAO_CAO_NGHIEM_THU_SPRINT_3_4.md).
+
 ## Điều kiện nghiệm thu và phần còn mở
 
 - Clone nhánh mới, cài đủ hai bộ dependency, build và mở Electron/headless theo README; kiểm tra cấu hình API và persist DB.

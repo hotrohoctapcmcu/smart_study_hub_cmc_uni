@@ -6,6 +6,8 @@
 
 **Ngày lập:** 05/11/2026 — múi giờ Việt Nam, Asia/Saigon (UTC+7).
 
+**Cập nhật bổ sung:** 05/11/2026 — nhận diện ứng dụng và logo tại commit 1d7ada6, bằng chứng E16.
+
 **Trạng thái văn bản:** Báo cáo tổng hợp phục vụ nghiệm thu; chưa có chữ ký chấp thuận của thành viên hoặc người nhận bàn giao.
 
 **Điều hướng:** [Phân công 5 thành viên](#2-phân-công-5-thành-viên-được-giữ-nguyên) · [Kết quả Sprint 3](#3-kết-quả-đã-có-tại-cuối-sprint-3) · [Tồn đọng chuyển tiếp](#4-tồn-đọng-cuối-sprint-3-và-cách-sprint-4-tiếp-nhận) · [Kết quả Sprint 4](#5-kết-quả-triển-khai-sprint-4-theo-từng-hạng-mục) · [Hồ sơ từng người](#6-hồ-sơ-công-việc-và-đầu-ra-bàn-giao-theo-từng-thành-viên) · [Bằng chứng](#8-danh-mục-bằng-chứng-dùng-để-nghiệm-thu) · [Phần còn mở](#9-phần-còn-mở-và-trách-nhiệm-hoàn-thiện-hồ-sơ-nghiệm-thu) · [Kịch bản kiểm tra](#10-kịch-bản-đề-nghị-thực-hiện-trong-buổi-nghiệm-thu) · [Phiếu ký xác nhận](#12-phiếu-xác-nhận-nghiệm-thu-và-bàn-giao).
@@ -19,6 +21,7 @@
 | Bản trước Sprint 4 | [faecc05](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/tree/faecc05), sau đợt hoàn thiện Sprint 3 ngày 28/10/2026. |
 | Bản mã triển khai Sprint 4 đã push | [4fc38af](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/commit/4fc38af). |
 | HEAD khi lập báo cáo | [0b6a2e0](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/commit/0b6a2e0); commit này bổ sung tài liệu đối chiếu bộ đếm milestone. |
+| Bản bổ sung logo sau khi lập báo cáo | [1d7ada6](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/commit/1d7ada6); tài nguyên PNG/ICO, nhận diện Electron, sidebar và favicon. Kết quả riêng tại mục 7.4. |
 | Sprint 3 | 23/10–29/10/2026; báo cáo thứ Năm 29/10/2026. |
 | Sprint 4 | 30/10–05/11/2026; báo cáo thứ Năm 05/11/2026. |
 | Deadline Sprint 4 | 23:59:59 ngày 05/11/2026, UTC+7; đây là quy ước cuối ngày, chưa ấn định giờ họp nghiệm thu. |
@@ -119,12 +122,24 @@ Các mã S4 bên dưới là mã đối chiếu trong báo cáo, không phải i
 | **S4-20 — Khóa nhập học** | Bỏ năm 2023 cố định; mã CMC hợp lệ lấy YY, mã khác dùng năm được cung cấp; migration chạy lại an toàn, API/UI/context cùng quy tắc. | **Anh Tuấn:** quy tắc mã/nguồn; **Hồng Thắm:** migration/helper; **Long Nhật:** profile/progress; **Huyền Trang:** adapter/UI; **Văn Tuấn:** context. | E01, E02. Test migration/sync/UI fixture đạt; cần đối chiếu thêm mã ngoài mẫu khi nghiệm thu. |
 | **S4-21 — Kiểm thử/tài liệu** | Bổ sung hồi quy API/AI/React/HTTP/SQLite; README, API, kiến trúc, tính năng, sprint, bằng chứng và giới hạn. | **Văn Tuấn:** điều phối/tổng hợp; **Long Nhật:** API/integration; **Hồng Thắm:** DB; **Anh Tuấn:** nguồn/fixture; **Huyền Trang:** React/UI. | E01–E13. Các cảnh báo build và khác biệt tài liệu còn được ghi rõ ở mục 9. |
 | **S4-22 — Theo dõi bàn giao** | Cập nhật 27 issue/4 milestone, lịch/deadline và phân công; sửa bộ đếm milestone, giữ trạng thái/assignee lịch sử. | **Văn Tuấn:** đầu mối điều phối; **cả năm thành viên:** xác nhận nội dung phần việc của mình. | E14, E15. Chưa cập nhật trường ngày Projects do thiếu quyền; chưa tự đóng issue Sprint 4. |
+| **S4-23 — Logo và nhận diện ứng dụng, bổ sung mới** | Logo cáo kết hợp cuốn sách/ngôi sao trên nền tím; PNG gốc trong suốt, ICO chín cỡ; tích hợp icon cửa sổ/thanh tác vụ Electron, sidebar, favicon và touch icon. Có script xuất lại từ PNG gốc. | **Văn Tuấn:** đầu mối rà soát/bàn giao Electron và tài nguyên icon; **Huyền Trang:** đầu mối rà soát/bàn giao sidebar/favicon và hiển thị sáng/tối. Thiết kế và tích hợp trong phiên này do trợ lý thực hiện theo yêu cầu người dùng, không suy ra tác giả cá nhân từ phân công. | E16. Electron 31/31, routes 37/37, smoke riêng 8/8 và build đạt; đã xem ảnh sáng/tối. Cần mở lại ứng dụng để nạp icon mới; icon của chính electron.exe chưa đổi và bộ cài vẫn thuộc NT-09. |
+
+### 5.1. Bổ sung nhận diện ứng dụng ngày 05/11/2026
+
+<img src="../Frontend/public/brand/app-icon.png" alt="Logo Smart Study Hub: cáo và cuốn sách trên nền tím" width="96" height="96">
+
+- **Thiết kế:** hình cáo, cuốn sách và ngôi sao gợi học tập; dùng tông tím thống nhất với giao diện, không có chữ nhỏ trong icon.
+- **Tài nguyên bàn giao:** [PNG gốc 1254 px](../assets/branding/smart-study-hub.png), [ICO Windows](../assets/branding/smart-study-hub.ico), PNG sidebar 512 px, favicon 32 px và touch icon 180 px. ICO gồm các cỡ 16, 20, 24, 32, 40, 48, 64, 128 và 256 px.
+- **Điểm tích hợp:** Electron khai báo icon cửa sổ và thông tin relaunch trên thanh tác vụ Windows với AppUserModelID vn.cmcu.smartstudyhub; sidebar dùng ảnh logo mới; HTML dùng favicon/touch icon tương ứng. Tên package, đường dẫn userData, dữ liệu ứng dụng và phiên đăng nhập được giữ nguyên.
+- **Nguồn thiết kế:** công cụ imagegen tích hợp hỗ trợ tạo logo theo yêu cầu người dùng; trợ lý xuất định dạng và tích hợp mã. Vai trò Văn Tuấn/Huyền Trang ở S4-23 là trách nhiệm rà soát, nhận bàn giao và xác nhận trong nhóm, không phải xác nhận hai thành viên đã tự vẽ logo.
+- **Tái tạo tài nguyên:** [script build-app-icons.cjs](../scripts/build-app-icons.cjs); prompt, vị trí tệp và hướng dẫn trong [hồ sơ logo](../assets/branding/README.md).
+- **Giới hạn áp dụng:** phải đóng/mở lại ứng dụng để nạp main process mới; shortcut đã ghim cũ có thể cần ghim lại. File electron.exe trong bộ Electron phát triển vẫn giữ icon gốc; việc nhúng icon vào executable của bộ cài chưa được thực hiện và không làm thay đổi trạng thái PB-49/PB-50.
 
 ## 6. Hồ sơ công việc và đầu ra bàn giao theo từng thành viên
 
 ### 6.1. Văn Tuấn — kiến trúc, AI và tích hợp — issue #24
 
-**Phạm vi chính:** S4-04, S4-09, S4-13, S4-14, phần AI của S4-11/S4-12/S4-15/S4-18 và điều phối S4-21/S4-22.
+**Phạm vi chính:** S4-04, S4-09, S4-13, S4-14, phần AI của S4-11/S4-12/S4-15/S4-18, đầu mối bàn giao phần Electron của S4-23 và điều phối S4-21/S4-22.
 
 | Nhóm công việc | Đầu ra chịu trách nhiệm | Đầu ra phối hợp của người khác |
 | --- | --- | --- |
@@ -133,6 +148,7 @@ Các mã S4 bên dưới là mã đối chiếu trong báo cáo, không phải i
 | Tóm tắt dài | Chia nguồn, giới hạn worker, thứ tự ghép, retry phần lỗi và không làm mất kết quả tốt. | Long Nhật jobs/API; Hồng Thắm cache; Anh Tuấn độ đầy đủ nguồn; Huyền Trang trạng thái tiến trình. |
 | Flashcard/AI học tập | Sinh thẻ theo lô, schema/repair hữu hạn; AI mục tiêu/checklist/quiz/ôn thi đúng ngữ cảnh. | Hồng Thắm checkpoint/transaction; Long Nhật API; Huyền Trang UI; Anh Tuấn đối soát nội dung nguồn. |
 | Bàn giao chung | Tổng hợp bằng chứng, lỗi còn mở, tài liệu và lịch/issue; phân biệt mock/live và giữ ngày thực tế. | Mỗi thành viên bàn giao bằng chứng tầng mình, không chuyển toàn bộ trách nhiệm nghiệm thu cho nhóm trưởng. |
+| Nhận diện Electron, S4-23 | Rà soát/nhận bàn giao PNG/ICO, cấu hình icon/AppUserModelID/relaunch và hướng dẫn mở lại ứng dụng; xác nhận giới hạn bộ cài. | Huyền Trang rà soát logo sidebar/favicon; nguồn thiết kế và tích hợp do trợ lý hỗ trợ được ghi tại mục 5.1. |
 
 Mã đối chiếu: [Electron main](../electron/main.js), [Gemini client](../API/utils/gemini-client.js), [tóm tắt nhiều phần](../API/utils/course-summary-ai.js), [Flashcard AI](../API/utils/course-cards-ai.js), [pipeline toàn môn](../API/services/course-summary.pipeline.js), [AI mục tiêu](../API/services/pomodoro-goals.service.js).
 
@@ -204,7 +220,7 @@ Mã đối chiếu: [migration học tập](../database/migrations/learningMigra
 
 ### 6.5. Huyền Trang — React/Vite và giao diện — issue #28
 
-**Phạm vi chính:** S4-01; giao diện S4-05 đến S4-20, sổ tay/canvas và bằng chứng tương tác.
+**Phạm vi chính:** S4-01; giao diện S4-05 đến S4-20, sổ tay/canvas, đầu mối bàn giao phần UI của S4-23 và bằng chứng tương tác.
 
 | Nhóm công việc | Đầu ra chịu trách nhiệm | Đầu ra phối hợp của người khác |
 | --- | --- | --- |
@@ -213,6 +229,7 @@ Mã đối chiếu: [migration học tập](../database/migrations/learningMigra
 | Học liệu và AI | Thư viện/slide/PDF, hàng đợi gọn, tóm tắt/Flashcard/quiz/điểm yếu/ôn thi; AI Tutor dừng/giữ nháp/lịch sử. | Văn Tuấn AI; Long Nhật API; Anh Tuấn dữ liệu; Hồng Thắm kết quả đã lưu. |
 | Sổ tay/canvas | Tiptap/template/trang con/AI block, nháp/autosave/export; canvas, OCR, đối tượng/công thức và sao lưu cục bộ. | Long Nhật notes/API; Hồng Thắm sổ tay SQLite; Văn Tuấn AI. Canvas vẫn lưu localStorage. |
 | Hồ sơ và UI QA | GPA đúng hệ/phạm vi; danh mục/tín chỉ/khối/khóa; React test/build, desktop/mobile, bàn phím/focus, ảnh/biên bản và FEATURES.md. | Anh Tuấn nguồn; Hồng Thắm công thức/schema; Long Nhật API. |
+| Logo giao diện, S4-23 | Rà soát/nhận bàn giao ảnh sidebar, favicon/touch icon, kích thước và khả năng hiển thị sáng/tối; không thay ghi nhận nguồn thiết kế bằng phân công UI. | Văn Tuấn nhận bàn giao icon Electron và relaunch; bằng chứng chung E16. |
 
 Mã đối chiếu: [App/router](../Frontend/src/App.jsx), [Pomodoro](../Frontend/src/components/learning/PomodoroTimer.jsx), [Flashcard](../Frontend/src/components/learning/FlashcardReview.jsx), [hàng đợi](../Frontend/src/components/learning/LearningQueue.jsx), [lịch sử chat](../Frontend/src/pages/AITutor/ConversationHistory.jsx), [sổ tay và autosave](../Frontend/src/pages/Notebooks/useNotebooks.js), [canvas](../Frontend/src/pages/Textbook/TextbookEditor.jsx), [refresh tín chỉ](../Frontend/src/components/profile/useIuCredits.js).
 
@@ -255,6 +272,19 @@ E13 ghi nhận ở hồ sơ đã đối soát: tổng chương trình **126**, b
 
 E08 ghi nhận benchmark với độ trễ giả lập 50 ms/request: 67.215 ký tự chia tám phần, cùng chín request; một worker 575 ms, bốn worker 272 ms, nhanh 2,11 lần trong lượt mô phỏng. Kiểm tra HTTP localhost ghi nhận bốn POST đồng thời trước khi trả câu trả lời đầu tiên. Kết quả này chứng minh cơ chế concurrency/đủ nguồn/thứ tự trong fixture, không phải cam kết tốc độ, chất lượng hay khả năng tránh rate limit của Gemini thật.
 
+### 7.4. Kiểm tra bổ sung logo ngày 05/11/2026
+
+Phạm vi riêng tại commit 1d7ada6, nguồn E16:
+
+| Kiểm tra | Kết quả ghi nhận | Giới hạn |
+| --- | --- | --- |
+| npm run test:electron | **31/31 đạt** | Startup regression xác nhận icon có thật, tên cửa sổ và cấu hình nhận diện Windows. |
+| React routes | **37/37 đạt trong routes.test.jsx** | Kiểm tra điều hướng liên quan; không phải chạy lại toàn bộ 455 test React. |
+| Electron smoke riêng | **8/8 đạt** | ICO chín cỡ, Electron đọc icon, PNG 512 px có góc trong suốt, cửa sổ nhận thông tin taskbar, logo sidebar 40 px, favicon, sáng/tối và không tràn viewport; dùng profile riêng và mock adapter. |
+| Build production | **Đạt, 33,66 giây** | Còn cảnh báo MathJax eval/chunk lớn đã có. |
+
+Đã xem ảnh sidebar sáng/tối; artifact ở tests/artifacts/branding. Lượt logo không restart ứng dụng người dùng, không sửa DB, không đổi đường dẫn userData và không chạy lại toàn bộ API/AI. Số liệu của mục 7.1 giữ nguyên theo lượt trước; lượt cập nhật báo cáo này chỉ dẫn lại bằng chứng, không tạo một lượt test mới.
+
 ## 8. Danh mục bằng chứng dùng để nghiệm thu
 
 | Mã | Tệp/tài liệu | Phạm vi và ngày cần giữ khi trích dẫn |
@@ -274,6 +304,7 @@ E08 ghi nhận benchmark với độ trễ giả lập 50 ms/request: 67.215 ký
 | E13 | [iu-credit-refresh.json](evidence/iu-credit-refresh.json) | 05/11, lượt sau: tín chỉ/khối IU thật, UI Electron và SQLite readback trong phạm vi hồ sơ thử. Không xóa giới hạn lịch sử của E12. |
 | E14 | [github-sprint-sync.json](evidence/github-sprint-sync.json) | 05/11: cập nhật 27 issue/4 milestone, giữ assignee/trạng thái, có hash nội dung trước/sau. |
 | E15 | [github-milestone-counters.json](evidence/github-milestone-counters.json) | 05/11: sửa bộ đếm bằng gắn lại metadata; giữ trạng thái và ngày đóng issue. |
+| E16 | [app-branding.json](evidence/app-branding.json), [hồ sơ PNG/ICO và prompt](../assets/branding/README.md) | 05/11: logo do imagegen hỗ trợ, tích hợp Electron/sidebar/favicon; 31 test Electron, 37 routes, 8 smoke riêng và build 33,66 giây. Phạm vi và nguồn đóng góp ở mục 5.1/7.4. |
 
 Ảnh/video/log bổ sung thường nằm trong thư mục tests/artifacts, được gitignore. Người bàn giao cần cung cấp bản sao artifact được chọn nếu hội đồng/người nhận cần kiểm chứng lại; các tệp local này không được mặc nhiên coi là có sẵn trong một clone GitHub mới. Không đưa cookie, mật khẩu, token hoặc response hồ sơ thô vào hồ sơ nghiệm thu.
 
@@ -324,6 +355,7 @@ Dùng fixture/DB tạm hoặc bản sao cho ca thay đổi/xóa/migration. Ca ng
 | **TC-14 — Migration/toàn vẹn** | Hồng Thắm / Long Nhật, Văn Tuấn, Anh Tuấn, Huyền Trang. | Nâng cấp bản sao DB cũ, chạy lại migration/sync, cố ý gây lỗi ghi, gửi lặp và mở lại. Giữ dữ liệu/index, owner đúng, rollback đủ, không trùng phiên/checklist/quiz/checkpoint. Backup/restore phải đối chiếu số liệu. | Chưa thực hiện; bằng chứng: ______ |
 | **TC-15 — Bộ cài/máy sạch** | Văn Tuấn / Huyền Trang, Long Nhật, Hồng Thắm, Anh Tuấn. | Sau khi có bộ cài: mở máy không cần Node.js; tìm frontend/WASM/endpoint_map; tạo DB trong thư mục người dùng khi cài Program Files; nâng cấp giữ dữ liệu. Tách rõ PB-49 và PB-50. | Chưa có đủ đầu ra; PB-49/PB-50 còn mở. |
 | **TC-16 — UI và thiết bị** | Huyền Trang / Long Nhật, Văn Tuấn. | Thực hiện từng ca phụ lục A; desktop/mobile, bàn phím/focus, zoom/screen reader và thiết bị được chọn. Lưu kích thước/thiết bị, ảnh và lỗi còn lại; kiểm tra toàn hành trình TC-02 → TC-07. | Chưa thực hiện; bằng chứng: ______ |
+| **TC-17 — Logo/nhận diện** | Văn Tuấn: Electron; Huyền Trang: UI. | Mở lại bản mới trên máy người nhận; kiểm tra icon cửa sổ/thanh tác vụ, tên relaunch, sidebar sáng/tối và favicon. Xác nhận PNG/ICO có trong bàn giao; ghi nhận shortcut ghim cũ và phân biệt icon ứng dụng với icon electron.exe chưa đóng gói. | Chưa thực hiện trên máy người nhận; đã có E16 trong phiên thử riêng. |
 
 ## 11. Đánh giá và đề xuất phạm vi nghiệm thu
 
@@ -334,6 +366,7 @@ Dùng fixture/DB tạm hoặc bản sao cho ca thay đổi/xóa/migration. Ca ng
 3. Có mã/bằng chứng theo phạm vi cho AI Tutor/lịch sử chat, sổ tay/canvas và dữ liệu học vụ GPA/chương trình/tín chỉ/khóa.
 4. Lượt tín chỉ IU ngày 05/11 có bằng chứng nguồn thật, UI Electron và SQLite; phạm vi có thể trình xác nhận riêng theo E13.
 5. Bộ kiểm thử và build của bản trước push đã đạt theo E01; tài liệu/phân công/bằng chứng đã được tổng hợp để người nhận kiểm tra.
+6. Logo và nhận diện Electron/sidebar/favicon đã có tài nguyên, mã tích hợp và kết quả kiểm tra riêng E16; đầu mối rà soát/bàn giao là Văn Tuấn và Huyền Trang theo tầng.
 
 Đây là căn cứ trình nghiệm thu, chưa phải quyết định nghiệm thu toàn bộ. Các phần chỉ được kiểm tra bằng mock/fixture phải được ghi đúng mức bằng chứng khi ký.
 
@@ -377,11 +410,11 @@ GitHub lưu due date milestone theo ngày, chuẩn hóa 00:00 UTC; giờ chốt 
 
 | Thành viên / issue | Nội dung phải xác nhận | Kết quả, mã ca và bằng chứng | Ngày / chữ ký |
 | --- | --- | --- | --- |
-| **Văn Tuấn — #24** | Kiến trúc, AI/context, summary/Flashcard, tích hợp và tổng hợp lỗi/phạm vi bàn giao; xác nhận đóng góp cá nhân kèm PR/commit/biên bản liên quan. | Chưa xác nhận: ____________________ | ____________________ |
+| **Văn Tuấn — #24** | Kiến trúc, AI/context, summary/Flashcard, tích hợp, nhận bàn giao nhận diện Electron S4-23 và tổng hợp lỗi/phạm vi bàn giao; xác nhận đóng góp cá nhân kèm PR/commit/biên bản liên quan. | Chưa xác nhận: ____________________ | ____________________ |
 | **Anh Tuấn — #25** | Collector/mapping/đối soát IU/EDUX/Outlook, nguồn học liệu và học vụ; công bố dữ liệu thiếu/giới hạn live; xác nhận đóng góp cá nhân. | Chưa xác nhận: ____________________ | ____________________ |
 | **Long Nhật — #26** | API/validation/nghiệp vụ/ownership, HTTP integration, lỗi/race/rollback và hợp đồng; xác nhận đóng góp cá nhân. | Chưa xác nhận: ____________________ | ____________________ |
 | **Hồng Thắm — #27** | Schema/migration, công thức học vụ, transaction/persist/checkpoint, DB cũ/backup/restore; xác nhận đóng góp cá nhân. | Chưa xác nhận: ____________________ | ____________________ |
-| **Huyền Trang — #28** | React/UI/adapter, timer/nháp/lịch sử, sổ tay/canvas/hồ sơ, UI/thiết bị và tái kiểm audit; xác nhận đóng góp cá nhân. | Chưa xác nhận: ____________________ | ____________________ |
+| **Huyền Trang — #28** | React/UI/adapter, timer/nháp/lịch sử, sổ tay/canvas/hồ sơ, nhận bàn giao logo sidebar/favicon S4-23, UI/thiết bị và tái kiểm audit; xác nhận đóng góp cá nhân. | Chưa xác nhận: ____________________ | ____________________ |
 
 ### 12.3. Quyết định của người nhận nghiệm thu
 
