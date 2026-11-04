@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import {
-  GraduationCap,
   LayoutDashboard,
   CalendarDays,
   ListTodo,
@@ -55,8 +54,8 @@ export default function Sidebar({ isOpen, onClose, compact = false, sidebarRef }
       aria-hidden={compact && !isOpen ? true : undefined}
       inert={compact && !isOpen ? "" : undefined}>
       <NavLink className="brand" to="/">
-        <span className="brand-icon">
-          <GraduationCap size={25} strokeWidth={1.8} />
+        <span className="brand-icon brand-app-icon">
+          <img src="/brand/app-icon.png" width="40" height="40" alt="" />
         </span>
         <div>
           <strong>Smart Study Hub<span className="brand-dot">.</span></strong>

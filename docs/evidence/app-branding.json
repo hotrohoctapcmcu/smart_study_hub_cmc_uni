@@ -1,0 +1,116 @@
+{
+  "date": "2026-11-05",
+  "timezone": "Asia/Saigon",
+  "design": {
+    "concept": "white fox, open book and learning spark on a violet rounded square",
+    "tool": "built-in image_gen via imagegen skill",
+    "master": "assets/branding/smart-study-hub.png",
+    "masterSize": [
+      1254,
+      1254
+    ],
+    "transparentBackground": true,
+    "prompt": "assets/branding/README.md"
+  },
+  "assets": {
+    "windowsIco": "assets/branding/smart-study-hub.ico",
+    "icoSizes": [
+      16,
+      20,
+      24,
+      32,
+      40,
+      48,
+      64,
+      128,
+      256
+    ],
+    "sidebar": "Frontend/public/brand/app-icon.png",
+    "favicon": "Frontend/public/brand/favicon-32.png",
+    "touchIcon": "Frontend/public/brand/apple-touch-icon.png",
+    "rebuild": "node scripts/build-app-icons.cjs"
+  },
+  "integration": [
+    "Electron BrowserWindow icon",
+    "Windows AppUserModelID and taskbar relaunch details",
+    "React sidebar",
+    "HTML favicon and touch icon"
+  ],
+  "verification": {
+    "electronTests": {
+      "passed": 31,
+      "failed": 0
+    },
+    "frontendRoutes": {
+      "passed": 37,
+      "failed": 0,
+      "matchedFiles": [
+        "Frontend/src/test/routes.test.jsx"
+      ]
+    },
+    "productionBuild": {
+      "passed": true,
+      "seconds": 33.66,
+      "existingWarnings": [
+        "MathJax eval",
+        "large chunks"
+      ]
+    },
+    "isolatedElectronSmoke": {
+      "date": "2026-11-05",
+      "provider": "mock adapter; isolated Electron profile",
+      "checks": [
+        {
+          "name": "Windows ICO contains nine size entries",
+          "passed": true
+        },
+        {
+          "name": "Electron decodes the Windows icon",
+          "passed": true
+        },
+        {
+          "name": "Sidebar PNG is 512 square with transparent corners",
+          "passed": true
+        },
+        {
+          "name": "Native Electron window accepts app icon and Windows taskbar details",
+          "passed": true
+        },
+        {
+          "name": "Sidebar displays the new logo at 40px without rotation",
+          "passed": true,
+          "detail": {
+            "naturalWidth": 512,
+            "width": 40,
+            "height": 40,
+            "transform": "none"
+          }
+        },
+        {
+          "name": "HTML points to the new favicon",
+          "passed": true
+        },
+        {
+          "name": "Branding remains visible in the actual dark theme",
+          "passed": true
+        },
+        {
+          "name": "Sidebar remains within viewport",
+          "passed": true
+        }
+      ]
+    },
+    "screenshotsInspected": true,
+    "screenshots": [
+      "tests/artifacts/branding/sidebar-light.png",
+      "tests/artifacts/branding/sidebar-dark.png"
+    ]
+  },
+  "runtime": {
+    "runningApplicationRestarted": false,
+    "applicationDatabaseModified": false,
+    "existingUserDataPathChanged": false,
+    "requiresAppRestartForNativeIcon": true,
+    "rawElectronExecutableIconReplaced": false
+  }
+}

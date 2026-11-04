@@ -12,7 +12,7 @@ test('Electron package entry starts the server, registers bridges and loads its 
     const entry = path.resolve(root, require('../package.json').main);
     const localRequire = createRequire(entry);
     const registered = new Set();
-    let ready, windowOptions, loadedUrl, serverStarted = false;
+    let ready, windowOptions, loadedUrl, appId, appDetails, serverStarted = false;
     const windows = [];
     class BrowserWindow {
         constructor(options) {
@@ -27,10 +27,11 @@ test('Electron package entry starts the server, registers bridges and loads its 
         once() {}
         on() {}
         loadURL(url) { loadedUrl = url; return Promise.resolve(); }
+        setAppDetails(details) { appDetails = details; }
         static getAllWindows() { return windows; }
     }
     const electron = {
-        app: { whenReady: () => ({ then: callback => { ready = callback; } }), on() {}, quit() {} },
+        app: { whenReady: () => ({ then: callback => { ready = callback; } }), on() {}, quit() {}, setAppUserModelId(id) { appId = id; } },
         BrowserWindow, shell: { openExternal: async () => {} }
     };
     const bridges = {
@@ -57,6 +58,16 @@ test('Electron package entry starts the server, registers bridges and loads its 
     await ready();
     assert.equal(windows.length, 1);
     assert.equal(loadedUrl, 'http://localhost:8080');
+    assert.equal(windowOptions.title, 'Smart Study Hub - CMC University');
+    assert.ok(path.isAbsolute(windowOptions.icon));
+    assert.ok(fs.statSync(windowOptions.icon).isFile());
+    if (process.platform === 'win32') {
+        assert.equal(appId, 'vn.cmcu.smartstudyhub');
+        assert.equal(appDetails.appId, appId);
+        assert.equal(appDetails.appIconPath, windowOptions.icon);
+        assert.equal(appDetails.relaunchDisplayName, windowOptions.title);
+        assert.ok(appDetails.relaunchCommand.includes(path.resolve(root)));
+    }
     assert.ok(path.isAbsolute(windowOptions.webPreferences.preload));
     assert.ok(fs.statSync(windowOptions.webPreferences.preload).isFile());
     assert.equal(windowOptions.webPreferences.contextIsolation, true);

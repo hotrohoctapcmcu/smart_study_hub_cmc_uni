@@ -9,6 +9,12 @@ if (!electron?.app || !electron?.BrowserWindow) {
 
 const { app, BrowserWindow, shell } = electron;
 const path = require("path");
+const APP_ID = "vn.cmcu.smartstudyhub";
+const APP_TITLE = "Smart Study Hub - CMC University";
+const APP_ICON = path.join(__dirname, "..", "assets", "branding",
+    process.platform === "win32" ? "smart-study-hub.ico" : "smart-study-hub.png");
+
+if (process.platform === "win32") app.setAppUserModelId(APP_ID);
 
 require("../index");
 
@@ -65,7 +71,8 @@ function createWindow() {
         minHeight: 700,
         show: false,
         backgroundColor: "#ffffff",
-        title: "UniStudy CMC",
+        title: APP_TITLE,
+        icon: APP_ICON,
         autoHideMenuBar: true,
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
@@ -76,6 +83,16 @@ function createWindow() {
             zoomFactor: 1.0
         }
     });
+
+    if (process.platform === "win32") {
+        mainWindow.setAppDetails({
+            appId: APP_ID,
+            appIconPath: APP_ICON,
+            relaunchDisplayName: APP_TITLE,
+            relaunchCommand: app.isPackaged ? `"${process.execPath}"` :
+                `"${process.execPath}" "${path.resolve(__dirname, "..")}"`
+        });
+    }
 
     lockZoom(mainWindow);
 
