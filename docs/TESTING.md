@@ -384,3 +384,10 @@ Các bộ có phần giao nhau, không cộng thành một tổng duy nhất. Kh
 Projects chưa cập nhật: token hiện thiếu `read:project`/`project`, chưa xác định được Project hoặc trường ngày liên kết. Computer Use dừng vì kiểm soát URL chưa hỗ trợ cho Cốc Cốc hiện tại. Không kết luận không có Project và không thay quyền truy cập.
 
 Biên bản: [github-sprint-sync.json](evidence/github-sprint-sync.json), [sprint4-publish-verification.json](evidence/sprint4-publish-verification.json). Log giữ trong thư mục tạm hệ điều hành `codex-smart-study-sprint-audit`, không commit. Các tệp `.env`, dữ liệu người dùng/DB, dependency/build và artifact/log vẫn theo `.gitignore`.
+
+
+## Đối chiếu bộ đếm milestone — 05/11/2026
+
+Sau phản ánh ảnh trang Milestones, REST xác nhận các issue đã gắn đúng milestone nhưng bộ đếm issue đóng của Sprint 1–3 vẫn trả 0. Lượt đồng bộ trước đã xác minh liên kết issue, chưa đối chiếu bộ đếm này. Đã tháo/gắn lại liên kết milestone của một issue sẵn có mỗi sprint (#1, #13, #19); giữ nguyên trạng thái, `closed_at`, nội dung, tên và assignee. Đọc lại endpoint từng milestone và danh sách với dữ liệu mới xác nhận Sprint 1 có **0 mở / 12 đóng**, Sprint 2 **0 mở / 5 đóng**, Sprint 3 **0 mở / 5 đóng**, Sprint 4 **5 mở / 0 đóng**. Đã bỏ marker nội bộ hiện thừa trong mô tả milestone 1–2.
+
+Cảnh báo quá hạn vẫn có ở Sprint 1/3 vì milestone còn mở và đã qua ngày hạn; phần trăm chỉ phản ánh số issue đóng, không thay bằng chứng nghiệm thu. Giữ nguyên ngày hạn/trạng thái milestone và lịch sử nghiệm thu theo yêu cầu. Đây là sửa metadata GitHub và bổ sung biên bản, không thay mã ứng dụng hay chạy lại bộ test. Báo cáo: [github-milestone-counters.json](evidence/github-milestone-counters.json).
