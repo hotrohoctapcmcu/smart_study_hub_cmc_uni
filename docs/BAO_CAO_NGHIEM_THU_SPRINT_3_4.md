@@ -8,6 +8,8 @@
 
 **Cập nhật bổ sung:** 05/11/2026 — nhận diện ứng dụng và logo tại commit 1d7ada6, bằng chứng E16.
 
+**Cập nhật phát hành Windows:** 05/11/2026 — Setup/Portable 1.0.0, bằng chứng E17; xem mục 5.2 và 7.5. Kết quả này không thay các lượt triển khai/kiểm thử lịch sử.
+
 **Trạng thái văn bản:** Báo cáo tổng hợp phục vụ nghiệm thu; chưa có chữ ký chấp thuận của thành viên hoặc người nhận bàn giao.
 
 **Điều hướng:** [Phân công 5 thành viên](#2-phân-công-5-thành-viên-được-giữ-nguyên) · [Kết quả Sprint 3](#3-kết-quả-đã-có-tại-cuối-sprint-3) · [Tồn đọng chuyển tiếp](#4-tồn-đọng-cuối-sprint-3-và-cách-sprint-4-tiếp-nhận) · [Kết quả Sprint 4](#5-kết-quả-triển-khai-sprint-4-theo-từng-hạng-mục) · [Hồ sơ từng người](#6-hồ-sơ-công-việc-và-đầu-ra-bàn-giao-theo-từng-thành-viên) · [Bằng chứng](#8-danh-mục-bằng-chứng-dùng-để-nghiệm-thu) · [Phần còn mở](#9-phần-còn-mở-và-trách-nhiệm-hoàn-thiện-hồ-sơ-nghiệm-thu) · [Kịch bản kiểm tra](#10-kịch-bản-đề-nghị-thực-hiện-trong-buổi-nghiệm-thu) · [Phiếu ký xác nhận](#12-phiếu-xác-nhận-nghiệm-thu-và-bàn-giao).
@@ -90,7 +92,7 @@ Bằng chứng lịch sử: backend Sprint 3 **14/14 đạt**; Electron E2E đ�
 | TD-03 | AI mới có kết quả thành công theo các lượt chạy cụ thể; thiếu bằng chứng cho mọi đầu vào, độ dài và tình huống lỗi. | Văn Tuấn chủ trì AI; Long Nhật truyền hủy/validation; Anh Tuấn dữ liệu; Huyền Trang trạng thái UI; Hồng Thắm persist. | Nâng cấp client/provider, Unicode/context, timeout/hủy, schema và cache/khả năng thử lại. | Tóm tắt dài và chia mục tiêu vẫn có lượt thật timeout; chưa nghiệm thu toàn bộ chất lượng đầu ra. |
 | TD-04 | Cấu trúc frontend/API/database/crawler cũ gây khó bảo trì và mở rộng. Đây là nhu cầu nâng cấp kiến trúc, không phải bằng chứng năm chức năng AI chưa được triển khai. | Văn Tuấn kiến trúc; Huyền Trang frontend; Long Nhật API; Hồng Thắm DB; Anh Tuấn crawler. | React/Vite, API nhiều tầng, DB theo module/migration và crawler/bridge riêng. | Có mã và kiểm thử; tiếp tục kiểm chứng bản bàn giao, dữ liệu cũ và môi trường máy sạch. |
 | TD-05 | Chưa đủ bằng chứng tương tác trên thiết bị thật và đầy đủ hành trình liên chức năng. | Huyền Trang chủ trì UI/thiết bị; Văn Tuấn điều phối; các thành viên xác nhận tầng của mình. | Thêm nhiều test React, HTTP/SQLite và kiểm tra desktop/mobile với fixture. | Tablet/stylus/camera, screen reader, hai cửa sổ và toàn hành trình nguồn thật vẫn còn mở. |
-| TD-06 | Giới hạn vận hành chung: một hồ sơ cấu hình, chưa có bộ cài độc lập và nghiệm thu dữ liệu trong bản cài. | Văn Tuấn điều phối; Huyền Trang build frontend; Long Nhật startup/API; Hồng Thắm DB; Anh Tuấn tài nguyên crawler. | Tài liệu hóa cách chạy, lưu trữ, sao lưu và giới hạn. | PB-49/PB-50 chưa hoàn tất; nhiều tài khoản là phạm vi thiết kế riêng PB-09/PB-10, không được gộp vào PB-50. |
+| TD-06 | Giới hạn vận hành chung tại cuối Sprint 3: một hồ sơ cấu hình, chưa có bộ cài độc lập và nghiệm thu dữ liệu trong bản cài. | Văn Tuấn điều phối; Huyền Trang build frontend; Long Nhật startup/API; Hồng Thắm DB; Anh Tuấn tài nguyên crawler. | Đã bổ sung Setup/Portable 1.0.0, runtime tự chạy và kiểm tra persist/cài đè trên máy hiện tại, E17. | PB-49/PB-50 có đầu ra đóng gói và kiểm chứng cục bộ; nghiệm thu máy sạch vẫn mở. Nhiều tài khoản là PB-09/PB-10. |
 
 Các lỗi GPA/tín chỉ/khóa nhập học được phát hiện và sửa trong Sprint 4 được ghi ở mục 5. Báo cáo không suy đoán chúng đã được giao hoặc đã được phát hiện tại cuối Sprint 3 khi chưa có tài liệu chứng minh thời điểm đó.
 
@@ -123,6 +125,7 @@ Các mã S4 bên dưới là mã đối chiếu trong báo cáo, không phải i
 | **S4-21 — Kiểm thử/tài liệu** | Bổ sung hồi quy API/AI/React/HTTP/SQLite; README, API, kiến trúc, tính năng, sprint, bằng chứng và giới hạn. | **Văn Tuấn:** điều phối/tổng hợp; **Long Nhật:** API/integration; **Hồng Thắm:** DB; **Anh Tuấn:** nguồn/fixture; **Huyền Trang:** React/UI. | E01–E13. Các cảnh báo build và khác biệt tài liệu còn được ghi rõ ở mục 9. |
 | **S4-22 — Theo dõi bàn giao** | Cập nhật 27 issue/4 milestone, lịch/deadline và phân công; sửa bộ đếm milestone, giữ trạng thái/assignee lịch sử. | **Văn Tuấn:** đầu mối điều phối; **cả năm thành viên:** xác nhận nội dung phần việc của mình. | E14, E15. Chưa cập nhật trường ngày Projects do thiếu quyền; chưa tự đóng issue Sprint 4. |
 | **S4-23 — Logo và nhận diện ứng dụng, bổ sung mới** | Logo cáo kết hợp cuốn sách/ngôi sao trên nền tím; PNG gốc trong suốt, ICO chín cỡ; tích hợp icon cửa sổ/thanh tác vụ Electron, sidebar, favicon và touch icon. Có script xuất lại từ PNG gốc. | **Văn Tuấn:** đầu mối rà soát/bàn giao Electron và tài nguyên icon; **Huyền Trang:** đầu mối rà soát/bàn giao sidebar/favicon và hiển thị sáng/tối. Thiết kế và tích hợp trong phiên này do trợ lý thực hiện theo yêu cầu người dùng, không suy ra tác giả cá nhân từ phân công. | E16. Electron 31/31, routes 37/37, smoke riêng 8/8 và build đạt; đã xem ảnh sáng/tối. Cần mở lại ứng dụng để nạp icon mới; icon của chính electron.exe chưa đổi và bộ cài vẫn thuộc NT-09. |
+| **S4-24 — Đóng gói/phát hành Windows, bổ sung mới** | Setup NSIS và Portable x64 1.0.0, nhúng logo vào executable; kèm Electron/API/React/SQLite/WASM/schema/module nguồn. Tự chọn cổng loopback, API nhận địa chỉ lúc chạy; origin cố định, DB/tệp/phiên lưu AppData, không kèm dữ liệu cá nhân. | **Văn Tuấn:** đầu mối build/Electron/release; **Long Nhật:** startup/API; **Hồng Thắm:** đường dẫn ghi/persist; **Huyền Trang:** frontend/icon/shortcut; **Anh Tuấn:** module nguồn/endpoint map. Trợ lý triển khai theo yêu cầu người dùng; thành viên xác nhận phần nhận bàn giao. | E17. Có kiểm tra executable và cài đè trên máy hiện tại, Node.js không nằm trong PATH của app; giới hạn máy sạch, nguồn thật/AI và chữ ký nghiệm thu vẫn được giữ. |
 
 ### 5.1. Bổ sung nhận diện ứng dụng ngày 05/11/2026
 
@@ -133,7 +136,15 @@ Các mã S4 bên dưới là mã đối chiếu trong báo cáo, không phải i
 - **Điểm tích hợp:** Electron khai báo icon cửa sổ và thông tin relaunch trên thanh tác vụ Windows với AppUserModelID vn.cmcu.smartstudyhub; sidebar dùng ảnh logo mới; HTML dùng favicon/touch icon tương ứng. Tên package, đường dẫn userData, dữ liệu ứng dụng và phiên đăng nhập được giữ nguyên.
 - **Nguồn thiết kế:** công cụ imagegen tích hợp hỗ trợ tạo logo theo yêu cầu người dùng; trợ lý xuất định dạng và tích hợp mã. Vai trò Văn Tuấn/Huyền Trang ở S4-23 là trách nhiệm rà soát, nhận bàn giao và xác nhận trong nhóm, không phải xác nhận hai thành viên đã tự vẽ logo.
 - **Tái tạo tài nguyên:** [script build-app-icons.cjs](../scripts/build-app-icons.cjs); prompt, vị trí tệp và hướng dẫn trong [hồ sơ logo](../assets/branding/README.md).
-- **Giới hạn áp dụng:** phải đóng/mở lại ứng dụng để nạp main process mới; shortcut đã ghim cũ có thể cần ghim lại. File electron.exe trong bộ Electron phát triển vẫn giữ icon gốc; việc nhúng icon vào executable của bộ cài chưa được thực hiện và không làm thay đổi trạng thái PB-49/PB-50.
+- **Giới hạn của lượt logo E16:** phải đóng/mở lại ứng dụng để nạp main process mới; shortcut đã ghim cũ có thể cần ghim lại. File electron.exe của môi trường phát triển giữ icon gốc. Lượt đóng gói sau đó đã nhúng icon vào SmartStudyHub.exe của bản phát hành, ghi riêng tại E17.
+
+### 5.2. Bổ sung bộ cài và Portable Windows — 05/11/2026
+
+Đầu ra: [Release v1.0.0](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/tag/v1.0.0), gồm Setup và Portable cho Windows x64. Người nhận tải về dùng mà không phải cài Git/Node.js/npm hoặc bật backend thủ công. Hướng dẫn build, sử dụng, sao lưu và giới hạn: [WINDOWS_RELEASE.md](WINDOWS_RELEASE.md).
+
+Setup cài theo tài khoản Windows, tạo shortcut; Portable mở trực tiếp. Cả hai dùng `%APPDATA%\SmartStudyHubCMC`, tách DB/tệp/phiên khỏi thư mục cài; origin `studyhub://app` giữ localStorage khi cổng backend đổi. Dữ liệu phát triển không được nhập tự động. Gói không chứa `.env`, cookie hay DB sinh viên của máy phát triển. Các executable chưa có chứng thư ký số.
+
+Đây là phần **mới** về đóng gói và **nâng cấp** startup/lưu trữ cho bản phân phối; không biến các mục AI/nguồn thật/thiết bị còn mở thành đã nghiệm thu. Phân công rà soát/bàn giao giữ đúng năm người ở S4-24, không quy toàn bộ công việc cho người commit tích hợp.
 
 ## 6. Hồ sơ công việc và đầu ra bàn giao theo từng thành viên
 
@@ -285,6 +296,12 @@ Phạm vi riêng tại commit 1d7ada6, nguồn E16:
 
 Đã xem ảnh sidebar sáng/tối; artifact ở tests/artifacts/branding. Lượt logo không restart ứng dụng người dùng, không sửa DB, không đổi đường dẫn userData và không chạy lại toàn bộ API/AI. Số liệu của mục 7.1 giữ nguyên theo lượt trước; lượt cập nhật báo cáo này chỉ dẫn lại bằng chứng, không tạo một lượt test mới.
 
+### 7.5. Kiểm tra bản phân phối Windows — 05/11/2026
+
+Nguồn E17 ghi riêng lượt đóng gói: kiểm tra runtime/đường dẫn, API/AI/Electron/React và HTTP tích hợp; đọc tài nguyên trong ASAR; chạy executable thật với profile thử, không có Node.js trong PATH của app. Kiểm tra giao diện/logo, backend, DB mới rỗng và ghi chú/tài liệu/localStorage qua ba lần mở; bản Setup còn được cài đè để kiểm tra giữ dữ liệu. Số ca/kết quả và SHA-256 cụ thể nằm trong [windows-release.json](evidence/windows-release.json).
+
+Đã xem ảnh lần mở đầu của executable. Chỉ có dữ liệu tổng hợp trong profile thử, không chạy lại Gemini hoặc nguồn trường thật. Đây là kiểm chứng trên máy Windows hiện tại; chưa có biên bản máy ảo sạch không cài Node.js hoặc cài toàn máy trong Program Files. Các ô ký nghiệm thu vẫn để người nhận xác nhận.
+
 ## 8. Danh mục bằng chứng dùng để nghiệm thu
 
 | Mã | Tệp/tài liệu | Phạm vi và ngày cần giữ khi trích dẫn |
@@ -305,6 +322,7 @@ Phạm vi riêng tại commit 1d7ada6, nguồn E16:
 | E14 | [github-sprint-sync.json](evidence/github-sprint-sync.json) | 05/11: cập nhật 27 issue/4 milestone, giữ assignee/trạng thái, có hash nội dung trước/sau. |
 | E15 | [github-milestone-counters.json](evidence/github-milestone-counters.json) | 05/11: sửa bộ đếm bằng gắn lại metadata; giữ trạng thái và ngày đóng issue. |
 | E16 | [app-branding.json](evidence/app-branding.json), [hồ sơ PNG/ICO và prompt](../assets/branding/README.md) | 05/11: logo do imagegen hỗ trợ, tích hợp Electron/sidebar/favicon; 31 test Electron, 37 routes, 8 smoke riêng và build 33,66 giây. Phạm vi và nguồn đóng góp ở mục 5.1/7.4. |
+| E17 | [windows-release.json](evidence/windows-release.json), [hướng dẫn Windows](WINDOWS_RELEASE.md) | 05/11: bộ cài/Portable 1.0.0, kiểm tra ASAR/tài nguyên, executable và giữ dữ liệu qua khởi động/cài đè trên máy hiện tại. Kết quả không thay nghiệm thu máy sạch, nguồn trường, AI hoặc thiết bị. |
 
 Ảnh/video/log bổ sung thường nằm trong thư mục tests/artifacts, được gitignore. Người bàn giao cần cung cấp bản sao artifact được chọn nếu hội đồng/người nhận cần kiểm chứng lại; các tệp local này không được mặc nhiên coi là có sẵn trong một clone GitHub mới. Không đưa cookie, mật khẩu, token hoặc response hồ sơ thô vào hồ sơ nghiệm thu.
 
@@ -322,7 +340,7 @@ Mức P1/P2 dưới đây là đề xuất ưu tiên kiểm chứng trong báo c
 | NT-06 / P2 | Quiz upload chưa trích văn bản PDF/DOCX/PPTX/ảnh. | **Long Nhật** | Anh Tuấn: nguồn; Văn Tuấn: AI; Huyền Trang: thông báo UI. | Người nhận chấp thuận phạm vi hiện tại TXT/Markdown hoặc lập yêu cầu mở rộng riêng. Trong phạm vi hiện tại, định dạng chưa hỗ trợ phải báo lỗi rõ và không giả nhận đã dùng nguồn. |
 | NT-07 / P2 | Canvas, bookmark/tiến độ slide còn lưu theo origin; chưa đồng bộ nhiều máy/cộng tác. | **Huyền Trang** | Hồng Thắm: ranh giới DB; Long Nhật/Văn Tuấn: kiến trúc khi mở rộng. | Xác nhận phạm vi local, sao lưu/nhập lại hoạt động; nếu cần đồng bộ nhiều máy thì đánh giá thành yêu cầu bổ sung. |
 | NT-08 / P2 | Tablet/stylus/camera, OCR viết tay/toán, zoom và screen reader chưa được nghiệm thu đủ. | **Huyền Trang** | Văn Tuấn điều phối; Long Nhật khi có lỗi API liên quan. | Ghi thiết bị/phần mềm đầu vào và kết quả thật; không dùng touch/pointer giả lập để chứng minh lực nhấn hoặc OCR phức tạp. |
-| NT-09 / P1 khi bàn giao bộ cài | PB-49: chưa có lệnh tạo bộ cài độc lập và nghiệm thu máy sạch. PB-50: chưa có biên bản tài nguyên/DB/nâng cấp trong bản cài. | **Văn Tuấn** | Huyền Trang: build; Long Nhật: startup/API; Hồng Thắm: DB; Anh Tuấn: endpoint_map và nguồn. | Có bộ cài, mở máy không cần Node.js; tìm đúng frontend/WASM/endpoint_map; ghi DB ở thư mục người dùng và giữ dữ liệu sau nâng cấp. Chạy npm start không thay điều kiện này. |
+| NT-09 / P1 khi nghiệm thu máy sạch | PB-49/PB-50 đã có script, Setup/Portable, kiểm tra tài nguyên và DB/cài đè cục bộ theo E17. Còn thiếu lượt trên máy sạch không cài Node.js và xác nhận người nhận. | **Văn Tuấn** | Huyền Trang: build; Long Nhật: startup/API; Hồng Thắm: DB; Anh Tuấn: endpoint_map và nguồn. | Bổ sung chạy trên máy sạch, kiểm tra tài nguyên/quyền ghi/nâng cấp đúng phạm vi bản cài theo người dùng. Program Files chưa thuộc kết quả cục bộ và chưa phải cấu hình phát hành hiện tại. |
 | NT-10 / giới hạn kiến trúc | Một hồ sơ cấu hình; chưa có xác thực/phân quyền nhiều tài khoản nội bộ, liên quan thiết kế PB-09/PB-10. | **Văn Tuấn** | Long Nhật: API; Hồng Thắm: dữ liệu; Huyền Trang: UI; Anh Tuấn: danh tính nguồn. | Ghi phạm vi một hồ sơ khi nghiệm thu; chỉ đánh giá nhiều tài khoản sau khi yêu cầu và thiết kế riêng được chốt. Không gán việc này cho PB-50. |
 | NT-11 / P2 | README/ARCHITECTURE còn câu mô tả đọc/cache ảnh EDUX chưa khớp mã text-only hiện tại. | **Văn Tuấn** | Anh Tuấn: quy tắc nguồn; Long Nhật: API; Hồng Thắm: persist; Huyền Trang: hướng dẫn tính năng. | Đồng bộ tài liệu với mã lọc ảnh và API hiện có. Chưa được dùng mô tả cũ làm bằng chứng tính năng cache ảnh đã được nghiệm thu. |
 | NT-12 / P2, quản lý dự án | Chưa xác định/cập nhật trường ngày Projects do thiếu quyền đọc/ghi Project. | **Văn Tuấn** | Từng thành viên kiểm tra phần việc của mình khi Project khả dụng. | Có quyền/phiên phù hợp và xác minh Project liên kết, nếu có. Ngày milestone/issue đã cập nhật; phần Projects vẫn ghi chưa hoàn tất. |
@@ -353,7 +371,7 @@ Dùng fixture/DB tạm hoặc bản sao cho ca thay đổi/xóa/migration. Ca ng
 | **TC-12 — GPA/học lại** | Hồng Thắm / Anh Tuấn, Long Nhật, Huyền Trang, Văn Tuấn. | Đối soát hệ 10/4, tổng/tích lũy, điểm thiếu, P/NP và nhiều lần học/thi với dữ liệu thử có đáp án chuẩn. Hồ sơ/progress/context dùng cùng số liệu; đổi bộ lọc kỳ không làm sai tổng toàn bộ. | Chưa thực hiện; bằng chứng: ______ |
 | **TC-13 — Tín chỉ/chương trình/khóa** | Anh Tuấn / Hồng Thắm, Long Nhật, Huyền Trang, Văn Tuấn. | Đối chiếu trường tổng và catalog IU; refresh tín chỉ riêng giữ bảng điểm/lịch/hồ sơ. Mã sinh viên không khớp bị từ chối; không cộng khối thành tổng chương trình; mã CMC và mã ngoài mẫu có năm đúng nguồn/quy tắc. Kiểm tra reload và SQLite. | Chưa thực hiện trong buổi mới; đã có bằng chứng giới hạn E13. |
 | **TC-14 — Migration/toàn vẹn** | Hồng Thắm / Long Nhật, Văn Tuấn, Anh Tuấn, Huyền Trang. | Nâng cấp bản sao DB cũ, chạy lại migration/sync, cố ý gây lỗi ghi, gửi lặp và mở lại. Giữ dữ liệu/index, owner đúng, rollback đủ, không trùng phiên/checklist/quiz/checkpoint. Backup/restore phải đối chiếu số liệu. | Chưa thực hiện; bằng chứng: ______ |
-| **TC-15 — Bộ cài/máy sạch** | Văn Tuấn / Huyền Trang, Long Nhật, Hồng Thắm, Anh Tuấn. | Sau khi có bộ cài: mở máy không cần Node.js; tìm frontend/WASM/endpoint_map; tạo DB trong thư mục người dùng khi cài Program Files; nâng cấp giữ dữ liệu. Tách rõ PB-49 và PB-50. | Chưa có đủ đầu ra; PB-49/PB-50 còn mở. |
+| **TC-15 — Bộ cài/máy sạch** | Văn Tuấn / Huyền Trang, Long Nhật, Hồng Thắm, Anh Tuấn. | Dùng Setup/Portable trong E17; kiểm tra máy sạch không cài Node.js, tài nguyên và DB trong thư mục người dùng; nâng cấp giữ dữ liệu. Nếu chọn cài toàn máy/Program Files, cần cấu hình và lượt riêng. | Đã kiểm chứng executable/cài đè cục bộ theo E17; máy sạch và chấp thuận chính thức chưa thực hiện. |
 | **TC-16 — UI và thiết bị** | Huyền Trang / Long Nhật, Văn Tuấn. | Thực hiện từng ca phụ lục A; desktop/mobile, bàn phím/focus, zoom/screen reader và thiết bị được chọn. Lưu kích thước/thiết bị, ảnh và lỗi còn lại; kiểm tra toàn hành trình TC-02 → TC-07. | Chưa thực hiện; bằng chứng: ______ |
 | **TC-17 — Logo/nhận diện** | Văn Tuấn: Electron; Huyền Trang: UI. | Mở lại bản mới trên máy người nhận; kiểm tra icon cửa sổ/thanh tác vụ, tên relaunch, sidebar sáng/tối và favicon. Xác nhận PNG/ICO có trong bàn giao; ghi nhận shortcut ghim cũ và phân biệt icon ứng dụng với icon electron.exe chưa đóng gói. | Chưa thực hiện trên máy người nhận; đã có E16 trong phiên thử riêng. |
 
@@ -367,6 +385,7 @@ Dùng fixture/DB tạm hoặc bản sao cho ca thay đổi/xóa/migration. Ca ng
 4. Lượt tín chỉ IU ngày 05/11 có bằng chứng nguồn thật, UI Electron và SQLite; phạm vi có thể trình xác nhận riêng theo E13.
 5. Bộ kiểm thử và build của bản trước push đã đạt theo E01; tài liệu/phân công/bằng chứng đã được tổng hợp để người nhận kiểm tra.
 6. Logo và nhận diện Electron/sidebar/favicon đã có tài nguyên, mã tích hợp và kết quả kiểm tra riêng E16; đầu mối rà soát/bàn giao là Văn Tuấn và Huyền Trang theo tầng.
+7. Setup/Portable x64 1.0.0 đã có đầu ra phát hành và kiểm tra runtime/persist/cài đè cục bộ E17; các phần nghiệm thu nguồn thật và máy sạch vẫn xét riêng.
 
 Đây là căn cứ trình nghiệm thu, chưa phải quyết định nghiệm thu toàn bộ. Các phần chỉ được kiểm tra bằng mock/fixture phải được ghi đúng mức bằng chứng khi ký.
 
@@ -374,7 +393,7 @@ Dùng fixture/DB tạm hoặc bản sao cho ca thay đổi/xóa/migration. Ca ng
 
 - NT-01 đến NT-05: cần kết quả live/tái kiểm/toàn hành trình và dữ liệu bàn giao theo phạm vi lựa chọn.
 - NT-06, NT-07, NT-08, NT-10: phải công bố rõ giới hạn và được người nhận xác nhận; yêu cầu mở rộng cần kế hoạch riêng.
-- NT-09: chưa đủ điều kiện nghiệm thu bộ cài máy sạch và dữ liệu sau nâng cấp theo PB-49/PB-50.
+- NT-09: đã có bộ cài và kiểm tra giữ dữ liệu khi cài đè cục bộ; còn nghiệm thu máy sạch và xác nhận bàn giao PB-49/PB-50.
 - NT-11, NT-12: tài liệu ảnh EDUX và trường ngày Projects còn việc cần hoàn thiện/xác minh.
 
 Không suy ra còn lỗi trên React chỉ từ audit frontend cũ; cũng không suy ra đã hết mọi lỗi do test tổng đạt. Quyết định cuối cùng cần dựa vào kết quả từng ca, mức ảnh hưởng, phạm vi chấp thuận và bằng chứng kèm theo.

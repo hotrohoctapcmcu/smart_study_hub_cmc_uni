@@ -404,3 +404,24 @@ Kết quả của bản bổ sung logo tại commit 1d7ada6, không thay số li
 | Build production | **Đạt, 33,66 giây** | Còn cảnh báo MathJax eval/chunk lớn đã có. |
 
 Đã xem ảnh sidebar sáng/tối ở tests/artifacts/branding; báo cáo gọn [app-branding.json](evidence/app-branding.json). Không restart ứng dụng người dùng, không sửa DB/đổi userData hoặc chạy lại toàn bộ API/AI/React trong lượt logo. Việc bổ sung mục tài liệu này không chạy test lần nữa. Icon electron.exe và nghiệm thu bộ cài chưa thuộc kết quả trên; cần mở lại ứng dụng để nạp nhận diện mới.
+
+## Bộ cài và Portable Windows 1.0.0 — 05/11/2026
+
+Đây là lượt kiểm tra bổ sung sau E16, không sửa kết quả lịch sử. Build Vite production **18,50 giây**, mock tắt, API được nhận từ runtime. electron-builder 26.18.0/Electron 44.7.0 tạo Setup NSIS và Portable Windows x64; có nhúng icon mới vào executable. Thư mục staging riêng tránh thay dependency của phiên Electron người dùng đang mở.
+
+| Kiểm tra | Kết quả | Phạm vi |
+| --- | --- | --- |
+| `npm run test:api` | **152/152 đạt** | API/contract/SQLite thử/provider giả lập. |
+| `npm run test:ai` | **96/96 đạt** | Hồi quy context/pipeline/provider localhost, không phải live AI. |
+| `npm run test:electron` | **31/31 đạt** | Entry/IPC/restore/timeout/luồng nguồn giả lập. |
+| `npm run test:frontend-api` | **10/10 đạt** | HTTP thật tới API với SQLite thử. |
+| `npm --prefix Frontend test -- --maxWorkers=2` | **455/455 đạt, 50 file** | Lượt cuối 151,48 giây. |
+| `node --test tests/packaged-runtime.cjs tests/electron-startup.cjs` | **3/3 đạt** | Đường dẫn ghi tuyệt đối, profile ổn định và phát triển giữ cấu hình cũ; có ca giao với Electron ở trên. |
+| Kiểm tra gói ASAR/tài nguyên | Xem **E17** | Có frontend, SQL/WASM, schema/migration, module nguồn/endpoint map, branding; loại `.env`/cookie/DB người dùng. |
+| Smoke executable thực tế | Xem **E17**, từng bản riêng | Giao diện/logo/API thật, DB mới rỗng, ghi chú/tài liệu/localStorage qua ba lần mở; Setup thêm cài đè giữ DB. |
+
+Lượt React đầu chạy cùng nén Portable có **454 đạt/1 lỗi chờ dialog** trong `tasks-detail.test.jsx`. Chạy riêng file này đạt 2/2, sau đó chạy lại **toàn bộ** đạt 455/455; không thay assertion hoặc tăng timeout để làm test đạt. Giữ thông tin này để phân biệt với lượt cuối.
+
+Smoke dùng profile tổng hợp riêng và PATH của app chỉ chứa thư mục hệ thống Windows, không có Node.js; vẫn dùng runtime đi kèm executable. Backend chọn cổng loopback trống; `studyhub://app` giữ origin và localStorage. Bộ cài cài theo người dùng, có shortcut và uninstall; cài đè giữ dữ liệu ngoài thư mục cài. Không sao chép DB/cookie của phiên phát triển.
+
+Chưa chạy máy ảo sạch không cài Node.js, Program Files/cài toàn máy, Windows 10/ARM64 hoặc các hệ điều hành khác. Không chạy lại nguồn trường/Gemini thật hay nghiệm thu thiết bị trong lượt này. Chưa có chứng thư ký số. Artifact tại `tests/artifacts/release/` là tệp local được gitignore; bằng chứng gọn và hash: [windows-release.json](evidence/windows-release.json), [hướng dẫn và link tải](WINDOWS_RELEASE.md). Không cộng số ca giữa các nhóm có giao nhau và không tự đóng issue/milestone bằng kết quả đóng gói.

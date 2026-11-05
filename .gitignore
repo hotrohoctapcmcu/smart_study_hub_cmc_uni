@@ -4,6 +4,7 @@ dist/
 build/
 coverage/
 .vite/
+/release/
 
 # Local configuration; commit templates and the mock-mode configuration only
 .env

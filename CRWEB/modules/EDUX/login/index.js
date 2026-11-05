@@ -18,7 +18,7 @@ const { cookieFrom } = require("../utils");
 // Co the tro sang moi truong khac (staging/test) bang bien moi truong.
 const ORIGIN = (process.env.EDUX_ORIGIN || "https://edux.cmcu.edu.vn").replace(/\/+$/, "");
 const API_BASE = process.env.EDUX_API_BASE || `${ORIGIN}/api`;
-const COOKIE_FILE = path.join(__dirname, "cookie.txt");
+const COOKIE_FILE = process.env.EDUX_COOKIE_PATH || path.join(__dirname, "cookie.txt");
 let sessionCookie = "";
 
 // Chi doc tu bien moi truong khi caller khong truyen tham so.

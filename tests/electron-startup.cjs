@@ -31,7 +31,7 @@ test('Electron package entry starts the server, registers bridges and loads its 
         static getAllWindows() { return windows; }
     }
     const electron = {
-        app: { whenReady: () => ({ then: callback => { ready = callback; } }), on() {}, quit() {}, setAppUserModelId(id) { appId = id; } },
+        app: { whenReady: () => ({ then: callback => { ready = callback; return { catch() {} }; } }), on() {}, quit() {}, setAppUserModelId(id) { appId = id; } },
         BrowserWindow, shell: { openExternal: async () => {} }
     };
     const bridges = {
@@ -52,10 +52,10 @@ test('Electron package entry starts the server, registers bridges and loads its 
             throw new Error(`Unexpected startup dependency: ${name}`);
         }
     }, { filename: entry });
-    assert.equal(serverStarted, true);
-    assert.deepEqual([...registered].sort(), ['iu', 'outlook', 'sync']);
     assert.equal(typeof ready, 'function');
     await ready();
+    assert.equal(serverStarted, true);
+    assert.deepEqual([...registered].sort(), ['iu', 'outlook', 'sync']);
     assert.equal(windows.length, 1);
     assert.equal(loadedUrl, 'http://localhost:8080');
     assert.equal(windowOptions.title, 'Smart Study Hub - CMC University');

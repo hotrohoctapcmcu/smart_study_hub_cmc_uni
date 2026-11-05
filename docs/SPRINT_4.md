@@ -29,7 +29,7 @@ Sprint 4 là mốc tổng hợp và bàn giao phiên bản hiện tại, diễn 
 | Sprint 1: chức năng 1, 2, 3, 4, 9, 18 | Luồng kết nối IU/EDUX, lịch/hồ sơ/điểm, refresh lịch, hạn EDUX, checklist, kỳ thi 70 ngày, xung đột và nhắc nhở. | PB-01…PB-07, PB-11…PB-32. |
 | Sprint 2: chức năng 5, 6, 8, 10, 11, 12, 17 | Upload/slide/ảnh/PDF, tìm kiếm/tag, Pomodoro/Time Map/tiến độ, email, sổ tay cấu trúc và vở canvas. | PB-33, PB-35…PB-38, PB-41…PB-45. |
 | Sprint 3: chức năng 7, 13, 14, 15, 16 | Gia sư/quiz/điểm yếu/kế hoạch/đơn trên React; context dài, hàng đợi AI, tóm tắt toàn môn và flashcard. | PB-20, PB-23, PB-34, PB-39, PB-40, PB-44. |
-| Bàn giao toàn hệ thống | Tương thích API, migration/persist, test hồi quy, hướng dẫn chạy, giới hạn bằng chứng và GitHub. | PB-46…PB-51, trong đó đóng gói bộ cài còn mở. |
+| Bàn giao toàn hệ thống | Tương thích API, migration/persist, test hồi quy, hướng dẫn chạy, giới hạn bằng chứng và GitHub. | PB-46…PB-51; Setup/Portable đã bổ sung, nghiệm thu máy sạch còn mở. |
 
 Chi tiết tiêu chí PB giữ tại [product_backlog.md](product_backlog.md). Bảng trên là ánh xạ phạm vi, không đánh dấu mọi PB đã hoàn thành.
 
@@ -74,7 +74,7 @@ Giữ nguyên 5 người và assignee #24–#28. Huyền Trang tương ứng tê
 
 - [ ] Nghiệm thu tóm tắt/Flashcard từ môn học thật sau restart API; live tóm tắt còn GEMINI_TIMEOUT, bước Flashcard phụ thuộc bị bỏ qua. Benchmark 2,11 lần chỉ là mô phỏng, không phải tốc độ Gemini thật.
 - [ ] Nghiệm thu AI goals/quiz/ôn thi phức tạp và toàn hành trình trên Electron/thiết bị; live trả lời tiếng Việt và 2 câu hỏi JOIN tổng hợp chỉ chứng minh đúng phạm vi đó.
-- [ ] Đối chiếu đủ biên bản bàn giao từng tầng; giữ PB-49/PB-50 (bộ cài/phân quyền) và các giới hạn thiết bị còn mở.
+- [ ] Đối chiếu đủ biên bản bàn giao từng tầng; bổ sung nghiệm thu máy sạch cho PB-49/PB-50 (bộ cài/tài nguyên và dữ liệu), giữ các giới hạn thiết bị còn mở. Nhiều tài khoản thuộc PB-09/PB-10.
 
 ### Anh Tuấn — Dữ liệu IU/EDUX/Outlook và học vụ
 
@@ -388,12 +388,22 @@ Tài nguyên và prompt: [assets/branding](../assets/branding/README.md). Bằng
 
 ## Điều kiện nghiệm thu và phần còn mở
 
+### Bổ sung phát hành Windows — 05/11/2026
+
+Đã có script `npm run dist:win`, Setup NSIS và Portable x64 1.0.0, nhúng logo vào executable. Gói chứa Electron, API, React production, SQLite/WASM/schema/migration và module nguồn; tự chạy backend với cổng loopback trống. `%APPDATA%\SmartStudyHubCMC` lưu DB/tệp/phiên, origin `studyhub://app` giữ dữ liệu trình duyệt. Không kèm DB/cookie/`.env` của máy phát triển.
+
+Đã kiểm tra executable thật với profile tổng hợp và Node.js không nằm trong PATH của app; kiểm tra đóng/mở lại và cài đè bộ cài giữ dữ liệu trên máy hiện tại. Kết quả từng bản và hash ở [windows-release.json](evidence/windows-release.json); [link tải và hướng dẫn](WINDOWS_RELEASE.md). Chưa có biên bản máy ảo sạch không cài Node.js hoặc Program Files; chưa có chứng thư code signing.
+
+Trợ lý thực hiện theo yêu cầu người dùng. Giữ phân công nhận rà soát/bàn giao: **Văn Tuấn** build/Electron/release, **Long Nhật** startup/API, **Hồng Thắm** DB/persist, **Huyền Trang** frontend/icon/shortcut, **Anh Tuấn** tài nguyên nguồn. Đây không phải xác nhận tác giả cá nhân hay chấp thuận nghiệm thu thay thành viên.
+
+### Điều kiện tiếp tục nghiệm thu
+
 - Clone nhánh mới, cài đủ hai bộ dependency, build và mở Electron/headless theo README; kiểm tra cấu hình API và persist DB.
 - Kiểm tra liên tục đồng bộ → lịch/task → tài liệu/ghi chú/Pomodoro → quiz/điểm yếu → kế hoạch; thao tác lưu và tải lại khớp DB.
 - Nguồn/AI lỗi, hết phiên, hủy, gửi lặp và xung đột mới không được xóa dữ liệu tốt hoặc tạo bản ghi nửa chừng.
 - Luồng tín chỉ IU ngày 05/11 đã có bằng chứng phiên thật, UI Electron và đọc lại SQLite trong phạm vi hồ sơ đã thử. Toàn luồng IU/EDUX/Outlook và AI phức tạp vẫn cần nghiệm thu riêng; các lượt live/timeout lịch sử được giữ nguyên, không suy rộng kết quả tín chỉ hoặc chat tổng hợp.
 - Sổ tay canvas và bookmark/tiến độ slide còn dữ liệu cục bộ theo origin; chưa có đồng bộ/cộng tác nhiều máy.
-- Ứng dụng dùng một hồ sơ cấu hình; chưa có xác thực/phân quyền nhiều người dùng. Chưa có script tạo bộ cài độc lập; PB-49/PB-50 còn mở.
+- Ứng dụng dùng một hồ sơ cấu hình; chưa có xác thực/phân quyền nhiều người dùng (PB-09/PB-10). PB-49/PB-50 đã có đầu ra và kiểm chứng đóng gói cục bộ nêu trên; phần máy sạch/chấp thuận bàn giao còn mở.
 - UI bàn phím/focus, zoom/screen reader, tablet/stylus/camera thật cần nghiệm thu theo phạm vi; test jsdom không thay thế kiểm tra tương tác trên thiết bị.
 
 ## Xác minh trước push ngày 05/11/2026

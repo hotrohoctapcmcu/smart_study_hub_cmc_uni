@@ -4,15 +4,17 @@ const path = require('path');
 
 const apiModule = require('./API/index');
 const FE_DIR = path.resolve(__dirname, 'Frontend', 'dist');
-const FE_PORT = 8080;
+const FE_PORT = Number(process.env.FE_PORT ?? 8080);
+const packaged = process.env.SMART_STUDY_PACKAGED === '1';
 
 let apiServer = null;
+let apiUrl = 'http://localhost:3001';
 
-if (typeof apiModule?.start === 'function') {
-    apiModule.start()
-        .then(server => { apiServer = server; })
-        .catch(err => console.error('[API]', err.message));
-}
+const apiReady = apiModule.start().then(server => {
+    apiServer = server;
+    apiUrl = `http://${packaged ? '127.0.0.1' : 'localhost'}:${server.address().port}`;
+    return server;
+});
 
 const MIME_TYPES = {
     '.html': 'text/html; charset=utf-8',
@@ -69,6 +71,12 @@ const feServer = http.createServer((req, res) => {
 });
 
 function sendFile(filePath, res) {
+    if (packaged && path.basename(filePath) === 'index.html') {
+        const runtime = JSON.stringify({ apiBaseUrl: apiUrl + '/api/v1' }).replace(/</g, '\\u003c');
+        const html = fs.readFileSync(filePath, 'utf8').replace('<head>', `<head><script>globalThis.__SSH_RUNTIME__=${runtime};</script>`);
+        res.writeHead(200, { 'Content-Type': MIME_TYPES['.html'] });
+        return res.end(html);
+    }
     const stream = fs.createReadStream(filePath);
     stream.once('open', () => {
         res.writeHead(200, {
@@ -87,9 +95,20 @@ if (!fs.existsSync(path.join(FE_DIR, 'index.html'))) {
     console.error('[FE] Frontend build unavailable. Run npm --prefix Frontend run build before starting.');
 }
 
-feServer.listen(FE_PORT, () => {
-    console.log(`[FE] http://localhost:${FE_PORT}`);
+const frontendReady = new Promise((resolve, reject) => {
+    feServer.once('error', reject);
+    feServer.listen({ port: FE_PORT, ...(process.env.FE_HOST ? { host: process.env.FE_HOST } : {}) }, () => {
+        console.log(`[FE] http://localhost:${FE_PORT}`);
+        resolve(feServer);
+    });
 });
+
+const ready = Promise.all([apiReady, frontendReady]).then(() => ({
+    apiUrl, frontendUrl: `http://${packaged ? '127.0.0.1' : 'localhost'}:${feServer.address().port}`
+}));
+ready.catch(error => console.error('[Startup]', error.message));
+function close() { apiServer?.close(); feServer.close(); }
+module.exports = { ready, close };
 
 function shutdown() {
     if (apiServer) apiServer.close();

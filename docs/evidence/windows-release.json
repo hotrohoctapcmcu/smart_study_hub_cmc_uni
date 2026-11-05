@@ -1,0 +1,420 @@
+{
+  "date": "2026-11-05",
+  "timezone": "Asia/Saigon",
+  "version": "1.0.0",
+  "releaseUrl": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/tag/v1.0.0",
+  "platform": "Windows x64",
+  "testedHost": "Windows 11 x64 10.0.26200",
+  "electron": "44.7.0",
+  "electronBuilder": "26.18.0",
+  "artifacts": [
+    {
+      "name": "Smart-Study-Hub-1.0.0-Portable-x64.exe",
+      "bytes": 122278515,
+      "sha256": "1e33b5d90545f39b80d845b3167b8037e7495de35304f64752d33de7252a3207"
+    },
+    {
+      "name": "Smart-Study-Hub-1.0.0-Setup-x64.exe",
+      "bytes": 139295273,
+      "sha256": "b2b66ee2c492a66702918272125bce8cf993e74e474dd59cc9cde827fc9aabf1"
+    }
+  ],
+  "archive": {
+    "entryCount": 1342,
+    "required": [
+      {
+        "path": "index.js",
+        "present": true
+      },
+      {
+        "path": "electron/main.js",
+        "present": true
+      },
+      {
+        "path": "electron/runtime.js",
+        "present": true
+      },
+      {
+        "path": "electron/preload.js",
+        "present": true
+      },
+      {
+        "path": "API/index.js",
+        "present": true
+      },
+      {
+        "path": "database/schema/00_sqlite_init.sql",
+        "present": true
+      },
+      {
+        "path": "database/migrations/schema/01_study_tools.sql",
+        "present": true
+      },
+      {
+        "path": "CRWEB/modules/IU/payload/endpoint_map.txt",
+        "present": true
+      },
+      {
+        "path": "CRWEB/modules/IU/data/program.js",
+        "present": true
+      },
+      {
+        "path": "CRWEB/modules/EDUX/data/index.js",
+        "present": true
+      },
+      {
+        "path": "Frontend/dist/index.html",
+        "present": true
+      },
+      {
+        "path": "node_modules/sql.js/dist/sql-wasm.wasm",
+        "present": true
+      }
+    ],
+    "forbiddenPersonalFiles": [],
+    "runtimeSources": [
+      {
+        "path": "index.js",
+        "matchesWorkingTree": true
+      },
+      {
+        "path": "electron/main.js",
+        "matchesWorkingTree": true
+      },
+      {
+        "path": "electron/runtime.js",
+        "matchesWorkingTree": true
+      },
+      {
+        "path": "API/index.js",
+        "matchesWorkingTree": true
+      },
+      {
+        "path": "CRWEB/modules/EDUX/login/index.js",
+        "matchesWorkingTree": true
+      }
+    ],
+    "sha256": "b144d723c2d33f2b6ee622ee8a71e15fafd5974484681c013d8a9df280b490be",
+    "branding": [
+      {
+        "name": "smart-study-hub.ico",
+        "present": true
+      },
+      {
+        "name": "smart-study-hub.png",
+        "present": true
+      }
+    ]
+  },
+  "runtime": {
+    "userData": "%APPDATA%\\SmartStudyHubCMC",
+    "database": "data/unistudy.db",
+    "documents": "data/documents",
+    "origin": "studyhub://app",
+    "ports": "random loopback ports on 127.0.0.1",
+    "singleInstance": true,
+    "developmentDataImported": false,
+    "developmentAppRestarted": false
+  },
+  "verification": {
+    "api": {
+      "passed": 152,
+      "failed": 0
+    },
+    "aiMock": {
+      "passed": 96,
+      "failed": 0
+    },
+    "electron": {
+      "passed": 31,
+      "failed": 0
+    },
+    "frontendApi": {
+      "passed": 10,
+      "failed": 0
+    },
+    "react": {
+      "passed": 455,
+      "failed": 0,
+      "files": 50,
+      "seconds": 151.48,
+      "initialRun": {
+        "passed": 454,
+        "failed": 1,
+        "cause": "tasks-detail dialog wait failed while compression ran; isolated 2/2 and subsequent full run 455/455 passed without code/assertion/timeout changes"
+      }
+    },
+    "runtimeAndEntry": {
+      "passed": 3,
+      "failed": 0,
+      "overlap": "entry test is also included in electron suite"
+    },
+    "productionBuild": {
+      "passed": true,
+      "seconds": 18.5,
+      "warnings": [
+        "MathJax eval",
+        "large chunks"
+      ]
+    },
+    "smoke": {
+      "unpacked": {
+        "passed": 13,
+        "failed": 0,
+        "externalNodeOnChildPath": false,
+        "launches": [
+          {
+            "origin": "studyhub://app",
+            "api": "http://127.0.0.1:62779/api/v1"
+          },
+          {
+            "origin": "studyhub://app",
+            "api": "http://127.0.0.1:57165/api/v1"
+          },
+          {
+            "origin": "studyhub://app",
+            "api": "http://127.0.0.1:58033/api/v1"
+          }
+        ],
+        "checks": [
+          {
+            "name": "Release executable exists",
+            "passed": true
+          },
+          {
+            "name": "Packaged UI uses a stable custom origin",
+            "passed": true
+          },
+          {
+            "name": "Bundled backend is online",
+            "passed": true
+          },
+          {
+            "name": "Renderer reaches the bundled API through its runtime address",
+            "passed": true
+          },
+          {
+            "name": "SQLite database is created under the private user profile",
+            "passed": true
+          },
+          {
+            "name": "Fresh distribution contains no student records",
+            "passed": true
+          },
+          {
+            "name": "Local canvas/preferences storage survives restart",
+            "passed": true
+          },
+          {
+            "name": "Persisted profile loads through the packaged API",
+            "passed": true
+          },
+          {
+            "name": "Upload/download uses the writable document directory",
+            "passed": true
+          },
+          {
+            "name": "Notes survive closing and reopening the packaged application",
+            "passed": true
+          },
+          {
+            "name": "Document metadata and bytes survive restart",
+            "passed": true
+          },
+          {
+            "name": "Stable browser storage is retained on the third launch",
+            "passed": true
+          },
+          {
+            "name": "Developer credentials were not copied into the private profile",
+            "passed": true
+          }
+        ],
+        "screenshot": "tests/artifacts/release/unpacked/first-launch.png"
+      },
+      "installed": {
+        "passed": 15,
+        "failed": 0,
+        "externalNodeOnChildPath": false,
+        "launches": [
+          {
+            "origin": "studyhub://app",
+            "api": "http://127.0.0.1:63137/api/v1"
+          },
+          {
+            "origin": "studyhub://app",
+            "api": "http://127.0.0.1:61355/api/v1"
+          },
+          {
+            "origin": "studyhub://app",
+            "api": "http://127.0.0.1:59356/api/v1"
+          }
+        ],
+        "checks": [
+          {
+            "name": "Release executable exists",
+            "passed": true
+          },
+          {
+            "name": "Packaged UI uses a stable custom origin",
+            "passed": true
+          },
+          {
+            "name": "Bundled backend is online",
+            "passed": true
+          },
+          {
+            "name": "Renderer reaches the bundled API through its runtime address",
+            "passed": true
+          },
+          {
+            "name": "SQLite database is created under the private user profile",
+            "passed": true
+          },
+          {
+            "name": "Fresh distribution contains no student records",
+            "passed": true
+          },
+          {
+            "name": "Local canvas/preferences storage survives restart",
+            "passed": true
+          },
+          {
+            "name": "Persisted profile loads through the packaged API",
+            "passed": true
+          },
+          {
+            "name": "Upload/download uses the writable document directory",
+            "passed": true
+          },
+          {
+            "name": "Setup reinstalls successfully without requesting administrator privileges",
+            "passed": true
+          },
+          {
+            "name": "Reinstall preserves the existing profile database",
+            "passed": true
+          },
+          {
+            "name": "Notes survive closing and reopening the packaged application",
+            "passed": true
+          },
+          {
+            "name": "Document metadata and bytes survive restart",
+            "passed": true
+          },
+          {
+            "name": "Stable browser storage is retained on the third launch",
+            "passed": true
+          },
+          {
+            "name": "Developer credentials were not copied into the private profile",
+            "passed": true
+          }
+        ],
+        "screenshot": "tests/artifacts/release/installed/first-launch.png"
+      },
+      "portable": {
+        "passed": 13,
+        "failed": 0,
+        "externalNodeOnChildPath": false,
+        "launches": [
+          {
+            "origin": "studyhub://app",
+            "api": "http://127.0.0.1:56177/api/v1"
+          },
+          {
+            "origin": "studyhub://app",
+            "api": "http://127.0.0.1:56568/api/v1"
+          },
+          {
+            "origin": "studyhub://app",
+            "api": "http://127.0.0.1:50179/api/v1"
+          }
+        ],
+        "checks": [
+          {
+            "name": "Release executable exists",
+            "passed": true
+          },
+          {
+            "name": "Packaged UI uses a stable custom origin",
+            "passed": true
+          },
+          {
+            "name": "Bundled backend is online",
+            "passed": true
+          },
+          {
+            "name": "Renderer reaches the bundled API through its runtime address",
+            "passed": true
+          },
+          {
+            "name": "SQLite database is created under the private user profile",
+            "passed": true
+          },
+          {
+            "name": "Fresh distribution contains no student records",
+            "passed": true
+          },
+          {
+            "name": "Local canvas/preferences storage survives restart",
+            "passed": true
+          },
+          {
+            "name": "Persisted profile loads through the packaged API",
+            "passed": true
+          },
+          {
+            "name": "Upload/download uses the writable document directory",
+            "passed": true
+          },
+          {
+            "name": "Notes survive closing and reopening the packaged application",
+            "passed": true
+          },
+          {
+            "name": "Document metadata and bytes survive restart",
+            "passed": true
+          },
+          {
+            "name": "Stable browser storage is retained on the third launch",
+            "passed": true
+          },
+          {
+            "name": "Developer credentials were not copied into the private profile",
+            "passed": true
+          }
+        ],
+        "screenshot": "tests/artifacts/release/portable/first-launch.png"
+      }
+    },
+    "distributionDetails": {
+      "installedArchiveMatchesUnpacked": true,
+      "embeddedExecutableIconInspected": true,
+      "iconScreenshot": "tests/artifacts/release/executable-icon.png",
+      "desktopShortcutTargetsInstalledExecutable": true,
+      "uninstallerPresent": true
+    }
+  },
+  "limitations": {
+    "codeSigned": false,
+    "cleanVirtualMachineTested": false,
+    "programFilesTested": false,
+    "externalNodeAbsentFromChildPath": true,
+    "hostNodeUninstalled": false,
+    "livePortalsRetested": false,
+    "liveAiRetested": false,
+    "autoUpdater": false,
+    "multiUser": false,
+    "formalAcceptanceSigned": false
+  },
+  "reviewAndHandover": {
+    "Van Tuan": "Electron/build/release",
+    "Anh Tuan": "source modules/endpoint map",
+    "Long Nhat": "startup/API",
+    "Hong Tham": "database/writable paths/persistence",
+    "Huyen Trang": "frontend/icon/shortcuts"
+  },
+  "implementation": "Assistant implemented packaging at user request; role assignments indicate review and handover responsibility, not verified individual authorship."
+}

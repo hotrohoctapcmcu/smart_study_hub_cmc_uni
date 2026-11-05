@@ -2,8 +2,13 @@
   "name": "hotrohoctap",
   "version": "1.0.0",
   "description": "Smart Study Hub - CMC University: Backend API + Frontend + IU crawler",
+  "author": "Smart Study Hub contributors",
+  "homepage": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni",
   "main": "electron/main.js",
   "scripts": {
+    "dist:win": "node scripts/package-app.cjs",
+    "dist:dir": "node scripts/package-app.cjs --dir",
+    "test:packaging": "node --test tests/packaged-runtime.cjs",
     "prestart": "npm --prefix Frontend run build",
     "start": "electron .",
     "prestart:headless": "npm --prefix Frontend run build",
@@ -42,9 +47,12 @@
     "cors": "^2.8.6",
     "docx": "^9.5.1",
     "dotenv": "^16.6.1",
-    "electron": "^44.7.0",
     "express": "^4.22.3",
     "jsonwebtoken": "^9.0.3",
     "sql.js": "^1.15.0"
+  },
+  "devDependencies": {
+    "electron": "44.7.0",
+    "electron-builder": "26.18.0"
   }
 }

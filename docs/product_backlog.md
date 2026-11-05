@@ -156,7 +156,7 @@ Các phụ thuộc thực tế cần chốt trước khi làm:
 - Hoàn thiện lưu lịch và kiểm tra xung đột trước khi nghiệm thu planner AI; kiểm tra lại lịch ngay lúc xác nhận, ghi giai đoạn và buổi học trong cùng transaction.
 - Có kết quả quiz đã nộp trước khi đánh giá điểm yếu/cải thiện; có file thật hoặc văn bản đã trích xuất trước khi nói AI dùng nội dung học liệu.
 - PB-09/PB-10 cần thiết kế riêng nếu mở nhiều tài khoản; không buộc việc sửa luồng một hồ sơ phải chờ một hệ thống đăng nhập chưa nằm trong bản hiện tại.
-- Kiểm thử trên bản đóng gói sau khi có bộ cài; đóng gói xong mới nghiệm thu quyền ghi và tài nguyên trên máy sạch.
+- Setup/Portable Windows x64 1.0.0 đã được bổ sung ngày 05/11, có kiểm chứng runtime/tài nguyên/persist và cài đè trên máy hiện tại; xem [hồ sơ phát hành](WINDOWS_RELEASE.md), [bằng chứng](evidence/windows-release.json). PB-49/PB-50 còn nghiệm thu máy sạch và xác nhận người nhận; chưa tự đánh dấu Done toàn bộ tiêu chí.
 
 ### 10 kịch bản trước bàn giao
 

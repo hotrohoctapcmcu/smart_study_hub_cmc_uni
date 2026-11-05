@@ -53,7 +53,18 @@ Các nhóm chức năng dùng chung trang Tổng quan, trang Đồng bộ dữ l
 
 ## Cài đặt và khởi chạy
 
-### Yêu cầu môi trường
+### Tải ứng dụng Windows — không cần cài Node.js
+
+Mở [GitHub Releases](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/latest) và chọn một bản **Windows x64**:
+
+- [Portable 1.0.0 — tải về rồi mở](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.0.0/Smart-Study-Hub-1.0.0-Portable-x64.exe).
+- [Setup 1.0.0 — cài vào máy, tạo shortcut](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.0.0/Smart-Study-Hub-1.0.0-Setup-x64.exe).
+
+Electron, backend, giao diện và SQLite đã nằm trong gói. Người dùng không cần Git, Node.js, npm hoặc chạy terminal. Mở **Đồng bộ dữ liệu** để kết nối tài khoản trường của mình; cần Internet cho đồng bộ, AI và tài nguyên OCR tải qua mạng. Bản phát hành không chứa tài khoản hoặc dữ liệu sinh viên của máy phát triển.
+
+Dữ liệu được lưu ở `%APPDATA%\SmartStudyHubCMC`, dùng chung cho Setup và Portable; thay file `.exe` không xóa dữ liệu. Bản 1.0.0 chưa có chứng thư ký số nên Windows có thể hiển thị cảnh báo nhà phát hành chưa xác định. Xem [hướng dẫn sử dụng, sao lưu và build Windows](docs/WINDOWS_RELEASE.md).
+
+### Yêu cầu khi chạy từ mã nguồn
 
 - Git, Node.js và npm. Môi trường đã kiểm tra: **Windows, Node.js 24.16.0, npm 11.13.0**.
 - Kết nối mạng khi cài dependency, đăng nhập các hệ thống trường hoặc sử dụng AI/OCR cần tải tài nguyên.
@@ -82,7 +93,7 @@ Các lệnh trên dùng PowerShell. Nếu execution policy chặn `npm.ps1`, s�
 npm start
 ```
 
-Lệnh tự build frontend rồi mở Electron. Máy chủ giao diện mặc định ở `http://localhost:8080`, API ở `http://localhost:3001/api/v1`. Đây là cách chạy từ mã nguồn; dự án hiện chưa có script đóng gói bộ cài độc lập.
+Lệnh tự build frontend rồi mở Electron. Máy chủ giao diện mặc định ở `http://localhost:8080`, API ở `http://localhost:3001/api/v1`. Để tạo bộ cài và Portable từ mã nguồn, chạy `npm run dist:win`; hướng dẫn trong [WINDOWS_RELEASE.md](docs/WINDOWS_RELEASE.md).
 
 ### Chạy khi phát triển
 

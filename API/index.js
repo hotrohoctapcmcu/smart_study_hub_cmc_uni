@@ -37,8 +37,12 @@ async function start() {
     app.use(notFound);
     app.use(errorHandler);
 
-    const server = app.listen(PORT, () => {
-        console.log(`[API] http://localhost:${PORT}`);
+    const server = await new Promise((resolve, reject) => {
+        const listener = app.listen({ port: Number(PORT), ...(process.env.API_HOST ? { host: process.env.API_HOST } : {}) }, () => {
+            console.log(`[API] http://localhost:${PORT}`);
+            resolve(listener);
+        });
+        listener.once('error', reject);
     });
     // Restore in the background so an unavailable EDUX cannot delay API boot.
     void require('./utils/edux-account').restore(require('./utils/nguoiDung').NGUOI_DUNG_ID);

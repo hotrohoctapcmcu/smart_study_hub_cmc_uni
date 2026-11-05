@@ -11,20 +11,21 @@ const { app, BrowserWindow, shell } = electron;
 const path = require("path");
 const APP_ID = "vn.cmcu.smartstudyhub";
 const APP_TITLE = "Smart Study Hub - CMC University";
-const APP_ICON = path.join(__dirname, "..", "assets", "branding",
+const APP_ICON = path.join(app.isPackaged ? process.resourcesPath : path.join(__dirname, "..", "assets"), "branding",
     process.platform === "win32" ? "smart-study-hub.ico" : "smart-study-hub.png");
 
 if (process.platform === "win32") app.setAppUserModelId(APP_ID);
 
-require("../index");
+if (app.isPackaged) require("./runtime").configurePackagedRuntime(app);
+if (app.isPackaged) {
+    electron.protocol.registerSchemesAsPrivileged([{
+        scheme: 'studyhub', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true }
+    }]);
+}
 
-try {
-    require("./bridges/iu").registerIuBridge();
-    require("./bridges/outlook").registerOutlookBridge();
-    require("./bridges/sync").registerSyncBridge();
-} catch { }
-
-const FE_URL = "http://localhost:8080";
+let FE_URL = "http://localhost:8080";
+let APP_URL = FE_URL;
+let servers = null;
 const RETRY_DELAY = 800;
 const MAX_ATTEMPTS = 40;
 
@@ -52,7 +53,7 @@ function lockZoom(win) {
 function loadApp() {
     if (!mainWindow || mainWindow.isDestroyed()) return;
 
-    mainWindow.loadURL(FE_URL).catch(() => {
+    mainWindow.loadURL(APP_URL).catch(() => {
         if (attempts++ >= MAX_ATTEMPTS) {
             console.error(`Không thể tải ${FE_URL}`);
             return;
@@ -96,7 +97,9 @@ function createWindow() {
 
     lockZoom(mainWindow);
 
-    mainWindow.once("ready-to-show", () => mainWindow?.show());
+    mainWindow.once("ready-to-show", () => {
+        if (process.env.SMART_STUDY_TEST_WINDOW !== 'hidden') mainWindow?.show();
+    });
 
     mainWindow.webContents.on("did-fail-load", (_, __, ___, ____, isMainFrame) => {
         if (isMainFrame !== false) loadApp();
@@ -110,7 +113,7 @@ function createWindow() {
     });
 
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-        if (url.startsWith(FE_URL)) return { action: "allow" };
+        if (url.startsWith(APP_URL)) return { action: "allow" };
         shell.openExternal(url).catch(() => { });
         return { action: "deny" };
     });
@@ -123,7 +126,46 @@ function createWindow() {
     loadApp();
 }
 
-app.whenReady().then(createWindow);
+async function startApplication() {
+    servers = require("../index");
+    const addresses = await servers.ready;
+    if (addresses) {
+        FE_URL = addresses.frontendUrl;
+        process.env.API_BASE = addresses.apiUrl;
+    }
+    APP_URL = FE_URL;
+    if (app.isPackaged) {
+        // Stable origin preserves canvas, drafts and preferences across launches,
+        // while the embedded HTTP servers can safely choose unused local ports.
+        electron.protocol.handle('studyhub', request => {
+            const target = new URL(request.url);
+            if (target.hostname !== 'app' || !['GET', 'HEAD'].includes(request.method)) return new Response('Not found', { status: 404 });
+            return electron.net.fetch(FE_URL + target.pathname + target.search, { method: request.method });
+        });
+        APP_URL = 'studyhub://app/';
+    }
+    require("./bridges/iu").registerIuBridge();
+    require("./bridges/outlook").registerOutlookBridge();
+    require("./bridges/sync").registerSyncBridge();
+    createWindow();
+}
+
+const primary = !app.isPackaged || app.requestSingleInstanceLock();
+if (!primary) {
+    app.quit();
+} else {
+    app.whenReady().then(startApplication).catch(error => {
+        console.error('[Startup]', error);
+        if (process.env.SMART_STUDY_TEST_WINDOW !== 'hidden') electron.dialog?.showErrorBox('Smart Study Hub', 'Không thể khởi động ứng dụng. ' + error.message);
+        app.quit();
+    });
+    app.on('second-instance', () => {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show(); mainWindow.focus();
+    });
+}
+app.on('before-quit', () => servers?.close?.());
 app.on("window-all-closed", () => app.quit());
 app.on("activate", () => {
     if (!BrowserWindow.getAllWindows().length) createWindow();
