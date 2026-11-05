@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-05",
+  "timezone": "Asia/Saigon",
+  "release": {
+    "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/tag/v1.0.0",
+    "draft": false,
+    "tag": "v1.0.0",
+    "target": {
+      "sha": "cd4c68a6032ebfd7d4a82c08886defa6c4689516",
+      "type": "commit",
+      "url": "https://api.github.com/repos/hotrohoctapcmcu/smart_study_hub_cmc_uni/git/commits/cd4c68a6032ebfd7d4a82c08886defa6c4689516"
+    },
+    "publishedAt": "2026-11-05T04:54:12Z",
+    "assets": [
+      {
+        "name": "HUONG-DAN-WINDOWS.md",
+        "size": 1767,
+        "digest": "sha256:1880d1fe42981224479c42ece99159298ac7cae8b1b93d5c48193e8104e27a3e",
+        "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.0.0/HUONG-DAN-WINDOWS.md",
+        "publicStatus": 200,
+        "publicLength": 1767
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "size": 207,
+        "digest": "sha256:85db577cafd32dc0eb3bd4d2437e20533d8de4c157ffa74074407046e1ff3da4",
+        "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.0.0/SHA256SUMS.txt",
+        "publicStatus": 200,
+        "publicLength": 207
+      },
+      {
+        "name": "Smart-Study-Hub-1.0.0-Portable-x64.exe",
+        "size": 122278515,
+        "digest": "sha256:1e33b5d90545f39b80d845b3167b8037e7495de35304f64752d33de7252a3207",
+        "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.0.0/Smart-Study-Hub-1.0.0-Portable-x64.exe",
+        "publicStatus": 200,
+        "publicLength": 122278515
+      },
+      {
+        "name": "Smart-Study-Hub-1.0.0-Setup-x64.exe",
+        "size": 139295273,
+        "digest": "sha256:b2b66ee2c492a66702918272125bce8cf993e74e474dd59cc9cde827fc9aabf1",
+        "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.0.0/Smart-Study-Hub-1.0.0-Setup-x64.exe",
+        "publicStatus": 200,
+        "publicLength": 139295273
+      }
+    ]
+  },
+  "issueUpdates": [
+    {
+      "number": 24,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/24",
+      "assignees": [
+        "vtishan"
+      ],
+      "state": "open",
+      "milestone": 3,
+      "beforeSha256": "cfb2e1330cd9f5a085ea2ae56ece7afcd1addf4860c375f6f8a12f4c5e566599",
+      "afterSha256": "3860f7c5086b999836bc2fce33b9e05c6fe7fb572e16d5f5a6d272ab44a2323a",
+      "role": "Electron/build/release, runtime tự chạy, origin cố định và cấu hình Setup/Portable. Phối hợp kiểm tra máy sạch và tổng hợp bàn giao."
+    },
+    {
+      "number": 25,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/25",
+      "assignees": [
+        "AnhTuancode-25"
+      ],
+      "state": "open",
+      "milestone": 3,
+      "beforeSha256": "eee7ebca31781d677b01b4d9bc6ccfaefbde9aedc364767910d5c16105f9b373",
+      "afterSha256": "15d52941ca2d1caee3430cecd741a389f510f809574c5b8ced4a9cefd770c18c",
+      "role": "Rà soát module IU/EDUX/Outlook và endpoint_map được đưa vào gói; phối hợp kết nối nguồn bằng tài khoản được cấp. Kiểm tra archive không thay lượt nguồn thật."
+    },
+    {
+      "number": 26,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/26",
+      "assignees": [
+        "longnhatdinhviet8-byte"
+      ],
+      "state": "open",
+      "milestone": 3,
+      "beforeSha256": "b9b7c7160fb5aabfebf94a61c090e3063e32a3b02022ef63ba2de0e4ccaf54b2",
+      "afterSha256": "a6aabc4298ed62c3b1f27d6993c9945694127eb560198c5a201e33bfca9c2614",
+      "role": "Rà soát startup chờ API sẵn sàng, cổng loopback động và hợp đồng API lúc chạy; phối hợp kiểm tra HTTP trong bản phát hành và lỗi khởi chạy."
+    },
+    {
+      "number": 27,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/27",
+      "assignees": [
+        "Tham2007"
+      ],
+      "state": "open",
+      "milestone": 3,
+      "beforeSha256": "8a0e9822f9815bbf2bcd8a9c692723966118860df159fd0737e99ed2e600cdb5",
+      "afterSha256": "aecffab83d318e1c152f1983fff1a5f4a969776fae8b1177f08fbf883f488f62",
+      "role": "Rà soát DB/schema/WASM và đường dẫn ghi AppData, persist ghi chú/tệp; cài đè đã giữ fixture nhưng vẫn cần DB cũ/backup/restore đúng phạm vi nghiệm thu."
+    },
+    {
+      "number": 28,
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/28",
+      "assignees": [
+        "kieudu-dlst"
+      ],
+      "state": "open",
+      "milestone": 3,
+      "beforeSha256": "dfb6ce9b4a01545204cab541ebff0a24733a73bc9759d15650264190db9c3514",
+      "afterSha256": "93127ae57f60b95b8f209ba714ec8ee41ee20d870739a8105ae483ad4738c0d2",
+      "role": "Rà soát frontend production không mock, logo nhúng executable/sidebar và shortcut; dữ liệu canvas/localStorage giữ origin giữa lần mở. UI/thiết bị còn mở vẫn cần nghiệm thu riêng."
+    }
+  ],
+  "milestonesChanged": false,
+  "deadlinesChanged": false,
+  "issuesClosed": false
+}

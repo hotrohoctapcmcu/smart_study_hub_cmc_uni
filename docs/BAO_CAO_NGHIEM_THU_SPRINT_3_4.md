@@ -300,6 +300,8 @@ Phạm vi riêng tại commit 1d7ada6, nguồn E16:
 
 Nguồn E17 ghi riêng lượt đóng gói: kiểm tra runtime/đường dẫn, API/AI/Electron/React và HTTP tích hợp; đọc tài nguyên trong ASAR; chạy executable thật với profile thử, không có Node.js trong PATH của app. Kiểm tra giao diện/logo, backend, DB mới rỗng và ghi chú/tài liệu/localStorage qua ba lần mở; bản Setup còn được cài đè để kiểm tra giữ dữ liệu. Số ca/kết quả và SHA-256 cụ thể nằm trong [windows-release.json](evidence/windows-release.json).
 
+Kết quả executable: **bản thư mục 13/13**, **Portable 13/13**, **Setup 15/15**. Release công khai lúc **11:54:12 ngày 05/11/2026, UTC+7**, tag v1.0.0 trỏ tới [cd4c68a](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/commit/cd4c68a6032ebfd7d4a82c08886defa6c4689516). Đã đối chiếu SHA-256/kích thước trên GitHub và link tải công khai HTTP 200; kèm file checksum/hướng dẫn. Đã bổ sung phần nhận bàn giao đóng gói vào issue #24–#28, giữ nguyên assignee, trạng thái, milestone và deadline. Bằng chứng xuất bản/đọc lại issue: E18.
+
 Đã xem ảnh lần mở đầu của executable. Chỉ có dữ liệu tổng hợp trong profile thử, không chạy lại Gemini hoặc nguồn trường thật. Đây là kiểm chứng trên máy Windows hiện tại; chưa có biên bản máy ảo sạch không cài Node.js hoặc cài toàn máy trong Program Files. Các ô ký nghiệm thu vẫn để người nhận xác nhận.
 
 ## 8. Danh mục bằng chứng dùng để nghiệm thu
@@ -323,6 +325,7 @@ Nguồn E17 ghi riêng lượt đóng gói: kiểm tra runtime/đường dẫn, 
 | E15 | [github-milestone-counters.json](evidence/github-milestone-counters.json) | 05/11: sửa bộ đếm bằng gắn lại metadata; giữ trạng thái và ngày đóng issue. |
 | E16 | [app-branding.json](evidence/app-branding.json), [hồ sơ PNG/ICO và prompt](../assets/branding/README.md) | 05/11: logo do imagegen hỗ trợ, tích hợp Electron/sidebar/favicon; 31 test Electron, 37 routes, 8 smoke riêng và build 33,66 giây. Phạm vi và nguồn đóng góp ở mục 5.1/7.4. |
 | E17 | [windows-release.json](evidence/windows-release.json), [hướng dẫn Windows](WINDOWS_RELEASE.md) | 05/11: bộ cài/Portable 1.0.0, kiểm tra ASAR/tài nguyên, executable và giữ dữ liệu qua khởi động/cài đè trên máy hiện tại. Kết quả không thay nghiệm thu máy sạch, nguồn trường, AI hoặc thiết bị. |
+| E18 | [github-windows-release.json](evidence/github-windows-release.json) | 05/11, 11:54:12 UTC+7: Release v1.0.0 công khai, tag đúng commit build, bốn asset có digest/kích thước và link công khai; đồng bộ phần đóng gói vào issue #24–#28, giữ nguyên người/trạng thái/milestone/deadline. |
 
 Ảnh/video/log bổ sung thường nằm trong thư mục tests/artifacts, được gitignore. Người bàn giao cần cung cấp bản sao artifact được chọn nếu hội đồng/người nhận cần kiểm chứng lại; các tệp local này không được mặc nhiên coi là có sẵn trong một clone GitHub mới. Không đưa cookie, mật khẩu, token hoặc response hồ sơ thô vào hồ sơ nghiệm thu.
 
