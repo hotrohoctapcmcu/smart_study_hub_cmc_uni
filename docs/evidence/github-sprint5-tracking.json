@@ -1,0 +1,115 @@
+{
+  "date": "2026-11-07",
+  "checkedAt": "2026-11-07T15:01:12.764Z",
+  "timezone": "Asia/Saigon",
+  "repository": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni",
+  "sourceCommit": "91ec7cdcfd784ad53c85a0cd9119ba9571cc94ce",
+  "issueGrouping": "5 issues for 5 members; six technical backlog items remain grouped by responsibility",
+  "milestone": {
+    "number": 5,
+    "title": "Sprint 5",
+    "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/5",
+    "state": "open",
+    "startDate": "2026-11-06",
+    "endDate": "2026-11-12",
+    "dueOnUtc": "2026-11-12T00:00:00Z",
+    "openIssues": 5,
+    "closedIssues": 0
+  },
+  "deadlineVietnam": "12/11/2026 23:59:59 +07:00",
+  "deadlineNote": "GitHub stores the milestone due date; the issue bodies and milestone description record the Vietnam end-of-day deadline.",
+  "issues": [
+    {
+      "number": 29,
+      "title": "[Sprint 5] Văn Tuấn – Runtime desktop và phát hành Windows 1.1.0",
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/29",
+      "assignees": [
+        "vtishan"
+      ],
+      "state": "open",
+      "milestone": 5,
+      "labels": [
+        "documentation",
+        "enhancement",
+        "integration"
+      ],
+      "bodySha256": "76a9e5354d31936ce756ded00f21f339469cbdee67b88505743178385293bf94",
+      "completedChecklistItems": 3,
+      "pendingChecklistItems": 2
+    },
+    {
+      "number": 30,
+      "title": "[Sprint 5] Anh Tuấn – Nguồn IU và dữ liệu lịch học kỳ",
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/30",
+      "assignees": [
+        "AnhTuancode-25"
+      ],
+      "state": "open",
+      "milestone": 5,
+      "labels": [
+        "enhancement",
+        "integration"
+      ],
+      "bodySha256": "59e823093ad3ccab4c8f3e67365ead83372c82c5159c650ff96d04e49fc771fd",
+      "completedChecklistItems": 3,
+      "pendingChecklistItems": 2
+    },
+    {
+      "number": 31,
+      "title": "[Sprint 5] Long Nhật – Nghiệp vụ, IPC xóa dữ liệu và chuyển lưu trữ",
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/31",
+      "assignees": [
+        "longnhatdinhviet8-byte"
+      ],
+      "state": "open",
+      "milestone": 5,
+      "labels": [
+        "enhancement",
+        "backend",
+        "integration"
+      ],
+      "bodySha256": "47b894e9ed3351af2ff0c1cec9203a4223bf60c1ca45a2ef8de6f40e4977a273",
+      "completedChecklistItems": 4,
+      "pendingChecklistItems": 2
+    },
+    {
+      "number": 32,
+      "title": "[Sprint 5] Hồng Thắm – Xóa dữ liệu an toàn và giữ lịch sử học kỳ",
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/32",
+      "assignees": [
+        "Tham2007"
+      ],
+      "state": "open",
+      "milestone": 5,
+      "labels": [
+        "enhancement",
+        "database"
+      ],
+      "bodySha256": "dfc85f370507f01f1af14b54ad1d90a3eec1148aa714f908b35e95afc9917be5",
+      "completedChecklistItems": 4,
+      "pendingChecklistItems": 2
+    },
+    {
+      "number": 33,
+      "title": "[Sprint 5] Huyền Trang – Giao diện quản lý dữ liệu và trạng thái học kỳ",
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/33",
+      "assignees": [
+        "kieudu-dlst"
+      ],
+      "state": "open",
+      "milestone": 5,
+      "labels": [
+        "accessibility",
+        "enhancement",
+        "frontend"
+      ],
+      "bodySha256": "2e4f21314b9dcdf3b03698b320a001635a3898b96a8a1a29fa22429e490650ec",
+      "completedChecklistItems": 5,
+      "pendingChecklistItems": 2
+    }
+  ],
+  "existingIssuesPreserved": 27,
+  "existingMilestonesPreserved": 4,
+  "readbackVerified": true,
+  "note": "Issues remain open for member review and acceptance; published checks are scoped to the recorded local/packaged tests."
+}

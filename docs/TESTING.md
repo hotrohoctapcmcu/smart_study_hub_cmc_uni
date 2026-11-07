@@ -467,3 +467,11 @@ Lượt Portable đầu phát hiện việc mở lại qua executable đã giả
 Archive Setup và payload bên trong đều qua kiểm tra toàn vẹn; `SmartStudyHub.exe` và `resources/app.asar` trùng SHA-256 với bản thư mục đã chạy thử. Đối chiếu 13 tệp mã/tài nguyên chính trong ASAR khớp nguồn hiện tại, có SQL/WASM và không có `.env`, cookie hoặc DB/dữ liệu cá nhân. Bản 1.1.0 chưa thực thi trình cài, thử cài/nâng cấp trên máy sạch hoặc chạy lại IU/EDUX/Outlook/AI thật; chưa ký code signing. Việc bỏ Node.js khỏi PATH của app không thay cho kiểm tra trên máy chưa cài Node.js.
 
 Log và báo cáo local nằm tại `tests/artifacts/sprint5-windows-build.log`, `sprint5-unpacked-smoke.log`, `sprint5-portable-smoke.log` và `tests/artifacts/release/v1.1.0/`; các tệp này được gitignore. Bằng chứng đóng gói và SHA-256 được lưu tại [windows-release-v1.1.0.json](evidence/windows-release-v1.1.0.json).
+
+## Theo dõi Sprint 5 trên GitHub — 07/11/2026
+
+Đã tạo [Milestone Sprint 5](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/5), thời gian 06/11–12/11/2026, và **5 Issues #29–#33 cho 5 thành viên**. Sáu hạng mục S5-01–S5-06 được gộp theo vai trò trong [bảng phân công](SPRINT_5.md#5-phân-công-và-theo-dõi-trên-github); mỗi Issue gồm cả kiểm thử và bàn giao của người phụ trách.
+
+Đọc lại REST xác nhận đúng năm Issue, mỗi Issue gán một người khác nhau, cùng Milestone 5, có đầy đủ nội dung/checklist/nhãn và trạng thái mở. Bộ đếm Milestone là **5 mở / 0 đóng**, hạn ngày **12/11/2026**; deadline cuối ngày **23:59:59 UTC+7** được ghi trong mô tả và từng Issue. Đối chiếu snapshot xác nhận 27 Issue và 4 Milestone có trước không đổi nội dung, trạng thái, phân công hoặc hạn. Biên bản: [github-sprint5-tracking.json](evidence/github-sprint5-tracking.json).
+
+Đây là cập nhật theo dõi công việc và tài liệu; không chạy lại bộ kiểm thử ứng dụng, không thay kết quả lịch sử hoặc đóng các mục chưa nghiệm thu. Mã bản phát hành vẫn là commit `91ec7cd`, tag `v1.1.0`.

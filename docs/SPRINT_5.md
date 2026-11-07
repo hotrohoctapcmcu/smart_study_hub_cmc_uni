@@ -1,8 +1,8 @@
 # Sprint 5 — Hoàn thiện ứng dụng desktop và vòng đời dữ liệu học tập
 
-**Ngày cập nhật: 07/11/2026 — Asia/Saigon (UTC+7).** Báo cáo tổng hợp những thay đổi đã triển khai và kiểm tra trên bản mã cục bộ sau [Sprint 4](SPRINT_4.md).
+**Ngày cập nhật: 07/11/2026 — Asia/Saigon (UTC+7).** Báo cáo tổng hợp những thay đổi đã triển khai, kiểm tra và push tại commit `91ec7cd` sau [Sprint 4](SPRINT_4.md).
 
-**Khung kế hoạch đề xuất:** 06/11–12/11/2026, tiếp nối nhịp sprint hằng tuần; báo cáo dự kiến thứ Năm 12/11/2026. Kết quả dưới đây là tiến độ đến ngày 07/11, chưa phải biên bản kết thúc sprint.
+**Lịch Sprint 5:** 06/11–12/11/2026, tiếp nối nhịp sprint hằng tuần; báo cáo dự kiến thứ Năm 12/11/2026. [Milestone Sprint 5](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/5) có hạn 12/11; deadline cuối ngày 23:59:59 (UTC+7), chưa ấn định giờ họp. Kết quả dưới đây là tiến độ đến ngày 07/11, chưa phải biên bản kết thúc sprint.
 
 ## 1. Bối cảnh và lý do thực hiện
 
@@ -45,6 +45,8 @@ Vì vậy, Sprint 5 tập trung vào **hoàn thiện cách vận hành desktop v
 | S5-04 | PB-55 | Giữ bản lưu khi IU chưa cung cấp lịch | Đã xử lý lịch rỗng, lỗi và dữ liệu không hợp lệ; lưu trạng thái lần thử/lần thành công và cho thử lại sau thất bại. |
 | S5-05 | PB-56 | Chuyển và bảo vệ dữ liệu cục bộ | Đã chuyển canvas/nháp từ origin cũ; giữ giá trị mới; xử lý xóa để nội dung cũ không được nhập lại. |
 | S5-06 | PB-57 | Hồi quy và hướng dẫn bàn giao | Build production và các nhóm kiểm tra đã đạt; có kiểm tra Electron thật, Setup/Portable 1.1.0 và biên bản đóng gói cục bộ. Máy sạch, cài/nâng cấp và nguồn trường thật tiếp tục nghiệm thu. |
+
+S5-01–S5-06 là sáu hạng mục kỹ thuật. Công việc được gộp thành **5 Issues cho 5 thành viên**, theo bảng phân công ở mục 5; kiểm thử và bàn giao nằm trong Issue của từng người.
 
 ### S5-01. Chuyển desktop sang xử lý trong tiến trình Electron
 
@@ -128,17 +130,19 @@ Khi bản chạy mã nguồn chuyển từ `http://localhost:8080` sang `studyhu
 
 Lượt chuyển và lượt xóa có marker riêng. Nếu người dùng đã chọn xóa ghi chú/canvas, dữ liệu tương ứng ở origin cũ cũng được xử lý để lần mở sau không nhập trở lại. Những nhóm không được chọn tiếp tục tồn tại.
 
-## 5. Phân công rà soát và nghiệm thu đề xuất
+## 5. Phân công và theo dõi trên GitHub
 
-Bảng kế thừa vai trò của năm thành viên trong Sprint 4, dùng làm kế hoạch rà soát/bàn giao Sprint 5. Kết quả triển khai được đối chiếu bằng mã và kiểm thử bên dưới.
+Bảng kế thừa vai trò của năm thành viên trong Sprint 4. Mỗi người có đúng một Issue, đã gán tài khoản phụ trách và gắn [Milestone Sprint 5](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/5). Đây là trách nhiệm rà soát/bàn giao; kết quả triển khai được đối chiếu bằng mã và kiểm thử bên dưới.
 
-| Thành viên | Trọng tâm rà soát/bàn giao Sprint 5 |
-| --- | --- |
-| Văn Tuấn — `vtishan` | Runtime Electron, custom protocol, transport nội bộ, tích hợp và điều phối kiểm chứng. |
-| Anh Tuấn — `AnhTuancode-25` | Dữ liệu IU theo kỳ/phạm vi, dữ liệu rỗng/lỗi, hết phiên và đối soát nguồn trường. |
-| Long Nhật — `longnhatdinhviet8-byte` | Khởi tạo nghiệp vụ, trạng thái đồng bộ, retry, IPC và quy trình yêu cầu xóa/khởi động lại. |
-| Hồng Thắm — `Tham2007` | Transaction, khóa ngoại, xóa theo nhóm, giữ lịch sử, đối chiếu phạm vi và chống trùng. |
-| Huyền Trang — `kieudu-dlst` | Cài đặt/Dữ liệu, chọn nhóm, xác nhận xóa, trạng thái học kỳ, điều hướng và kiểm tra giao diện. |
+| Thành viên | Issue | Trọng tâm rà soát/bàn giao Sprint 5 |
+| --- | --- | --- |
+| Văn Tuấn — `vtishan` | [#29](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/29) | Runtime Electron, custom protocol, transport nội bộ, tích hợp, Windows 1.1.0 và tổng hợp bàn giao. |
+| Anh Tuấn — `AnhTuancode-25` | [#30](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/30) | Dữ liệu IU theo kỳ/phạm vi, dữ liệu rỗng/lỗi, hết phiên và đối soát nguồn trường. |
+| Long Nhật — `longnhatdinhviet8-byte` | [#31](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/31) | Khởi tạo nghiệp vụ, trạng thái đồng bộ, retry, IPC, xóa/khởi động lại và chuyển lưu trữ origin. |
+| Hồng Thắm — `Tham2007` | [#32](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/32) | Transaction, khóa ngoại, xóa theo nhóm, giữ lịch sử, đối chiếu phạm vi và chống trùng. |
+| Huyền Trang — `kieudu-dlst` | [#33](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/33) | Cài đặt/Dữ liệu, chọn nhóm, xác nhận xóa, trạng thái học kỳ, điều hướng và kiểm tra giao diện. |
+
+Mỗi Issue có phạm vi, mã/bằng chứng, checklist phần đã kiểm tra và phần còn nghiệm thu. Các Issue tiếp tục mở để thành viên rà soát và người nhận xác nhận. Đọc lại GitHub ngày 07/11 xác nhận **5 Issue mở / 0 đóng**, đúng năm người; 27 Issue và 4 Milestone cũ được giữ nguyên. Biên bản: [github-sprint5-tracking.json](evidence/github-sprint5-tracking.json).
 
 ## 6. Mã và tài liệu bàn giao
 
