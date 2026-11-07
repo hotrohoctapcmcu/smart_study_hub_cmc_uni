@@ -21,6 +21,17 @@
 
 const { contextBridge, ipcRenderer } = require("electron");
 
+contextBridge.exposeInMainWorld('__SSH_RUNTIME__', {
+    desktop: true,
+    apiBaseUrl: 'studyhub://app/api/v1',
+    backendOrigin: 'studyhub://app'
+});
+
+contextBridge.exposeInMainWorld('__uniStudyData', {
+    catalog: () => ipcRenderer.invoke('data:catalog'),
+    reset: options => ipcRenderer.invoke('data:reset', options)
+});
+
 function subscribeConnectionProgress(callback) {
     if (typeof callback !== 'function') return () => {};
     const listener = (_event, snapshot) => callback(snapshot);

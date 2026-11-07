@@ -130,21 +130,22 @@ function mapSangDataIU(schema) {
         };
     }
 
-    const tkb = ((iu.lich_hoc && iu.lich_hoc.chi_tiet_thoi_khoa_bieu) || []).map((t) => ({
-        ma_mon: s(t.ma_mon),
-        ten_mon: s(t.ten_mon).replace(/\s+/g, '_'),
-        ten_lop: s(t.hinh_thuc) || 'Lớp học phần',
-        phong: s(t.phong),
+    const rawTimetable = Array.isArray(iu.lich_hoc?.chi_tiet_thoi_khoa_bieu) ? iu.lich_hoc.chi_tiet_thoi_khoa_bieu : [];
+    const tkb = rawTimetable.map((t) => ({
+        ma_mon: s(t?.ma_mon),
+        ten_mon: s(t?.ten_mon).replace(/\s+/g, '_'),
+        ten_lop: s(t?.hinh_thuc) || 'Lớp học phần',
+        phong: s(t?.phong),
         co_so: 'Cơ sở chính',
         // Portal IU không trả THU cho từng buổi — suy ra từ NGAYHOC.
-        thu: thuToDayOfWeek(t.thu) || thuTuNgay(t.ngay) || 2,
-        gio_bat_dau: s(t.thoi_gian_bat_dau) || '07:30',
-        gio_ket_thuc: s(t.thoi_gian_ket_thuc) || '09:30',
-        ngay_bat_dau: toDMY(t.ngay),
-        ngay_ket_thuc: toDMY(t.ngay),
-        giang_vien: s(t.giang_vien),
-        hoc_ky: s(t.hoc_ky),
-        nam_hoc: s(t.nam_hoc)
+        thu: thuToDayOfWeek(t?.thu) || thuTuNgay(t?.ngay),
+        gio_bat_dau: s(t?.thoi_gian_bat_dau),
+        gio_ket_thuc: s(t?.thoi_gian_ket_thuc),
+        ngay_bat_dau: toDMY(t?.ngay),
+        ngay_ket_thuc: toDMY(t?.ngay),
+        giang_vien: s(t?.giang_vien),
+        hoc_ky: s(t?.hoc_ky),
+        nam_hoc: s(t?.nam_hoc)
     }));
 
     const lich_thi = ((iu.lich_thi && iu.lich_thi.chi_tiet_lich_thi) || []).map((t) => {

@@ -9,6 +9,7 @@ if (!electron?.app || !electron?.BrowserWindow) {
 
 const { app, BrowserWindow, shell } = electron;
 const path = require("path");
+const { APP_ORIGIN, isAppUrl } = require('./app-origin');
 const APP_ID = "vn.cmcu.smartstudyhub";
 const APP_TITLE = "Smart Study Hub - CMC University";
 const APP_ICON = path.join(app.isPackaged ? process.resourcesPath : path.join(__dirname, "..", "assets"), "branding",
@@ -17,15 +18,14 @@ const APP_ICON = path.join(app.isPackaged ? process.resourcesPath : path.join(__
 if (process.platform === "win32") app.setAppUserModelId(APP_ID);
 
 if (app.isPackaged) require("./runtime").configurePackagedRuntime(app);
-if (app.isPackaged) {
-    electron.protocol.registerSchemesAsPrivileged([{
-        scheme: 'studyhub', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true }
-    }]);
-}
+electron.protocol.registerSchemesAsPrivileged([{
+    scheme: 'studyhub', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true }
+}]);
 
-let FE_URL = "http://localhost:8080";
-let APP_URL = FE_URL;
-let servers = null;
+const APP_URL = APP_ORIGIN + '/';
+let runtime = null;
+let starting = true;
+let pendingReset = null;
 const RETRY_DELAY = 800;
 const MAX_ATTEMPTS = 40;
 
@@ -55,7 +55,7 @@ function loadApp() {
 
     mainWindow.loadURL(APP_URL).catch(() => {
         if (attempts++ >= MAX_ATTEMPTS) {
-            console.error(`Không thể tải ${FE_URL}`);
+            console.error(`Không thể tải ${APP_URL}`);
             return;
         }
 
@@ -105,15 +105,24 @@ function createWindow() {
         if (isMainFrame !== false) loadApp();
     });
 
-    mainWindow.webContents.on("did-finish-load", () => {
+    mainWindow.webContents.on("did-finish-load", async () => {
         attempts = 0;
         clearTimeout(timer);
         // Ép lại 100% sau mỗi lần tải/nạp lại trang
         lockZoom(mainWindow);
+        if (pendingReset) {
+            try {
+                const id = await mainWindow.webContents.executeJavaScript("localStorage.getItem('__studyhub_last_reset__')");
+                if (id === pendingReset.id) {
+                    require('./data-management').completeReset(app, id);
+                    pendingReset = null;
+                }
+            } catch (error) { console.error('[Data reset]', error.message); }
+        }
     });
 
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-        if (url.startsWith(APP_URL)) return { action: "allow" };
+        if (isAppUrl(url)) return { action: "allow" };
         shell.openExternal(url).catch(() => { });
         return { action: "deny" };
     });
@@ -127,27 +136,19 @@ function createWindow() {
 }
 
 async function startApplication() {
-    servers = require("../index");
-    const addresses = await servers.ready;
-    if (addresses) {
-        FE_URL = addresses.frontendUrl;
-        process.env.API_BASE = addresses.apiUrl;
-    }
-    APP_URL = FE_URL;
-    if (app.isPackaged) {
-        // Stable origin preserves canvas, drafts and preferences across launches,
-        // while the embedded HTTP servers can safely choose unused local ports.
-        electron.protocol.handle('studyhub', request => {
-            const target = new URL(request.url);
-            if (target.hostname !== 'app' || !['GET', 'HEAD'].includes(request.method)) return new Response('Not found', { status: 404 });
-            return electron.net.fetch(FE_URL + target.pathname + target.search, { method: request.method });
-        });
-        APP_URL = 'studyhub://app/';
-    }
-    require("./bridges/iu").registerIuBridge();
+    pendingReset = await require('./data-management').applyPendingReset(electron);
+    const legacyStorage = await require('./storage-migration').readLegacyStorage(electron, {
+        resetScript: pendingReset ? require('./data-management').resetStorageScript(pendingReset) : null
+    });
+    runtime = await require('./desktop').createDesktopRuntime({ legacyStorage, pendingReset });
+    electron.protocol.handle('studyhub', runtime.handle);
+    const transport = { fetchImpl: runtime.fetch, apiBase: APP_ORIGIN };
+    require("./bridges/iu").registerIuBridge(transport);
     require("./bridges/outlook").registerOutlookBridge();
-    require("./bridges/sync").registerSyncBridge();
+    require("./bridges/sync").registerSyncBridge(transport);
+    require('./data-management').registerDataBridge({ electron });
     createWindow();
+    starting = false;
 }
 
 const primary = !app.isPackaged || app.requestSingleInstanceLock();
@@ -165,8 +166,8 @@ if (!primary) {
         mainWindow.show(); mainWindow.focus();
     });
 }
-app.on('before-quit', () => servers?.close?.());
-app.on("window-all-closed", () => app.quit());
+app.on('before-quit', () => runtime?.close());
+app.on("window-all-closed", () => { if (!starting) app.quit(); });
 app.on("activate", () => {
-    if (!BrowserWindow.getAllWindows().length) createWindow();
+    if (!starting && runtime && !BrowserWindow.getAllWindows().length) createWindow();
 });

@@ -26,6 +26,7 @@ let EDUX_ORIGIN;
 const testDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'unistudy-edux-api-'));
 process.env.DB_PATH = path.join(testDirectory, 'test.db');
 process.env.DOCUMENTS_PATH = path.join(testDirectory, 'documents');
+process.env.EDUX_ACCOUNTS_PATH = path.join(testDirectory, 'edux-accounts');
 process.env.API_PORT = '0';
 process.env.APP_USER_ID = '1';
 

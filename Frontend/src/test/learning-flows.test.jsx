@@ -41,11 +41,14 @@ describe("Learning flows", () => {
   });
 
   it("keeps the active Pomodoro deadline and focus segments after leaving the page", async () => {
+    const now = new Date('2026-11-07T00:00:00+07:00');
+    vi.setSystemTime(now);
     const spy = vi.fn(adapter);
     apiClient.defaults.adapter = spy;
     const page = mount(PomodoroTimer);
     await waitFor(() => expect(screen.queryAllByRole("status")).toHaveLength(0));
     vi.useFakeTimers();
+    vi.setSystemTime(now);
     fireEvent.click(screen.getByRole("button", { name: "Bắt đầu" }));
     await act(async () => { vi.advanceTimersByTime(2000); });
     page.unmount();

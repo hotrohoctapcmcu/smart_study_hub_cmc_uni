@@ -214,11 +214,11 @@ test('IPC rejects untrusted origins, continues after missing EDUX credentials an
         outlook: { status: () => ({ connected: false }), connect: async () => { outlookCalls++; return { cookie: 'SECRET' }; } }
     });
     const invoke = handlers.get('sync:connect-all');
-    for (const url of ['https://evil.example:8080', 'http://localhost:8081', 'file:///app', 'https://localhost:8080']) {
+    for (const url of ['https://evil.example:8080', 'http://localhost:8080', 'file:///app', 'studyhub://evil/sync', 'studyhub://app:8080/sync', 'studyhub://evil@app/sync']) {
         assert.throws(() => invoke({ senderFrame: { url } }), /không hợp lệ/);
     }
     assert.equal(iuCalls, 0);
-    const result = await invoke({ senderFrame: { url: 'http://localhost:8080/sync' } });
+    const result = await invoke({ senderFrame: { url: 'studyhub://app/sync' } });
     assert.equal(result.results.edux.code, 'credentials_required');
     assert.equal(result.results.iu.ok, true);
     assert.equal(result.results.outlook.ok, true);
@@ -256,7 +256,7 @@ test('IPC registers EDUX session only when needed and skips all existing connect
         outlook: { status: () => ({ connected: true }), connect: () => { throw new Error('unexpected'); } }
     });
     const invoke = handlers.get('sync:connect-all');
-    const event = { senderFrame: { url: 'http://127.0.0.1:8080/sync' } };
+    const event = { senderFrame: { url: 'studyhub://app/sync' } };
     const result = await invoke(event, { edux: { email: ' student@example.test ', password: 'SECRET' } });
     assert.equal(result.ok, true);
     const post = requests.find(request => request.options.method === 'POST');
@@ -277,7 +277,7 @@ test('IPC delivers connection progress only to its invoking frame and forwards n
         connectIU: async ({ signal }) => { iuSignal = signal; return { cookie: 'SECRET' }; },
         outlook: { status: () => ({ connected: false }), connect: async ({ signal }) => { outlookSignal = signal; return { accessToken: 'SECRET' }; } }
     });
-    const event = { senderFrame: { url: 'http://localhost:8080/sync', send: (channel, state) => sent.push({ channel, state }) } };
+    const event = { senderFrame: { url: 'studyhub://app/sync', send: (channel, state) => sent.push({ channel, state }) } };
     await handlers.get('sync:connect-all')(event);
     assert.equal(iuSignal instanceof AbortSignal, true);
     assert.equal(outlookSignal instanceof AbortSignal, true);

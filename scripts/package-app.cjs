@@ -5,7 +5,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 const release = path.join(root, 'release');
-const stage = path.join(release, '.build');
+const stage = path.join(release, '.build', require('../package.json').version);
 fs.mkdirSync(stage, { recursive: true });
 
 function run(args, cwd, extraEnv = {}) {

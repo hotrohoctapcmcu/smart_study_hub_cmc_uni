@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from 'react-router-dom';
 import {
   Database,
   Cloud,
@@ -38,6 +39,7 @@ const resultLabel = (item) => item?.status === "CHECKING" ? "Đang kiểm tra ph
       : item?.status === "UNKNOWN" ? "Chưa xác nhận kết quả"
         : item?.ok ? "Đã đồng bộ" : item?.partial && item?.synced ? "Đã đồng bộ một phần" : "Chưa đồng bộ";
 export default function Sync() {
+  const desktop = globalThis.__SSH_RUNTIME__?.desktop;
   const sources = useApi(syncApi.getSources),
     iu = useApi(syncApi.iu.status),
     edux = useApi(syncApi.edux.status),
@@ -148,6 +150,7 @@ export default function Sync() {
         title="Đồng bộ dữ liệu"
         description="Một lần bấm để kết nối và đồng bộ IU, EDUX, Outlook."
       >
+        <Link className="btn btn-outline" to="/settings?section=data">Xóa dữ liệu</Link>
         <Button
           variant="outline"
           disabled={actionBusy}
@@ -169,6 +172,13 @@ export default function Sync() {
         </Button>
       </PageHeader>
       {actionBusy && <p role="status">Đang kết nối và đồng bộ. Hoàn tất đăng nhập Microsoft nếu có yêu cầu.</p>}
+      <Card title="Thời khóa biểu & học kỳ">
+        <p>Lịch các học kỳ cũ được giữ để xem lại. Lịch mới cập nhật riêng; lỗi kết nối, lịch rỗng hoặc dữ liệu không hợp lệ sẽ giữ bản đã lưu.</p>
+        {courses.data?.timetableSync && <p role="status">{courses.data.timetableSync.message}
+          {courses.data.timetableSync.historyCount > 0 ? ` Có ${courses.data.timetableSync.historyCount} lịch đã qua trong lịch sử.` : ''}
+        </p>}
+        <Link to="/schedule">Xem thời khóa biểu và lịch cũ</Link>
+      </Card>
       {allResults && (
         <Card title="Kết quả đồng bộ cả 3">
           {allJob?.progress && <>
@@ -185,7 +195,7 @@ export default function Sync() {
         <div className="filter-bar">
           <div className="actions">
             <HeartPulse size={18} />
-            <strong>Trạng thái máy chủ</strong>
+            <strong>{desktop ? 'Trạng thái ứng dụng' : 'Trạng thái máy chủ'}</strong>
           </div>
           <Badge
             variant={
@@ -193,10 +203,10 @@ export default function Sync() {
             }
             label={
               health.error
-                ? "Backend offline"
+                ? (desktop ? 'Không đọc được dữ liệu' : 'Backend offline')
                 : health.loading
                   ? "Đang kiểm tra..."
-                  : "Backend online"
+                  : (desktop ? 'Sẵn sàng' : 'Backend online')
             }
           />
           <Button variant="ghost" size="sm" onClick={health.refetch}>
@@ -205,7 +215,7 @@ export default function Sync() {
         </div>
         {health.error && (
           <p className="hint">
-            Kiểm tra backend tại địa chỉ đã cấu hình trong VITE_API_URL.
+            {desktop ? 'Hãy thử lại hoặc mở lại ứng dụng.' : 'Kiểm tra backend tại địa chỉ đã cấu hình trong VITE_API_URL.'}
           </p>
         )}
       </Card>

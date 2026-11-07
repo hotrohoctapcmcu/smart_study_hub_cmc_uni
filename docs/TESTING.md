@@ -1,6 +1,6 @@
 # Kiểm thử và bằng chứng
 
-Tài liệu gồm kết quả lịch sử đến **30/10/2026** và [lượt xác minh bàn giao Sprint 4 ngày 02/11/2026](#xác-minh-bản-bàn-giao-sprint-4--02112026) (Asia/Saigon). Mỗi số liệu gắn với phạm vi và phiên bản tại thời điểm chạy; không cộng các bộ có giao nhau và không suy ra mọi dịch vụ ngoài đã được nghiệm thu.
+Tài liệu giữ kết quả lịch sử và các lượt xác minh Sprint 4; kết quả mới về desktop và quản lý dữ liệu nằm tại [Sprint 5 ngày 07/11/2026](#sprint-5--desktop-và-vòng-đời-dữ-liệu--07112026) (Asia/Saigon). Mỗi số liệu gắn với phạm vi và phiên bản tại thời điểm chạy; không cộng các bộ có giao nhau và không suy ra mọi dịch vụ ngoài đã được nghiệm thu.
 
 **Dọn log ngày 04/11/2026:** đã đối chiếu kết quả trước khi chuyển 43 log kiểm thử vào `tests/artifacts/logs/2026-11-04/` (`root/` chứa 35 log cũ ở gốc, `artifacts/` chứa 8 log cũ trong thư mục artifact). Các tên `.log` ở phần lịch sử bên dưới giữ nguyên để nhận diện lượt chạy; vị trí mới tra trong [log-cleanup.json](evidence/log-cleanup.json). Báo cáo JSON/ảnh được giữ, không chạy lại test trong lượt sắp xếp file. Báo cáo chốt tại [SPRINT_4.md](SPRINT_4.md#chốt-báo-cáo-học-tập-và-dọn-log--04112026). Log mới nên ghi vào `tests/artifacts/logs/` thay vì thư mục gốc.
 
@@ -13,6 +13,8 @@ Chạy từ thư mục gốc, sau khi cài dependency ở gốc và trong `Front
 | `npm run test:api` | Hợp đồng route, database, smoke/regression HTTP, AI/EDUX giả lập và nghiệp vụ học tập |
 | `npm run test:database` | Module database, migration và lưu trữ |
 | `npm run test:electron` | Entry Electron, preload, bridge IPC, khôi phục phiên, timeout đăng nhập và chuyển tham số đồng bộ; dùng mock và dữ liệu thử riêng |
+| `npm run test:desktop` | Giao tiếp trong bộ nhớ, tải build, SQLite, upload/download/range, origin và khởi động Electron thật; chặn mọi lệnh mở cổng/TCP trong lượt thử |
+| `npm run test:data-management` | Xóa từng loại trên SQLite/thư mục tạm, giữ nội dung không chọn, kiểm tra khóa ngoại; lịch sử học kỳ, lịch rỗng/lỗi, phạm vi ngày và chống trùng |
 | `npm run test:ai` | Ngữ cảnh, Unicode, job tóm tắt, retry/cancel, kế hoạch, quiz và học liệu |
 | `npm run test:course-learning` | Môn hiện tại, ảnh/tài khoản EDUX, toàn bộ nguồn, tóm tắt, flashcard, refresh và khôi phục IU |
 | `npm run test:learning-apis` | Lịch tự học, lịch thi, Time Map, Progress, thông báo và task/checklist |
@@ -427,3 +429,41 @@ Smoke dùng profile tổng hợp riêng và PATH của app chỉ chứa thư m�
 Chưa chạy máy ảo sạch không cài Node.js, Program Files/cài toàn máy, Windows 10/ARM64 hoặc các hệ điều hành khác. Không chạy lại nguồn trường/Gemini thật hay nghiệm thu thiết bị trong lượt này. Chưa có chứng thư ký số. Artifact tại `tests/artifacts/release/` là tệp local được gitignore; bằng chứng gọn và hash: [windows-release.json](evidence/windows-release.json), [hướng dẫn và link tải](WINDOWS_RELEASE.md). Không cộng số ca giữa các nhóm có giao nhau và không tự đóng issue/milestone bằng kết quả đóng gói.
 
 Release v1.0.0 đã xuất bản công khai lúc **11:54:12 ngày 05/11/2026 UTC+7**, tag trỏ commit **cd4c68a**. Đọc lại GitHub xác nhận digest/kích thước asset khớp bản đã kiểm tra; HEAD không xác thực vào cả bốn link tải đều HTTP 200, đúng độ dài. Bản thư mục/Portable đạt **13/13 mỗi bản**; Setup đạt **15/15**. Đã cập nhật phần đóng gói theo vai trò trong issue #24–#28 và xác minh metadata người/trạng thái/milestone giữ nguyên; không đổi deadline. Biên bản: [github-windows-release.json](evidence/github-windows-release.json).
+
+## Sprint 5 — Desktop và vòng đời dữ liệu — 07/11/2026
+
+Kết quả của đợt triển khai desktop không mở cổng localhost, xóa dữ liệu theo lựa chọn và giữ lịch sử thời khóa biểu. Nội dung được tổng hợp trong [SPRINT_5.md](SPRINT_5.md). Lượt viết báo cáo chỉ đối chiếu kết quả đã chạy và log cục bộ; các số liệu Sprint 4 ở trên được giữ nguyên.
+
+| Nhóm kiểm tra | Kết quả đã ghi nhận | Phạm vi |
+| --- | --- | --- |
+| Frontend, `--maxWorkers=1` | **457/457 đạt, 51 file** | Giao diện/hợp đồng kế thừa và hai ca mới cho chọn phạm vi, xác nhận, hủy và lỗi khi yêu cầu xóa. |
+| `npm run test:api` | **152/152 đạt** | API/nghiệp vụ/SQLite tạm và provider giả lập. |
+| `npm run test:electron` | **31/31 đạt** | Entry, preload/IPC, kiểm tra nguồn gọi, restore và timeout/đồng bộ giả lập. |
+| Xóa dữ liệu và lịch sử học kỳ | **2/2 đạt** | `tests/data-management.cjs`, `tests/timetable-history.cjs`; kiểm tra khóa ngoại, tệp, nhóm không chọn, phạm vi và dữ liệu lỗi/rỗng. |
+| Electron thật và entry | **2/2 đạt** | `tests/desktop-electron.cjs`, `tests/electron-startup.cjs`; giao diện/dữ liệu thật trong profile tạm, hai lần mở và chặn TCP nội bộ. |
+| Build production | **Đạt, 9,88 giây** | Lượt build cuối trước khi chốt thay đổi; còn cảnh báo chunk lớn đã có. |
+
+Trong lượt toàn bộ frontend đầu có hai ca Pomodoro phụ thuộc giờ chạy, dẫn tới gặp cảnh báo trùng lịch lớp mẫu. Đã cố định thời điểm trước khi tải lịch cho đúng phạm vi kiểm tra đếm giờ/focus segments; lượt toàn bộ cuối đạt 457/457. Kiểm tra EDUX cũng được cố định thư mục tài khoản thử theo thư mục test để không phụ thuộc cấu hình máy chạy.
+
+Smoke Electron kiểm tra đọc SQLite, ghi chú, DOCX, upload/download/byte range, UI chọn loại dữ liệu và chuyển origin. Ở lần mở tiếp theo với cùng profile tạm, nhóm ghi chú/canvas đã chọn bị xóa, hồ sơ/tài liệu/bộ nhớ không chọn còn nguyên, marker được xác nhận và bản lưu cũ không nhập lại nội dung đã xóa. Nút xóa được kiểm tra nằm trong viewport trước khi cuộn hết danh sách. Các phép xóa chỉ dùng dữ liệu tổng hợp và thư mục tạm.
+
+Log local: `tests/artifacts/data-management-api.log`, `data-management-frontend.log`, `data-management-build.log`; ảnh `tests/artifacts/desktop-data-management.png`. Các artifact này được gitignore. Các nhóm có giao nhau, không cộng thành tổng duy nhất.
+
+Ở lượt kiểm tra mã nguồn bên trên, nguồn IU/EDUX/Outlook thật và bộ cài/Portable từ runtime Sprint 5 chưa được nghiệm thu lại; kết quả phát hành ngày 05/11 thuộc Sprint 4. Lượt đóng gói 1.1.0 được ghi riêng bên dưới, còn nguồn thật và bàn giao tiếp tục theo checklist trong báo cáo Sprint 5.
+
+## Đóng gói Windows 1.1.0 — 07/11/2026
+
+Build Setup NSIS và Portable Windows x64 từ runtime Sprint 5 bằng `npm run dist:win`. Phiên bản gói gốc và frontend cùng là **1.1.0**; staging riêng tại `release/.build/1.1.0`. Không thay kết quả cài đặt của bản 1.0.0 ở mục lịch sử phía trên.
+
+| Kiểm tra | Kết quả | Phạm vi |
+| --- | --- | --- |
+| `node scripts/smoke-packaged.cjs` | **19/19 đạt** | Executable trong `win-unpacked`, profile tạm, nghiệp vụ thật và nhiều lần mở lại. |
+| `node scripts/smoke-packaged.cjs release/Smart-Study-Hub-1.1.0-Portable-x64.exe` | **19/19 đạt** | Launcher Portable thật, giữ dữ liệu và tự khởi động lại sau khi xóa có lựa chọn. |
+
+Cả hai bản kiểm tra giao diện/logo, origin `studyhub://app`, SQLite mới không chứa sinh viên, đọc hồ sơ, ghi chú, upload/download và localStorage qua nhiều lần chạy. Gọi thao tác xóa ghi chú/canvas qua IPC thật làm app mở lại; dữ liệu đã chọn bị xóa, hồ sơ/tài liệu/cài đặt không chọn còn nguyên. Kiểm tra các socket của tiến trình xác nhận chỉ có cổng DevTools do harness chủ động yêu cầu, không có cổng API/giao diện. PATH của tiến trình app chỉ chứa thư mục hệ thống Windows, không có Node.js bên ngoài.
+
+Lượt Portable đầu phát hiện việc mở lại qua executable đã giải nén không phù hợp với vòng đời launcher, và lần sửa đầu chưa giữ tham số khởi động. Đã chuyển sang launcher gốc qua `PORTABLE_EXECUTABLE_FILE`, truyền lại tham số, build lại và chạy đủ **19/19** ở lượt cuối. Kiểm tra đơn vị cũng xác nhận bản chạy mã nguồn không dùng đường dẫn Portable từ môi trường.
+
+Archive Setup và payload bên trong đều qua kiểm tra toàn vẹn; `SmartStudyHub.exe` và `resources/app.asar` trùng SHA-256 với bản thư mục đã chạy thử. Đối chiếu 13 tệp mã/tài nguyên chính trong ASAR khớp nguồn hiện tại, có SQL/WASM và không có `.env`, cookie hoặc DB/dữ liệu cá nhân. Bản 1.1.0 chưa thực thi trình cài, thử cài/nâng cấp trên máy sạch hoặc chạy lại IU/EDUX/Outlook/AI thật; chưa ký code signing. Việc bỏ Node.js khỏi PATH của app không thay cho kiểm tra trên máy chưa cài Node.js.
+
+Log và báo cáo local nằm tại `tests/artifacts/sprint5-windows-build.log`, `sprint5-unpacked-smoke.log`, `sprint5-portable-smoke.log` và `tests/artifacts/release/v1.1.0/`; các tệp này được gitignore. Bằng chứng đóng gói và SHA-256 được lưu tại [windows-release-v1.1.0.json](evidence/windows-release-v1.1.0.json).

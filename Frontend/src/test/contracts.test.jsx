@@ -219,6 +219,9 @@ describe("Compatibility with actual backend request/response fields", () => {
     expect(body).toMatchObject({ subject: "Lập trình C#", topic: "OOP" });
   });
   it("keeps only active focus segments when saving Pomodoro", async () => {
+    // Keep this timer test outside the sample classroom slots at any run time.
+    const now = new Date('2026-11-07T00:00:00+07:00');
+    vi.setSystemTime(now);
     const spy = vi.fn(adapter);
     apiClient.defaults.adapter = spy;
     mount(PomodoroTimer);
@@ -226,6 +229,7 @@ describe("Compatibility with actual backend request/response fields", () => {
       expect(screen.queryAllByRole("status")).toHaveLength(0),
     );
     vi.useFakeTimers();
+    vi.setSystemTime(now);
     fireEvent.click(screen.getByRole("button", { name: "Bắt đầu" }));
     await act(async () => {
       vi.advanceTimersByTime(2000);

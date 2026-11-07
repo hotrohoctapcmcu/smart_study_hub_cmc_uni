@@ -1,0 +1,62 @@
+{
+  "date": "2026-11-07",
+  "timezone": "Asia/Saigon",
+  "version": "1.1.0",
+  "releaseURL": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/tag/v1.1.0",
+  "status": "prepared-and-locally-verified",
+  "target": "Windows x64",
+  "runtime": {
+    "electron": "44.7.0",
+    "electronBuilder": "26.18.0",
+    "sourceFilesMatched": 13,
+    "excludedUserDataFound": 0,
+    "wasmPresent": true,
+    "noApplicationHttpListeners": true,
+    "diagnosticPortOnlyDuringSmoke": true
+  },
+  "checks": {
+    "unpacked": {
+      "passed": 19,
+      "failed": 0
+    },
+    "portable": {
+      "passed": 19,
+      "failed": 0
+    },
+    "setupArchiveIntegrity": true,
+    "setupPayloadMatchesUnpacked": true,
+    "packagedSelectiveResetAndRelaunch": true
+  },
+  "limitations": {
+    "cleanMachineRetested": false,
+    "installerExecuted": false,
+    "liveProvidersRetested": false,
+    "codeSigned": false
+  },
+  "assets": [
+    {
+      "name": "Smart-Study-Hub-1.1.0-Setup-x64.exe",
+      "bytes": 139306255,
+      "sha256": "358eb771d30ddfa07e8da9c1526fcddcf474eab43a5b89867808ec7a833b11ab",
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.1.0/Smart-Study-Hub-1.1.0-Setup-x64.exe"
+    },
+    {
+      "name": "Smart-Study-Hub-1.1.0-Portable-x64.exe",
+      "bytes": 122283973,
+      "sha256": "401ca3b7cb7b56730e1ad5ebe7e8d7dc738772bc1c02b5c900c56f60d8be1544",
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.1.0/Smart-Study-Hub-1.1.0-Portable-x64.exe"
+    },
+    {
+      "name": "HUONG-DAN-WINDOWS.md",
+      "bytes": 1297,
+      "sha256": "a6dc1e4bfbb70297783676c8ca46d2cc81bdd88c2f22bc33311137b4d6fe5c90",
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.1.0/HUONG-DAN-WINDOWS.md"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 294,
+      "sha256": "bff40506d9e67cd05037d62c459e82599080fd4a7045ec9ad745067aa92a1793",
+      "url": "https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.1.0/SHA256SUMS.txt"
+    }
+  ]
+}

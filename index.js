@@ -8,7 +8,7 @@ const FE_PORT = Number(process.env.FE_PORT ?? 8080);
 const packaged = process.env.SMART_STUDY_PACKAGED === '1';
 
 let apiServer = null;
-let apiUrl = 'http://localhost:3001';
+let apiUrl;
 
 const apiReady = apiModule.start().then(server => {
     apiServer = server;

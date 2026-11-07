@@ -90,7 +90,7 @@ test('scoped EDUX updates preserve historical assignments and survive database r
     assert.equal((await database.layBaiTapEDUX(1)).length, 2);
 });
 
-test('successful empty IU refresh clears only remote lessons in coverage and failure keeps data', async () => {
+test('empty or unavailable IU refresh preserves remote history and manual lessons', async () => {
     database ||= await require('../../database')();
     const base = { ho_ten: 'Test', ten_nganh_hoc: 'CNTT', tkb: [{
         ma_mon: 'C1', ten_mon: 'Môn 1', ten_lop: 'A', phong: 'A1', co_so: 'CMC', thu: 4,
@@ -107,7 +107,7 @@ test('successful empty IU refresh clears only remote lessons in coverage and fai
         SELECT student_id,subject_id,'Manual','M','CMC',4,'12:00','13:00','2026-10-28','2026-10-28','MANUAL' FROM Timetables LIMIT 1`);
     await database.dongBoHoSoIU('TEST01', { ...failed, tkb: [], tkb_range: { from: '01/09/2026', to: '31/08/2027' } });
     rows = await database.layThoiKhoaBieu(1);
-    assert.equal(rows.length, 2);
+    assert.equal(rows.length, 3);
     assert.equal(rows.filter(item => item.source === 'MANUAL').length, 1);
-    assert.equal(rows.filter(item => item.source === 'IU')[0].subject_code, 'C2');
+    assert.equal(rows.filter(item => item.source === 'IU').length, 2);
 });

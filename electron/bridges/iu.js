@@ -19,13 +19,12 @@
  * Cookie cổng IU chỉ tồn tại trong main process và API server, KHÔNG BAO GIỜ
  * đi qua renderer (FE sandbox). Renderer chỉ nhận { ok, ... } gọn nhẹ.
  *
- * Đăng ký: require("./bridges/iu") trong electron/main.js SAU khi
- * require("../index") (khởi động API và nạp cấu hình). Không làm gì khi chạy bằng
+ * Đăng ký trong electron/main.js sau khi backend nội bộ và cấu hình sẵn sàng.
+ * Desktop truyền transport trong bộ nhớ, không gọi localhost. Không làm gì khi chạy bằng
  * `node` (không có Electron): các handler đơn giản không được đăng ký.
  * ===================================================================================
  */
 
-const API_BASE = process.env.API_BASE || "http://localhost:3001";
 let connectIuHandler = null;
 
 function connectIU(options = {}) {
@@ -42,48 +41,32 @@ function getElectron() {
     return null;
 }
 
-async function postJson(path, body, signal) {
-    const res = await fetch(`${API_BASE}/api/v1${path}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body || {}),
-        ...(signal ? { signal } : {}),
-    });
-    let json = null;
-    try { json = await res.json(); } catch { json = null; }
-    if (!res.ok) {
-        const msg = (json && (json.message || json.error)) || `HTTP ${res.status}`;
-        throw new Error(msg);
+function createApiClient(fetchImpl, apiBase) {
+    async function request(path, options) {
+        const res = await fetchImpl(`${apiBase}/api/v1${path}`, options);
+        let json = null;
+        try { json = await res.json(); } catch { json = null; }
+        if (!res.ok) {
+            const msg = (json && (json.message || json.error)) || `HTTP ${res.status}`;
+            throw new Error(msg);
+        }
+        return json;
     }
-    return json;
+    return {
+        postJson: (path, body, signal) => request(path, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body || {}), ...(signal ? { signal } : {})
+        }),
+        getJson: path => request(path),
+        deleteJson: path => request(path, { method: 'DELETE' })
+    };
 }
 
-async function getJson(path) {
-    const res = await fetch(`${API_BASE}/api/v1${path}`);
-    let json = null;
-    try { json = await res.json(); } catch { json = null; }
-    if (!res.ok) {
-        const msg = (json && (json.message || json.error)) || `HTTP ${res.status}`;
-        throw new Error(msg);
-    }
-    return json;
-}
-
-async function deleteJson(path) {
-    const res = await fetch(`${API_BASE}/api/v1${path}`, { method: "DELETE" });
-    let json = null;
-    try { json = await res.json(); } catch { json = null; }
-    if (!res.ok) {
-        const msg = (json && (json.message || json.error)) || `HTTP ${res.status}`;
-        throw new Error(msg);
-    }
-    return json;
-}
-
-function registerIuBridge() {
+function registerIuBridge({ fetchImpl = globalThis.fetch, apiBase = 'studyhub://app' } = {}) {
     const electron = getElectron();
     if (!electron) return false; // chạy node thường: không đăng ký
 
+    const { postJson, getJson, deleteJson } = createApiClient(fetchImpl, apiBase);
     const { ipcMain } = electron;
     // eslint-disable-next-line global-require
     const { loginIU, logoutIU, getIuWindow } = require("../../CRWEB/modules/IU/login");

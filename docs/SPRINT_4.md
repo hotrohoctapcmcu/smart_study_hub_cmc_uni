@@ -1,4 +1,4 @@
-# Sprint 4 — Bản cập nhật toàn diện Smart Study Hub
+# Sprint 4 — Củng cố kiến trúc, sửa lỗi và chuẩn hóa bản bàn giao
 
 Tổng hợp bản mã và phân công ngày **02/11/2026**, cập nhật triển khai/kiểm thử đến **05/11/2026** (Asia/Saigon). Sprint 4 kế thừa đủ 18 chức năng của [Sprint 1](SPRINT_1.md), [Sprint 2](SPRINT_2.md), [Sprint 3](SPRINT_3.md), đồng thời ghi nhận các thay đổi sau mốc hoàn thiện 28/10.
 
@@ -7,6 +7,8 @@ Tổng hợp bản mã và phân công ngày **02/11/2026**, cập nhật triể
 - Theo dõi trên GitHub: [Milestone Sprint 4](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/3), issue #24–#28 đã gán assignee.
 
 Sprint 4 là mốc tổng hợp và bàn giao phiên bản hiện tại, diễn ra **30/10–05/11/2026**, báo cáo **thứ Năm 05/11/2026** (UTC+7). Deadline cuối ngày **23:59:59**; không tự gán Story Point. Phần có mã triển khai được tách khỏi phần còn cần kiểm chứng; issue mở là nhiệm vụ rà soát/hoàn thiện/nghiệm thu, không khẳng định toàn bộ mã còn chưa làm.
+
+Sprint 4 tập trung củng cố các chức năng sau Sprint 1–3: chuẩn hóa kiến trúc, sửa lỗi tích hợp và dữ liệu học vụ, hoàn thiện các luồng học tập và chuẩn bị bản bàn giao Windows. Trên nền tảng đó, [Sprint 5](SPRINT_5.md) tiếp tục hoàn thiện vận hành desktop và vòng đời dữ liệu: bỏ cổng localhost trong bản desktop, cho chọn loại dữ liệu cần xóa và giữ lịch sử khi chuyển học kỳ. Kết quả và mốc triển khai trong báo cáo Sprint 4 được giữ theo các đợt đã ghi nhận.
 
 ## Mục tiêu và thay đổi so với bản cũ
 
@@ -20,7 +22,7 @@ Sprint 4 là mốc tổng hợp và bàn giao phiên bản hiện tại, diễn 
 | Học liệu | Upload tài liệu, sổ tay/PDF cơ bản. | Phạm vi môn IU đang học, chương/slide/ảnh EDUX, cache nguồn, viewer và liên kết công cụ học. |
 | AI | Chat/quiz/điểm yếu/kế hoạch/đơn của Sprint 3. | Kiểm tra Unicode/context; tóm tắt thủ công với n phần song song, hàng đợi từng môn, cache SQLite; flashcard theo lô có thể tạo tiếp và ôn lại. |
 | Ghi chép | Sổ/trang văn bản và nháp. | Sổ tay cấu trúc Tiptap/template/trang con/AI block; vở canvas riêng với đối tượng, bảng, công thức, OCR và export. |
-| Bàn giao | Nhiều báo cáo theo đợt/người. | README mới, đúng 4 file báo cáo sprint, tài liệu kỹ thuật tập trung và issue theo từng thành viên. |
+| Bàn giao | Nhiều báo cáo theo đợt/người. | README mới, bộ báo cáo Sprint 1–4 tại mốc bàn giao, tài liệu kỹ thuật tập trung và issue theo từng thành viên. |
 
 ## Phạm vi kế thừa theo sprint
 
@@ -412,4 +414,4 @@ Trợ lý thực hiện theo yêu cầu người dùng. Giữ phân công nhận
 
 ## Tài liệu bàn giao
 
-Đúng bốn báo cáo sprint: `SPRINT_1.md`, `SPRINT_2.md`, `SPRINT_3.md`, `SPRINT_4.md`. Các báo cáo cũ được tổng hợp vào những file này và dẫn nguồn bằng commit cố định. Tài liệu chuyên môn tiếp tục ở [ARCHITECTURE.md](ARCHITECTURE.md), [API.md](API.md), [FEATURES.md](FEATURES.md), [TESTING.md](TESTING.md), [product_backlog.md](product_backlog.md); hướng dẫn bắt đầu nằm trong [README](../README.md).
+Các báo cáo đến mốc bàn giao Sprint 4 gồm `SPRINT_1.md`, `SPRINT_2.md`, `SPRINT_3.md`, `SPRINT_4.md`. Những thay đổi tiếp theo về desktop và vòng đời dữ liệu được tổng hợp tại [SPRINT_5.md](SPRINT_5.md). Tài liệu chuyên môn tiếp tục ở [ARCHITECTURE.md](ARCHITECTURE.md), [API.md](API.md), [FEATURES.md](FEATURES.md), [TESTING.md](TESTING.md), [product_backlog.md](product_backlog.md); hướng dẫn bắt đầu nằm trong [README](../README.md).

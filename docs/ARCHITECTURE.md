@@ -7,7 +7,7 @@ Cập nhật cấu trúc tài liệu ngày **30/10/2026** theo working tree hi�
 ```mermaid
 flowchart LR
   U[Người dùng] --> R[React / Vite]
-  R -->|HTTP /api/v1| A[Express routes]
+  R -->|Desktop: studyhub / Web: HTTP| A[Express routes]
   A --> C[Controllers / Validators]
   C --> S[Services]
   S --> D[database/modules]
@@ -20,8 +20,9 @@ flowchart LR
 
 | Vị trí | Trách nhiệm |
 | --- | --- |
-| `electron/main.js` | Entry Electron, khởi động máy chủ và cửa sổ chính. |
-| `index.js` | Chạy API và phục vụ `Frontend/dist` ở cổng 8080, hỗ trợ route React. |
+| `electron/main.js` | Entry Electron, đăng ký `studyhub://app`, khởi tạo backend trong tiến trình và cửa sổ chính. |
+| `electron/desktop.js`, `local-transport.js` | Phục vụ build và handler nghiệp vụ bằng stream trong bộ nhớ; không mở cổng TCP. |
+| `index.js` | Chỉ dành cho chế độ trình duyệt/headless: chạy API và phục vụ `Frontend/dist` ở cổng 8080. |
 | `electron/preload.js` | Cung cấp các namespace IPC cho renderer qua contextBridge. |
 | `electron/bridges/` | Các bridge `iu.js`, `outlook.js`, `sync.js` cho đăng nhập và đồng bộ. |
 | `Frontend/src/main.jsx`, `App.jsx` | Entry React, router và bố cục ứng dụng. |
@@ -39,12 +40,12 @@ flowchart LR
 ## Khởi động
 
 1. `npm start` build React rồi mở `electron/main.js` theo `package.json.main`.
-2. `index.js` chạy máy chủ frontend và gọi `API/index.js.start()`.
-3. API nạp `.env` tại gốc, gọi `require('../database')()`, khởi tạo connection/schema/migration rồi truyền DB vào các route/service.
+2. Electron gọi `createDesktopRuntime()` trong `electron/desktop.js`, phục vụ `Frontend/dist` và nghiệp vụ tại origin ổn định `studyhub://app`.
+3. `API/index.js.initialize()` nạp `.env`, khởi tạo SQLite/schema/migration và truyền DB vào các route/service, không gọi `listen()`. Transport nối handler Express với request/response qua stream trong bộ nhớ.
 4. Electron cung cấp các bridge qua preload; cửa sổ dùng `contextIsolation: true`, `nodeIntegration: false` và sandbox.
-5. React gọi API để lấy dữ liệu. Các trạng thái tải, rỗng, lỗi và thử lại được xử lý ở giao diện.
+5. React dùng Fetch adapter của Axios để gọi `studyhub://app/api/v1`; các bridge IU/đồng bộ dùng cùng transport nội bộ. Upload, download, byte range và lỗi giữ nguyên hợp đồng nghiệp vụ.
 
-Máy chủ frontend phục vụ bản build trong `Frontend/dist`; chạy trực tiếp `node index.js` khi chưa build sẽ thiếu giao diện. Vite dùng cổng 5173 khi phát triển. Xem [cách khởi chạy](../README.md).
+Desktop và headless đều cần bản build trong `Frontend/dist`. Chỉ `npm run start:headless`/`API/index.js.start()` mới mở máy chủ HTTP; Vite dùng cổng 5173 khi phát triển giao diện trong trình duyệt. Xem [cách khởi chạy](../README.md).
 
 ## Tầng database
 

@@ -1,5 +1,28 @@
 const { executeQuery } = require('../connection/db');
 const { layStudentId, xoaTheoChuSoHuu, capNhatTrangThaiTheoChuSoHuu } = require('../shared/academic');
+const { ensureSyncState } = require('../shared/timetable-sync');
+
+async function ghiLoiDongBoThoiKhoaBieu(studentId) {
+    const sid = await layStudentId(studentId);
+    if (!sid) return;
+    await ensureSyncState(executeQuery);
+    await executeQuery(`INSERT INTO TimetableSyncState(student_id,status,message,last_attempt_at)
+        VALUES(@sid,'unavailable',@message,@now)
+        ON CONFLICT(student_id) DO UPDATE SET status=excluded.status,message=excluded.message,last_attempt_at=excluded.last_attempt_at`, {
+        sid, message: 'Chưa lấy được lịch IU. Thời khóa biểu đã lưu và lịch sử học kỳ vẫn được giữ.', now: new Date().toISOString()
+    });
+}
+
+async function layTrangThaiThoiKhoaBieu(studentId) {
+    const sid = await layStudentId(studentId);
+    if (!sid) return null;
+    await ensureSyncState(executeQuery);
+    const [state] = await executeQuery('SELECT * FROM TimetableSyncState WHERE student_id=@sid', { sid });
+    const [counts] = await executeQuery(`SELECT COUNT(*) AS total,
+        SUM(CASE WHEN end_date < date('now','+7 hours') THEN 1 ELSE 0 END) AS historyCount
+        FROM Timetables WHERE student_id=@sid AND source='IU'`, { sid });
+    return { status: 'not_synced', message: 'Chưa đồng bộ lịch IU.', ...state, ...counts };
+}
 
 const THOI_KHOA_BIEU_SELECT = `
         SELECT t.timetable_id, t.student_id, s.student_code,
@@ -99,8 +122,8 @@ async function themTietHoc(studentId, data = {}) {
     await executeQuery(`
         INSERT INTO Timetables (student_id, subject_id, class_name, room, campus,
                                 day_of_week, start_time, end_time, start_date, end_date,
-                                lecturer_name, semester, academic_year)
-        VALUES (@sid, @subId, @cn, @rm, @cp, @dow, @st, @et, @sd, @ed, @ln, @sm, @ay)
+                                lecturer_name, semester, academic_year, source)
+        VALUES (@sid, @subId, @cn, @rm, @cp, @dow, @st, @et, @sd, @ed, @ln, @sm, @ay, 'TEACHER')
     `, {
         sid, subId: parseInt(data.subjectId, 10),
         cn: data.className, rm: data.room, cp: data.campus || 'Cơ sở chính',
@@ -534,6 +557,8 @@ async function xoaLichTuHoc(scheduleId, studentId = null) {
 }
 
 module.exports = {
+    ghiLoiDongBoThoiKhoaBieu,
+    layTrangThaiThoiKhoaBieu,
     layThoiKhoaBieu,
     layThoiKhoaBieuTheoNgay,
     layThoiKhoaBieuTheoTuan,

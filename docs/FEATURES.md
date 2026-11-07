@@ -1,6 +1,6 @@
 # Hướng dẫn sử dụng
 
-Tài liệu theo cấu trúc React/Vite hiện có ngày 30/10/2026. Cài đặt và khởi chạy ở [README](../README.md); cấu hình kết nối và hợp đồng ở [API](API.md); bằng chứng và giới hạn xác minh ở [TESTING](TESTING.md).
+Tài liệu theo cấu trúc React/Vite hiện có; phần quản lý dữ liệu và thời khóa biểu được cập nhật ngày 07/11/2026. Cài đặt và khởi chạy ở [README](../README.md); cấu hình kết nối và hợp đồng ở [API](API.md); bằng chứng và giới hạn xác minh ở [TESTING](TESTING.md).
 
 ## Bắt đầu
 
@@ -31,6 +31,18 @@ Tài liệu theo cấu trúc React/Vite hiện có ngày 30/10/2026. Cài đặt
 `Ctrl+K` / `⌘+K` tìm trong workspace, hỗ trợ từ khóa và `#tag`. Kết quả mở đúng mục/ngày/ngữ cảnh. Lối tắt `/tasks?action=create` và `/schedule?action=create` mở biểu mẫu tạo mới.
 
 Học tập hỗ trợ `/learning?tab=subjects`, `flashcards`, `quiz`, `weaknesses`, `pomodoro`. Tài liệu mặc định mở **Bài giảng**; các tab trực tiếp là `?tab=reference`, `files`, `notes`, `notebooks`. Trên điện thoại, sidebar chuyển thành drawer; hộp thoại hỗ trợ Escape và điều hướng bàn phím. Cài đặt sáng/tối/hệ thống, màu, font và bo góc lưu tại trình duyệt; hiệu ứng tôn trọng `prefers-reduced-motion`.
+
+## Quản lý dữ liệu trên máy
+
+Trong ứng dụng desktop, mở **Cài đặt → Dữ liệu** hoặc **Đồng bộ → Xóa dữ liệu**. Chọn từng nhóm: thời khóa biểu; bảng điểm/chương trình học; công việc/checklist; lịch thi/kế hoạch ôn; lịch tự học/Pomodoro; tài liệu/học liệu; ghi chú/sổ tay/canvas; AI; thông báo; email; phiên đăng nhập; cài đặt. Có thể chọn **Xóa toàn bộ dữ liệu**, gồm cả hồ sơ sinh viên.
+
+Hộp xác nhận liệt kê phạm vi và yêu cầu nhập **XÓA**. Ứng dụng khởi động lại rồi xóa dữ liệu đã chọn trước khi khởi chạy các tác vụ nền. Nội dung không chọn được giữ; xóa tài liệu giữ ghi chú nhưng bỏ liên kết đến tệp đã xóa. Xóa email giữ công việc/kỳ thi đã tạo từ thư. Nguồn trường vẫn có thể tải lại dữ liệu nếu giữ phiên đăng nhập; chọn thêm **Phiên đăng nhập** khi cần ngắt các nguồn. Xuất/sao lưu nội dung cần giữ trước khi xác nhận.
+
+## Thời khóa biểu khi chuyển học kỳ
+
+Lịch đã qua được giữ để xem lại bằng tuần/tháng hoặc danh sách tại **Thời khóa biểu**. Khi IU cung cấp lịch hợp lệ, ứng dụng chỉ thay phần lịch sắp tới trong phạm vi đã lấy và các học kỳ đã xác định; lịch học kỳ khác, lịch tự thêm và dữ liệu cá nhân được giữ. Bản cập nhật lặp lại không tạo bản sao lịch sử. Khi dữ liệu chưa xác định được kỳ hoặc phạm vi, ứng dụng ưu tiên bổ sung/cập nhật các buổi có thể đối chiếu thay vì xóa lịch khác.
+
+Nếu mất mạng, hết phiên IU, chưa có lịch học kỳ mới, lịch trả rỗng hoặc sai ngày/giờ, ứng dụng giữ bản đã lưu và thông báo tại **Đồng bộ → Thời khóa biểu & học kỳ**. Có thể thử đồng bộ lại ngay; không phải đợi đủ 24 giờ sau một lượt thất bại. Lịch trống chưa đủ để xác nhận toàn bộ buổi đã hủy, nên muốn bỏ bản lưu cần xóa chủ động. Quy tắc này áp dụng cho thời khóa biểu; lịch thi vẫn theo cửa sổ quét và hợp đồng riêng.
 
 ## Kho tài liệu và học liệu EDUX
 

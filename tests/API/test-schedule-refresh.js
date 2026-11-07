@@ -31,7 +31,8 @@ test('schedule refresh runs on every entry and after 24 hours, deduplicates and 
         layThoiKhoaBieu: async () => rows,
         executeQuery: async () => [{ student_code: 'REFRESH' }],
         luuBaiTapEDUX: async (_uid, _items, options) => { taskSaves++; assert.equal(options.preserveExisting, true); return { saved: 1, removed: 0 }; },
-        dongBoHoSoIU: async (_code, data) => { saves++; if (!data.tkb.length) rows = []; return { timetableCount: data.tkb.length }; }
+        dongBoHoSoIU: async (_code, data) => { saves++; return { timetableCount: data.tkb.length,
+            timetable: { preserved: !data.tkb.length, message: 'Giữ thời khóa biểu đã lưu.' } }; }
     });
     const app = express(); app.use(express.json()); app.use(router);
     app.use((error, _req, res, _next) => res.status(error.statusCode || 500).json({ message: error.message }));
@@ -61,7 +62,10 @@ test('schedule refresh runs on every entry and after 24 hours, deduplicates and 
     sessions.saveSession(1, { session: { studentId: 'REFRESH' }, cookie: 'restored-test-only' });
     assert.equal((await request({})).status, 502); assert.equal(saves, 3); assert.equal(rows.length, 1);
     rejected = false; empty = true;
-    assert.equal((await request({})).refreshed, true); assert.equal(rows.length, 0);
+    assert.equal((await request({})).refreshed, false); assert.equal(rows.length, 1);
+    const beforeRetry = pulls;
+    assert.equal((await request({})).refreshed, false);
+    assert.equal(pulls, beforeRetry + 1, 'empty or failed refresh can be retried immediately');
     empty = false;
     rows = [{ subject_id: 1, subject_code: 'SQL', subject_name: 'SQL', start_date: '2020-01-01', end_date: '2099-12-31', source: 'IU' }];
     eduxSessions.saveSession(1, { cookie: 'test-edux-only' });

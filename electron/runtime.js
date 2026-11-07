@@ -16,8 +16,7 @@ function configurePackagedRuntime(app, env = process.env) {
         DOCUMENTS_PATH: path.join(data, 'documents'),
         EDUX_ACCOUNTS_PATH: path.join(data, 'edux-accounts'),
         EDUX_COOKIE_PATH: path.join(data, 'edux-cookie.txt'),
-        GEMINI_SESSION_DIR: path.join(data, 'gemini-session'),
-        API_PORT: '0', FE_PORT: '0', API_HOST: '127.0.0.1', FE_HOST: '127.0.0.1'
+        GEMINI_SESSION_DIR: path.join(data, 'gemini-session')
     });
     return { userData, data };
 }

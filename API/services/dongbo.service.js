@@ -16,6 +16,7 @@ let db;
 let iuPullInFlight = null;
 let curriculumPullInFlight = null;
 let lastScheduleRefreshAt = 0;
+let scheduleRefreshFailed = false;
 const allSyncJobs = new Map();
 const jobHistory = new Map();
 const sourceHistory = new Map();
@@ -245,17 +246,24 @@ async function performIuPull(options) {
     if (!saved) throw loi('Chưa có phiên IU.', 401);
 
     const { ngayBatDau, ngayKetThuc, soNgayLichThi, luuDb = true, refreshEdux = true } = options;
+    if (luuDb) scheduleRefreshFailed = true;
     let pulled;
     try {
         pulled = await keoDuLieuIU(saved.session, saved.cookie, { ngayBatDau, ngayKetThuc, soNgayLichThi });
     } catch (error) {
+        if (luuDb) scheduleRefreshFailed = true;
+        if (luuDb) {
+            try { await db.ghiLoiDongBoThoiKhoaBieu?.(NGUOI_DUNG_ID); }
+            catch { /* Preserve the original portal error if status persistence fails. */ }
+        }
         if ([401, 403].includes(Number(error.statusCode || error.status))) {
             iuKho.clearSession(NGUOI_DUNG_ID);
             throw loi('Phiên IU đã hết hạn. Hãy kết nối IU lại.', 401);
         }
         throw error;
     }
-    const { data, thatBai } = pulled;
+    const { data } = pulled;
+    const thatBai = [...(pulled.thatBai || [])];
 
     iuKho.saveSession(NGUOI_DUNG_ID, {
         session: saved.session,
@@ -272,6 +280,7 @@ async function performIuPull(options) {
     const savedDb = luuDb
         ? await db.dongBoHoSoIU(studentCode, dataIU)
         : null;
+    if (savedDb?.timetable?.preserved) thatBai.push(savedDb.timetable.message);
     if (savedDb) rememberSync('IU', Boolean(thatBai?.length));
 
 
@@ -280,7 +289,8 @@ async function performIuPull(options) {
         message += ` Một số nhóm lỗi: ${thatBai.join('; ')}`;
     }
 
-    const scheduleFetched = luuDb && Array.isArray(dataIU.tkb);
+    const scheduleFetched = luuDb && Array.isArray(dataIU.tkb) && savedDb?.timetable?.preserved !== true;
+    if (luuDb) scheduleRefreshFailed = !scheduleFetched;
     if (scheduleFetched) lastScheduleRefreshAt = Date.now();
     let eduxRefresh = null;
     if (scheduleFetched && refreshEdux) {
@@ -350,7 +360,7 @@ async function refresh(body) {
         message: 'Chưa có phiên IU. Kết nối IU để tự động cập nhật lịch học; dữ liệu đã lưu vẫn được giữ.',
         scope: await getCurrentCourseScope(db, NGUOI_DUNG_ID)
     };
-    if (body?.startup !== true && lastScheduleRefreshAt && Date.now() - lastScheduleRefreshAt < DAY_MS) {
+    if (body?.startup !== true && !scheduleRefreshFailed && lastScheduleRefreshAt && Date.now() - lastScheduleRefreshAt < DAY_MS) {
         return { refreshed: false, reason: 'up_to_date', lastRefreshedAt: new Date(lastScheduleRefreshAt).toISOString(), scope: await getCurrentCourseScope(db, NGUOI_DUNG_ID) };
     }
     const result = await pullAndSaveIU({ luuDb: true });
@@ -445,7 +455,8 @@ module.exports = {
     sources: async () => { await eduxAccounts.restore(NGUOI_DUNG_ID); return { sources: layCacNguonDongBo() }; },
     start: (body = {}) => snapshot(createSyncJob(validate.syncRequest(body)).job),
     status: layTrangThaiJob,
-    currentCourses: async () => ({ data: await getCurrentCourseScope(db, NGUOI_DUNG_ID) }),
+    currentCourses: async () => ({ data: { ...await getCurrentCourseScope(db, NGUOI_DUNG_ID),
+        timetableSync: await db.layTrangThaiThoiKhoaBieu?.(NGUOI_DUNG_ID) || null } }),
     refresh, syncAll, saveIuSession, clearIuSession, pullIuGroup,
     iuStatus: () => sourceStatus('IU'),
     eduxStatus: async () => { await eduxAccounts.restore(NGUOI_DUNG_ID); return sourceStatus('EDUX'); },

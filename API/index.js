@@ -18,7 +18,14 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(require('./routes/status'));
 
-async function start() {
+let initialization;
+
+function initialize() {
+    if (!initialization) initialization = initializeBackend();
+    return initialization;
+}
+
+async function initializeBackend() {
     let db;
 
     try {
@@ -37,6 +44,13 @@ async function start() {
     app.use(notFound);
     app.use(errorHandler);
 
+    // Desktop uses these same handlers in memory, without app.listen().
+    void require('./utils/edux-account').restore(require('./utils/nguoiDung').NGUOI_DUNG_ID);
+    return { app, close: () => db?.closePool?.() };
+}
+
+async function start() {
+    const backend = await initialize();
     const server = await new Promise((resolve, reject) => {
         const listener = app.listen({ port: Number(PORT), ...(process.env.API_HOST ? { host: process.env.API_HOST } : {}) }, () => {
             console.log(`[API] http://localhost:${PORT}`);
@@ -44,13 +58,10 @@ async function start() {
         });
         listener.once('error', reject);
     });
-    // Restore in the background so an unavailable EDUX cannot delay API boot.
-    void require('./utils/edux-account').restore(require('./utils/nguoiDung').NGUOI_DUNG_ID);
-
     async function shutdown() {
         server.close(async () => {
             try {
-                if (db?.closePool) await db.closePool();
+                await backend.close();
                 process.exit(0);
             } catch (err) {
                 console.error('[Shutdown]', err.message);
@@ -74,4 +85,5 @@ if (require.main === module) {
 }
 
 module.exports = app;
+module.exports.initialize = initialize;
 module.exports.start = start;

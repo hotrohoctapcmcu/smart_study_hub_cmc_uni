@@ -21,8 +21,8 @@ test('packaged runtime keeps all writable data outside the installation and keep
         const second = configurePackagedRuntime(app, env);
         assert.deepEqual(second, first);
         assert.equal(fs.readFileSync(env.DB_PATH, 'utf8'), 'persisted fixture');
-        assert.equal(env.API_PORT, '0'); assert.equal(env.FE_PORT, '0');
-        assert.equal(env.API_HOST, '127.0.0.1'); assert.equal(env.NODE_ENV, 'production');
+        assert.equal(env.API_PORT, undefined); assert.equal(env.FE_PORT, undefined);
+        assert.equal(env.API_HOST, undefined); assert.equal(env.NODE_ENV, 'production');
     } finally {
         assert.equal(path.dirname(path.resolve(directory)), path.resolve(os.tmpdir()));
         assert.ok(path.basename(directory).startsWith('smart-study-runtime-test-'));

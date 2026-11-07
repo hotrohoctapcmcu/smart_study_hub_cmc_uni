@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { User, Bell, Palette, Shield, RefreshCw, Globe } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { User, Bell, Palette, Shield, RefreshCw, Globe, Database } from "lucide-react";
+import DataManagement from '../../components/settings/DataManagement';
 import {
   PageHeader,
   Card,
@@ -19,10 +20,12 @@ const items = [
   ["appearance", "Giao diện", Palette],
   ["account", "Tài khoản", Shield],
   ["sync", "Đồng bộ", RefreshCw],
+  ["data", "Dữ liệu", Database],
   ["language", "Ngôn ngữ", Globe],
 ];
 export default function Settings() {
-  const [active, setActive] = useState("appearance"),
+  const [params] = useSearchParams();
+  const [active, setActive] = useState(params.get('section') === 'data' ? 'data' : 'appearance'),
     [preferences, setPreferences] = useState(readPreferences);
   useEffect(() => {
     applyPreferences(preferences);
@@ -50,7 +53,7 @@ export default function Settings() {
           ))}
         </nav>
         <Card region="C" title={items.find((x) => x[0] === active)[1]}>
-          {active === "appearance" ? (
+          {active === 'data' ? <DataManagement /> : active === "appearance" ? (
             <div className="settings-section">
               <div>
                 <h3>Chế độ hiển thị</h3>
@@ -130,7 +133,7 @@ export default function Settings() {
                 </Field>
               </div>
               <p className="hint">
-                Tùy chỉnh được áp dụng ngay và lưu trên trình duyệt này.
+                Tùy chỉnh được áp dụng ngay và lưu trên thiết bị này.
               </p>
               <div>
                 <Button
@@ -163,7 +166,7 @@ export default function Settings() {
                 </button>
               </div>
               <p className="hint">
-                Các nhắc nhở lịch học và deadline được quản lý bởi backend. Bạn
+                Các nhắc nhở lịch học và deadline được quản lý bởi ứng dụng. Bạn
                 có thể đọc thông báo tại biểu tượng chuông.
               </p>
             </div>

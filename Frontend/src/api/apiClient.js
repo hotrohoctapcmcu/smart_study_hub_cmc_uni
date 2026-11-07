@@ -1,9 +1,12 @@
 import axios from "axios";
 
-const API_URL = globalThis.__SSH_RUNTIME__?.apiBaseUrl || import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1";
+const runtime = globalThis.__SSH_RUNTIME__;
+const API_URL = runtime?.apiBaseUrl || import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1";
 
 const apiClient = axios.create({
   baseURL: API_URL,
+  // XMLHttpRequest does not support the desktop's custom protocol.
+  ...(runtime?.desktop ? { adapter: 'fetch' } : {}),
   timeout: 30000,
   withCredentials: true,
   headers: {
@@ -31,7 +34,7 @@ apiClient.interceptors.response.use((response) => {
   }
   return response;
 });
-if (import.meta.env.VITE_USE_MOCK === "true") {
+if (!runtime?.desktop && import.meta.env.VITE_USE_MOCK === "true") {
   apiClient.defaults.adapter = async (config) =>
     (await import("../test/mockAdapter.js")).mockAdapter(config);
 }
@@ -47,6 +50,6 @@ export function responseList(value, key) {
   if (Array.isArray(data)) return data;
   return key && Array.isArray(data?.[key]) ? data[key] : [];
 }
-export const backendOrigin = new URL(API_URL, window.location.origin).origin;
+export const backendOrigin = runtime?.backendOrigin || new URL(API_URL, window.location.origin).origin;
 
 export default apiClient;

@@ -96,9 +96,11 @@ export function ErrorState({
             (error?.response
               ? "Máy chủ trả lỗi " + error.response.status
               : error?.code === "ERR_NETWORK"
-                ? "Vui lòng kiểm tra backend và cấu hình VITE_API_URL."
+                ? (globalThis.__SSH_RUNTIME__?.desktop
+                  ? "Không đọc được dữ liệu. Hãy thử lại hoặc mở lại ứng dụng."
+                  : "Vui lòng kiểm tra backend và cấu hình VITE_API_URL.")
                 : error?.message) ||
-            "Vui lòng kiểm tra backend tại localhost:3001."}
+            "Không đọc được dữ liệu. Hãy thử lại hoặc mở lại ứng dụng."}
         </p>
         {onRetry && (
           <Button variant="outline" size="sm" onClick={onRetry}>

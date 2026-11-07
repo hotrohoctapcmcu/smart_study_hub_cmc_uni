@@ -1,10 +1,12 @@
 ﻿# Product backlog và kế hoạch nhóm
 
-Tra nhanh: [Phân công Sprint 1–3](#phân-công-nhóm-và-3-sprint) · [Sprint 4 và issue từng thành viên](SPRINT_4.md#phân-công-trên-github) · [Product backlog](#backlog-theo-luồng-sử-dụng) · [Cách nghiệm thu](#cách-đóng-một-hạng-mục).
+Tra nhanh: [Phân công Sprint 1–3](#phân-công-nhóm-và-3-sprint) · [Sprint 4 và issue từng thành viên](SPRINT_4.md#phân-công-trên-github) · [Sprint 5](SPRINT_5.md) · [Product backlog](#backlog-theo-luồng-sử-dụng) · [Cách nghiệm thu](#cách-đóng-một-hạng-mục).
 
 **Cập nhật bàn giao 02/11/2026:** kế hoạch 3 Sprint gốc được giữ làm lịch sử. Bản tái cấu trúc và mở rộng hiện tại là **Sprint 4**, nằm trên nhánh chính `main`; bản main cũ lưu ở `before`. Theo dõi tại [milestone Sprint 4](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/milestone/3). Phân công đã gán GitHub: Văn Tuấn [#24](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/24), Anh Tuấn [#25](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/25), Long Nhật [#26](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/26), Hồng Thắm [#27](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/27), Huyền Trang [#28](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/issues/28). Mục tiêu/tiêu chí PB bên dưới vẫn cần bằng chứng để đóng, không tự chuyển thành Done khi cập nhật main.
 
-Bốn báo cáo tổng hợp: [Sprint 1](SPRINT_1.md) · [Sprint 2](SPRINT_2.md) · [Sprint 3](SPRINT_3.md) · [Sprint 4](SPRINT_4.md).
+Báo cáo tổng hợp: [Sprint 1](SPRINT_1.md) · [Sprint 2](SPRINT_2.md) · [Sprint 3](SPRINT_3.md) · [Sprint 4](SPRINT_4.md) · [Sprint 5](SPRINT_5.md).
+
+**Cập nhật 07/11/2026:** Sprint 4 là mốc củng cố kiến trúc, sửa lỗi và chuẩn hóa bản bàn giao. Sprint 5 tiếp nối với vận hành desktop không mở cổng localhost, quản lý/xóa dữ liệu có lựa chọn và giữ lịch sử học kỳ. Bổ sung PB-52–PB-57 ở mục 12; tiến độ, kiểm chứng cục bộ và phần tiếp tục bàn giao tại [báo cáo Sprint 5](SPRINT_5.md).
 
 Smart Study Hub giúp sinh viên CMC mở một ứng dụng để biết hôm nay học gì, việc nào sắp đến hạn, tài liệu nằm ở đâu và nên ôn gì tiếp theo. Giá trị của sản phẩm nằm ở việc những thông tin đó nối được với nhau và vẫn còn sau khi đóng ứng dụng.
 
@@ -24,7 +26,7 @@ Backlog này được viết lại theo mã đang có ngày **30/10/2026**. Các
 
 | Đã thấy trong mã hiện tại | Việc còn cần xác minh trước khi đóng |
 | --- | --- |
-| Electron, React/Vite, Express và SQLite; có lệnh chạy ứng dụng, headless và các nhóm test | Bộ cài trên máy sạch, đường dẫn tài nguyên và quyền ghi khi cài vào Program Files. `package.json` gốc chưa có lệnh tạo bộ cài |
+| Electron, React/Vite, handler Express và SQLite; desktop dùng transport bộ nhớ, có lệnh chạy headless/test và tạo Setup/Portable | Kiểm tra lại bộ cài từ runtime Sprint 5 trên máy sạch; đường dẫn tài nguyên, quyền ghi và giữ/xóa dữ liệu theo phạm vi hỗ trợ |
 | Module IU/EDUX/Outlook, luồng kết nối và job đồng bộ có tiến trình | Tài khoản trường thật, phiên hết hạn/MFA, nguồn trả thiếu dữ liệu hoặc thay đổi cấu trúc; fixture không chứng minh dịch vụ thật hoạt động |
 | Trang lịch, task, kỳ thi, hồ sơ, học liệu, thống kê và email; API tương ứng đã được tách thành route/service | Đối chiếu thao tác UI → HTTP → SQLite → tải lại, đặc biệt checklist, hạn EDUX, học lại và nhắc đến hạn khi thời gian trôi qua |
 | API và giao diện trợ lý, quiz, điểm yếu, kế hoạch ôn, đơn nghỉ; có bộ kiểm thử riêng | Độ đúng và khả dụng của AI thật, giới hạn context, dữ liệu thiếu, xử lý hủy/lỗi và xác nhận lại lịch trước khi lưu |
@@ -145,6 +147,19 @@ Sinh viên không nên phải biết từng nguồn dùng giao thức gì. Họ 
 | PB-49 | Must | Có lệnh build tạo bộ cài; cài và mở trên máy sạch không cần cài Node.js; không nhầm `npm start` với bản cài độc lập |
 | PB-50 | Must | Bản cài tìm được frontend, WASM và `endpoint_map.txt`; tạo/ghi/mở lại DB ở thư mục người dùng, kể cả cài vào Program Files; dữ liệu cũ còn sau nâng cấp theo phạm vi hỗ trợ |
 | PB-51 | Must | Người nhận làm theo tài liệu để cài/chạy, cấu hình, kiểm tra và tìm đúng tầng mã; có mô tả API/database, sao lưu, đóng gói và giới hạn đã biết; liên kết nội bộ còn dùng được |
+
+### 12. Vận hành desktop và quản lý dữ liệu qua nhiều học kỳ — Sprint 5
+
+| Mã | Ưu tiên | Kết quả cần đạt và cách nghiệm thu |
+| --- | --- | --- |
+| PB-52 | Must | Desktop mở giao diện và xử lý nghiệp vụ qua `studyhub://app`, không gọi `listen()` cho giao diện/backend; đọc/ghi SQLite, upload/download/range/DOCX hoạt động khi bài thử chặn TCP nội bộ. |
+| PB-53 | Must | Người dùng chọn từng loại dữ liệu hoặc toàn bộ; hộp xác nhận nêu phạm vi và yêu cầu XÓA; thực hiện ở lần khởi động lại trước tác vụ nền; chỉ xóa dữ liệu đã chọn, giữ khóa ngoại và các nội dung còn lại. |
+| PB-54 | Must | Đồng bộ học kỳ mới giữ lịch đã qua, lịch học kỳ khác, ngoài phạm vi và lịch tự thêm; cập nhật phần xác minh được, không tạo trùng lịch sử; lịch lặp giữ đoạn ngoài khoảng thay thế. |
+| PB-55 | Must | IU lỗi/hết phiên, lịch rỗng hoặc sai ngày giờ không làm mất bản đã lưu; lưu/hiển thị trạng thái, giữ thời điểm thành công gần nhất và cho thử lại sau thất bại mà không chờ 24 giờ. |
+| PB-56 | Must | Chuyển localStorage từ origin cũ sang desktop, giữ giá trị mới đã có; xóa nhóm ghi chú/canvas dọn đúng phần ở hai origin; mở lại không nhập lại dữ liệu đã xóa hoặc xóa tiếp nội dung mới. |
+| PB-57 | Should | Có hồi quy giao diện/nghiệp vụ, kiểm tra xóa và khởi động lại bằng hồ sơ tạm; tài liệu nêu cách dùng, phạm vi và kết quả. Đối soát nguồn thật và bản cài mới được ghi riêng trước khi ký bàn giao. |
+
+Các mục trên đã có mã và kiểm chứng cục bộ được ghi trong [SPRINT_5.md](SPRINT_5.md). Việc nghiệm thu nguồn thật và bộ cài mới tiếp tục theo checklist bàn giao; các tiêu chí của PB-49/PB-50 vẫn được đối chiếu riêng.
 
 ## Cách đóng một hạng mục
 

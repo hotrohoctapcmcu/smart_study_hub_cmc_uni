@@ -57,12 +57,12 @@ Các nhóm chức năng dùng chung trang Tổng quan, trang Đồng bộ dữ l
 
 Mở [GitHub Releases](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/latest) và chọn một bản **Windows x64**:
 
-- [Portable 1.0.0 — tải về rồi mở](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.0.0/Smart-Study-Hub-1.0.0-Portable-x64.exe).
-- [Setup 1.0.0 — cài vào máy, tạo shortcut](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.0.0/Smart-Study-Hub-1.0.0-Setup-x64.exe).
+- [Portable 1.1.0 — tải về rồi mở](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.1.0/Smart-Study-Hub-1.1.0-Portable-x64.exe).
+- [Setup 1.1.0 — cài vào máy, tạo shortcut](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.1.0/Smart-Study-Hub-1.1.0-Setup-x64.exe).
 
 Electron, backend, giao diện và SQLite đã nằm trong gói. Người dùng không cần Git, Node.js, npm hoặc chạy terminal. Mở **Đồng bộ dữ liệu** để kết nối tài khoản trường của mình; cần Internet cho đồng bộ, AI và tài nguyên OCR tải qua mạng. Bản phát hành không chứa tài khoản hoặc dữ liệu sinh viên của máy phát triển.
 
-Dữ liệu được lưu ở `%APPDATA%\SmartStudyHubCMC`, dùng chung cho Setup và Portable; thay file `.exe` không xóa dữ liệu. Bản 1.0.0 chưa có chứng thư ký số nên Windows có thể hiển thị cảnh báo nhà phát hành chưa xác định. Xem [hướng dẫn sử dụng, sao lưu và build Windows](docs/WINDOWS_RELEASE.md).
+Dữ liệu được lưu ở `%APPDATA%\SmartStudyHubCMC`, dùng chung cho Setup và Portable; thay file `.exe` không xóa dữ liệu. Bản 1.1.0 bổ sung desktop không mở cổng localhost, chọn loại dữ liệu cần xóa và giữ lịch sử học kỳ. Bản cài chưa có chứng thư ký số nên Windows có thể hiển thị cảnh báo nhà phát hành chưa xác định. Xem [hướng dẫn sử dụng, sao lưu và build Windows](docs/WINDOWS_RELEASE.md).
 
 ### Yêu cầu khi chạy từ mã nguồn
 
@@ -93,7 +93,7 @@ Các lệnh trên dùng PowerShell. Nếu execution policy chặn `npm.ps1`, s�
 npm start
 ```
 
-Lệnh tự build frontend rồi mở Electron. Máy chủ giao diện mặc định ở `http://localhost:8080`, API ở `http://localhost:3001/api/v1`. Để tạo bộ cài và Portable từ mã nguồn, chạy `npm run dist:win`; hướng dẫn trong [WINDOWS_RELEASE.md](docs/WINDOWS_RELEASE.md).
+Lệnh tự build frontend rồi mở Electron tại `studyhub://app`. Bản desktop đọc giao diện và xử lý dữ liệu ngay trong tiến trình Electron, không mở cổng localhost hay cần chạy API riêng. SQLite, đồng bộ và các chức năng hiện có vẫn dùng chung phần xử lý nghiệp vụ. Để tạo bộ cài và Portable từ mã nguồn, chạy `npm run dist:win`; hướng dẫn trong [WINDOWS_RELEASE.md](docs/WINDOWS_RELEASE.md).
 
 ### Chạy khi phát triển
 
@@ -133,7 +133,7 @@ Các chế độ khác:
 
 ```mermaid
 flowchart LR
-    UI[React / Vite] -->|HTTP /api/v1| API[Express API]
+    UI[React / Vite] -->|Desktop: studyhub / Web: HTTP| API[Express handlers]
     API --> S[Services]
     S --> DB[(SQLite / sql.js)]
     S --> P[IU / EDUX / Outlook]
@@ -142,7 +142,7 @@ flowchart LR
     E --> P
 ```
 
-Frontend gọi API để đọc/ghi dữ liệu. Backend kiểm tra đầu vào, xử lý nghiệp vụ, kết nối nguồn và lưu SQLite. Electron quản lý cửa sổ đăng nhập cùng bridge cho renderer. Các kế hoạch AI được tạo dưới dạng xem trước; server đọc lại lịch và kiểm tra xung đột trước khi lưu sau xác nhận.
+Trong bản desktop, frontend gọi `studyhub://app/api/v1`; Electron chuyển yêu cầu đến các handler nghiệp vụ bằng stream trong bộ nhớ, không qua mạng hay mở cổng. Chế độ trình duyệt dùng HTTP. Backend kiểm tra đầu vào, kết nối nguồn và lưu SQLite. Electron quản lý cửa sổ đăng nhập cùng bridge cho renderer. Các kế hoạch AI được tạo dưới dạng xem trước; phần xử lý đọc lại lịch và kiểm tra xung đột trước khi lưu sau xác nhận.
 
 ```text
 smart_study_hub_cmc_uni/
@@ -182,19 +182,20 @@ Backend đọc `.env` ở thư mục gốc; Vite đọc `Frontend/.env`. Dùng h
 | Biến | Mặc định / mục đích |
 | --- | --- |
 | `DB_PATH` | `./data/unistudy.db`, file database trên máy chạy backend. |
-| `API_PORT` | `3001`, cổng API. |
-| `API_BASE` | `http://localhost:3001`, URL backend dùng bởi bridge Electron, không kèm `/api/v1`. |
+| `API_PORT` | `3001`, cổng API khi chạy trình duyệt/headless; desktop không dùng. |
 | `APP_USER_ID` | `1`, hồ sơ được API sử dụng. |
-| `VITE_API_URL` | `http://localhost:3001/api/v1`, URL gọi API từ frontend. |
+| `VITE_API_URL` | `http://localhost:3001/api/v1`, URL khi chạy trình duyệt; desktop tự dùng `studyhub://app/api/v1`. |
 | `VITE_USE_MOCK` | `false`; bật khi phát triển với dữ liệu giả lập. |
 | `DOCUMENTS_PATH` | Thư mục file tải lên, mặc định `documents/` cạnh database. |
 | `EDUX_ACCOUNTS_PATH` | Thư mục thông tin tài khoản EDUX cục bộ, mặc định `edux-accounts/` cạnh database. |
 | `GEMINI_TIMEOUT_MS` | `45000`, giới hạn thời gian gọi Gemini. Provider hiện dùng phiên web khách. |
 | `OUTLOOK_ACCESS_TOKEN` | Tùy chọn cho headless; token Graph có quyền `Mail.Read`. |
 
-Nếu đổi `API_PORT`, cập nhật cùng `API_BASE` và `VITE_API_URL`. `JWT_SECRET` và `ALLOWED_ORIGINS` còn trong file mẫu nhưng chưa được dùng cho xác thực nội bộ hoặc giới hạn CORS; cấu hình thực tế nằm trong `API/config/index.js`.
+Nếu đổi `API_PORT` cho chế độ trình duyệt, cập nhật cùng `VITE_API_URL`. Desktop không cần cấu hình cổng hoặc URL backend. `JWT_SECRET` và `ALLOWED_ORIGINS` còn trong file mẫu nhưng chưa được dùng cho xác thực nội bộ hoặc giới hạn CORS; cấu hình thực tế nằm trong `API/config/index.js`.
 
 ## Lưu trữ và sao lưu
+
+Desktop có **Cài đặt → Dữ liệu** (hoặc **Đồng bộ → Xóa dữ liệu**) để chọn từng loại cần xóa, xem phạm vi và nhập **XÓA** trước khi app khởi động lại để thực hiện. Lịch các học kỳ cũ được giữ để xem lại; lịch IU mới chỉ cập nhật khi hợp lệ, còn lỗi/lịch rỗng giữ bản đã lưu. Chi tiết trong [hướng dẫn quản lý dữ liệu](docs/FEATURES.md#quản-lý-dữ-liệu-trên-máy).
 
 | Dữ liệu | Nơi lưu |
 | --- | --- |
@@ -204,7 +205,7 @@ Nếu đổi `API_PORT`, cập nhật cùng `API_BASE` và `VITE_API_URL`. `JWT_
 | Vở canvas, bookmark/tiến độ/ghi chú slide | localStorage của trình duyệt theo origin và phạm vi hồ sơ tương ứng. |
 | Tài khoản EDUX đã nhớ | JSON cục bộ chứa email/mật khẩu để khôi phục kết nối. |
 
-Để sao lưu, dừng ứng dụng rồi sao chép database cùng các thư mục file cần giữ. Với vở canvas, xuất JSON để giữ khả năng chỉnh sửa; bản PDF/ảnh chỉ giữ nội dung hiển thị. Các origin Vite và cổng 8080 có kho localStorage riêng.
+Để sao lưu, dừng ứng dụng rồi sao chép database cùng các thư mục file cần giữ. Với vở canvas, xuất JSON để giữ khả năng chỉnh sửa; bản PDF/ảnh chỉ giữ nội dung hiển thị. Desktop dùng origin `studyhub://app`; bản chạy mã nguồn tự chuyển localStorage cũ từ `http://localhost:8080` trong cùng hồ sơ Electron, giữ các giá trị mới đã có. Dữ liệu trong trình duyệt/Vite vẫn thuộc hồ sơ trình duyệt riêng.
 
 `.env`, dữ liệu người dùng, database, cookie, dependency, bản build và artifact kiểm thử được Git bỏ qua. Repository chỉ chứa cấu hình mẫu. Vị trí và vòng đời từng loại dữ liệu được mô tả trong [kiến trúc](docs/ARCHITECTURE.md#nơi-lưu-dữ-liệu-và-sao-lưu).
 
@@ -257,7 +258,8 @@ Chi tiết trách nhiệm và công việc theo từng giai đoạn nằm trong 
 | [Sprint 1](docs/SPRINT_1.md) | Nền tảng và các nghiệp vụ quản lý học tập cốt lõi. |
 | [Sprint 2](docs/SPRINT_2.md) | Học liệu, công cụ học tập và tích hợp dữ liệu. |
 | [Sprint 3](docs/SPRINT_3.md) | Các luồng AI học tập và tích hợp tổng thể. |
-| [Sprint 4](docs/SPRINT_4.md) | Đợt tái cấu trúc/mở rộng, phân công và nghiệm thu bản bàn giao. |
+| [Sprint 4](docs/SPRINT_4.md) | Củng cố kiến trúc, sửa lỗi tích hợp/dữ liệu và chuẩn hóa bản bàn giao. |
+| [Sprint 5](docs/SPRINT_5.md) | Desktop không mở cổng localhost, xóa dữ liệu theo lựa chọn và giữ lịch sử qua học kỳ. |
 
 ## Phát triển và đóng góp
 

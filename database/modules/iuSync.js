@@ -10,6 +10,7 @@ const {
 
 const VALID_GRADES = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F', 'P', 'NP'];
 const { resolveEnrollmentYear } = require('../shared/student-identity');
+const { syncTimetable } = require('../shared/timetable-sync');
 
 async function saveIUData(studentCode, dataIU) {
     if (!studentCode) throw new Error('studentCode là bắt buộc');
@@ -228,54 +229,10 @@ async function syncIUCurriculum(studentId, dataIU, result) {
 }
 
 async function syncIUTimetable(studentId, dataIU, result) {
-    if (!Array.isArray(dataIU.tkb)) return;
-
-    const rangeFrom = convertDate(dataIU.tkb_range?.from);
-    const rangeTo = convertDate(dataIU.tkb_range?.to);
-    const hasRange = /^\d{4}-\d{2}-\d{2}$/.test(rangeFrom || '') && /^\d{4}-\d{2}-\d{2}$/.test(rangeTo || '') && rangeFrom <= rangeTo;
-    await executeQuery(
-        'DELETE FROM Timetables WHERE student_id = @sid AND source = \'IU\'' +
-            (hasRange ? ' AND start_date <= @toDate AND end_date >= @fromDate' : ''),
-        hasRange ? { sid: studentId, fromDate: rangeFrom, toDate: rangeTo } : { sid: studentId }
-    );
-
-    for (const t of dataIU.tkb) {
-        if (!t || typeof t !== 'object') continue;
-
-        const subjectName = (t.ten_mon || '').replace(/_/g, ' ').trim();
-        const subjectCode = t.ma_mon || null;
-
-        const subjectId = await upsertSubjectByCodeOrName(subjectCode, subjectName);
-        if (!subjectId) continue;
-
-        await executeQuery(
-            `INSERT INTO Timetables (
-                 student_id, subject_id, class_name, room, campus,
-                 day_of_week, start_time, end_time, start_date, end_date,
-                 lecturer_name, semester, academic_year, source
-             ) VALUES (
-                 @sid, @subId, @cn, @rm, @cp,
-                 @dow, @st, @et, @sd, @ed, @ln, @sem, @ay, 'IU'
-             )`,
-            {
-                sid: studentId,
-                subId: subjectId,
-                cn: t.ten_lop || 'Lớp học phần',
-                rm: t.phong || 'A101',
-                cp: t.co_so || 'Cơ sở chính',
-                dow: Number(t.thu) || 2,
-                st: t.gio_bat_dau || '07:30',
-                et: t.gio_ket_thuc || '09:30',
-                sd: convertDate(t.ngay_bat_dau) || '2026-09-01',
-                ed: convertDate(t.ngay_ket_thuc) || '2026-12-31',
-                ln: t.giang_vien || null,
-                sem: t.hoc_ky || null,
-                ay: t.nam_hoc || null
-            }
-        );
-
-        result.timetableCount++;
-    }
+    if (!Object.hasOwn(dataIU, 'tkb') && !dataIU.tkb_range) return;
+    result.timetable = await syncTimetable({ studentId, data: dataIU, query: executeQuery,
+        upsertSubject: upsertSubjectByCodeOrName, convertDate });
+    result.timetableCount = result.timetable.count;
 }
 
 async function syncIUExams(studentId, dataIU, result) {

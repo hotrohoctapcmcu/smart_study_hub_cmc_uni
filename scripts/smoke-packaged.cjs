@@ -11,10 +11,11 @@ const executable = path.resolve(process.argv[2] || path.join(root, 'release/win-
 const label = path.basename(executable).includes('Portable') ? 'portable' : executable.includes('win-unpacked') ? 'unpacked' : 'installed';
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'smart-study-release-smoke-'));
 const profile = path.join(directory, 'profile');
-const output = path.join(root, 'tests/artifacts/release', label);
+const version = require('../package.json').version;
+const output = path.join(root, 'tests/artifacts/release', 'v' + version, label);
 fs.mkdirSync(output, { recursive: true });
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-const report = { date: '2026-11-05', executable, label, isolatedProfile: true, checks: [], launches: [] };
+const report = { date: '2026-11-07', version, executable, label, isolatedProfile: true, checks: [], launches: [] };
 function check(name, passed, detail) {
     report.checks.push({ name, passed: Boolean(passed), ...(detail === undefined ? {} : { detail }) });
     console.log(`${passed ? 'PASS' : 'FAIL'} ${name}`);
@@ -38,6 +39,7 @@ async function cdp(url) {
         pending.clear();
     });
     const send = (method, params = {}) => new Promise((resolve, reject) => {
+        if (socket.readyState !== WebSocket.OPEN) return reject(new Error('CDP connection closed'));
         const id = ++counter;
         const timer = setTimeout(() => { pending.delete(id); reject(new Error('CDP timeout: ' + method)); }, 15000);
         pending.set(id, { resolve, reject, timer }); socket.send(JSON.stringify({ id, method, params }));
@@ -72,9 +74,9 @@ async function launch() {
         await pause(100);
     }
     const api = await client.evaluate('globalThis.__SSH_RUNTIME__?.apiBaseUrl');
-    assert.match(api, /^http:\/\/127\.0\.0\.1:\d+\/api\/v1$/);
+    assert.equal(api, 'studyhub://app/api/v1');
     report.launches.push({ origin: await client.evaluate('location.origin'), api });
-    return { child, client, api, log: () => log };
+    return { child, client, api, port, targetId: target.id, log: () => log };
 }
 async function close(instance) {
     try { await instance.client.send('Browser.close'); } catch {}
@@ -82,11 +84,67 @@ async function close(instance) {
     for (let i = 0; i < 100 && instance.child.exitCode === null; i++) await pause(100);
     if (instance.child.exitCode === null) { instance.child.kill(); await pause(300); }
 }
+async function request(instance, url, options = {}) {
+    const init = { ...options };
+    if (Buffer.isBuffer(init.body)) init.body = Array.from(init.body);
+    // Custom-protocol requests must run in Electron, where the handler lives.
+    return instance.client.evaluate(`(async () => {
+        const init = ${JSON.stringify(init)};
+        if (Array.isArray(init.body)) init.body = new Uint8Array(init.body);
+        const response = await fetch(${JSON.stringify(url)}, init);
+        return { ok: response.ok, status: response.status, body: await response.text() };
+    })()`);
+}
 async function api(instance, route, options) {
-    const response = await fetch(instance.api + route, options);
-    const body = await response.json();
+    const response = await request(instance, instance.api + route, options);
+    const body = JSON.parse(response.body);
     assert.ok(response.ok && body.success, `${route}: ${response.status} ${JSON.stringify(body)}`);
     return body.data;
+}
+
+function assertNoApplicationPorts(instance) {
+    const port = Number(instance.port);
+    assert.ok(Number.isInteger(port) && port > 0 && port < 65536);
+    const command = `$smokeSockets = Get-NetTCPConnection -State Listen -ErrorAction Stop;
+        $smokeOwner = $smokeSockets | Where-Object { $_.LocalPort -eq ${port} } | Select-Object -First 1 -ExpandProperty OwningProcess;
+        if (!$smokeOwner) { throw 'Diagnostic listener not found'; }
+        $smokeProcesses = Get-CimInstance Win32_Process;
+        $smokeIds = [System.Collections.Generic.HashSet[int]]::new(); [void]$smokeIds.Add([int]$smokeOwner);
+        do { $smokeChanged = $false; foreach ($smokeProcess in $smokeProcesses) {
+            if ($smokeIds.Contains([int]$smokeProcess.ParentProcessId) -and $smokeIds.Add([int]$smokeProcess.ProcessId)) { $smokeChanged = $true; }
+        } } while ($smokeChanged);
+        @($smokeSockets | Where-Object { $smokeIds.Contains([int]$_.OwningProcess) } | Select-Object -ExpandProperty LocalPort -Unique) | ConvertTo-Json -Compress`;
+    const result = spawnSync(path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe'),
+        ['-NoProfile', '-NonInteractive', '-Command', command], { encoding: 'utf8', windowsHide: true, timeout: 30000 });
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, 'Cannot inspect packaged listeners: ' + result.stderr);
+    const values = JSON.parse(result.stdout);
+    const ports = Array.isArray(values) ? values : [values];
+    check('Application opens no API/UI ports (only the explicitly requested DevTools test port)', ports.length > 0 && ports.every(value => value === port));
+}
+
+async function restartThroughDataReset(instance) {
+    const oldTarget = instance.targetId;
+    try {
+        await instance.client.evaluate(`window.__uniStudyData.reset({ categories: ['notes'], confirmation: 'XÓA' })`);
+    } catch { /* The old DevTools connection may close before the reply arrives. */ }
+    instance.client.close();
+    let target;
+    for (let attempt = 0; attempt < 240; attempt++) {
+        try {
+            target = (await (await fetch(`http://127.0.0.1:${instance.port}/json/list`, { signal: AbortSignal.timeout(1500) })).json())
+                .find(page => page.type === 'page' && page.id !== oldTarget && page.url.startsWith('studyhub://app/'));
+        } catch {}
+        if (target) break;
+        await pause(250);
+    }
+    assert.ok(target, 'Packaged app must relaunch after selective deletion');
+    const client = await cdp(target.webSocketDebuggerUrl);
+    for (let attempt = 0; attempt < 100; attempt++) {
+        if (await client.evaluate(`Boolean(globalThis.__uniStudyData && document.querySelector('.brand-app-icon img')?.naturalWidth)`)) break;
+        await pause(100);
+    }
+    return { ...instance, client, targetId: target.id, relaunched: true };
 }
 
 (async () => {
@@ -96,8 +154,10 @@ async function api(instance, route, options) {
         report.externalNodeOnChildPath = false;
         current = await launch();
         check('Packaged UI uses a stable custom origin', await current.client.evaluate(`location.origin === 'studyhub://app'`));
-        check('Bundled backend is online', (await (await fetch(current.api.replace('/api/v1', '/health'))).json()).status === 'online');
+        check('Bundled backend is online', JSON.parse((await request(current, current.api.replace('/api/v1', '/health'))).body).status === 'online');
         check('Renderer reaches the bundled API through its runtime address', await current.client.evaluate(`fetch(globalThis.__SSH_RUNTIME__.apiBaseUrl.replace('/api/v1','/health')).then(r=>r.json()).then(r=>r.status==='online')`));
+        check('Packaged application exposes the data-management categories', await current.client.evaluate(`window.__uniStudyData.catalog().then(items=>items.length===12&&items.some(item=>item.id==='timetable'))`));
+        assertNoApplicationPorts(current);
         await current.client.evaluate(`localStorage.setItem('release-persistence-check','kept-across-restart')`);
         const screenshot = await current.client.send('Page.captureScreenshot', { format: 'png' });
         fs.writeFileSync(path.join(output, 'first-launch.png'), Buffer.from(screenshot.data, 'base64'));
@@ -118,7 +178,7 @@ async function api(instance, route, options) {
         const notebook = await api(current, '/notebooks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'Release notebook' }) });
         await api(current, '/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: 'release-note', notebookId: notebook.notebook_id, title: 'Release note', content: 'Packaged persistence evidence' }) });
         const document = await api(current, '/documents', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'X-Document-Meta': encodeURIComponent(JSON.stringify({ filename: 'release.txt', title: 'Release document' })) }, body: Buffer.from('Release file bytes') });
-        check('Upload/download uses the writable document directory', await (await fetch(current.api + `/documents/${document.id}/file`)).text() === 'Release file bytes');
+        check('Upload/download uses the writable document directory', (await request(current, current.api + `/documents/${document.id}/file`)).body === 'Release file bytes');
         await close(current); current = null;
 
         if (label === 'installed' && process.env.SMART_STUDY_TEST_INSTALLER) {
@@ -134,9 +194,18 @@ async function api(instance, route, options) {
         current = await launch();
         check('Notes survive closing and reopening the packaged application', (await api(current, '/notes')).some(note => note.title === 'Release note' && note.content === 'Packaged persistence evidence'));
         const documents = await api(current, '/documents');
-        check('Document metadata and bytes survive restart', documents.length === 1 && await (await fetch(current.api + `/documents/${documents[0].id}/file`)).text() === 'Release file bytes');
+        check('Document metadata and bytes survive restart', documents.length === 1 && (await request(current, current.api + `/documents/${documents[0].id}/file`)).body === 'Release file bytes');
         check('Stable browser storage is retained on the third launch', await current.client.evaluate(`localStorage.getItem('release-persistence-check') === 'kept-across-restart'`));
         check('Developer credentials were not copied into the private profile', !fs.existsSync(path.join(profile, 'data/edux-accounts/1.json')));
+        await current.client.evaluate(`localStorage.setItem('ssh-textbooks-v1:release','drawing to delete')`);
+        current = await restartThroughDataReset(current);
+        check('Selective deletion restarts the actual packaged executable', true);
+        check('Selected notes and canvas are deleted after restart', (await api(current, '/notes')).length === 0
+            && await current.client.evaluate(`localStorage.getItem('ssh-textbooks-v1:release') === null`));
+        check('Unselected profile, files and preferences remain after deletion', (await api(current, '/student/profile')).full_name === 'Release smoke fixture'
+            && (await api(current, '/documents')).length === 1
+            && await current.client.evaluate(`localStorage.getItem('release-persistence-check') === 'kept-across-restart'`));
+        assertNoApplicationPorts(current);
         await close(current); current = null;
     } catch (error) { report.failure = error.stack; console.error(error.stack); process.exitCode = 1; }
     finally {

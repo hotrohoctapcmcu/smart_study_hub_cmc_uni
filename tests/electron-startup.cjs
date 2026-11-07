@@ -7,12 +7,12 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { createRequire } = require('node:module');
 
-test('Electron package entry starts the server, registers bridges and loads its preload', async () => {
+test('Electron entry starts the desktop runtime without HTTP servers and loads its preload', async () => {
     const root = path.resolve(__dirname, '..');
     const entry = path.resolve(root, require('../package.json').main);
     const localRequire = createRequire(entry);
     const registered = new Set();
-    let ready, windowOptions, loadedUrl, appId, appDetails, serverStarted = false;
+    let ready, windowOptions, loadedUrl, appId, appDetails, runtimeStarted = false, scheme, protocolHandler;
     const windows = [];
     class BrowserWindow {
         constructor(options) {
@@ -32,14 +32,25 @@ test('Electron package entry starts the server, registers bridges and loads its 
     }
     const electron = {
         app: { whenReady: () => ({ then: callback => { ready = callback; return { catch() {} }; } }), on() {}, quit() {}, setAppUserModelId(id) { appId = id; } },
-        BrowserWindow, shell: { openExternal: async () => {} }
+        BrowserWindow, shell: { openExternal: async () => {} },
+        protocol: {
+            registerSchemesAsPrivileged: schemes => { scheme = schemes[0]; },
+            handle: (name, handler) => { assert.equal(name, 'studyhub'); protocolHandler = handler; }
+        }
     };
+    const runtime = { handle() {}, fetch() {}, close() {} };
     const bridges = {
         iu: 'registerIuBridge', outlook: 'registerOutlookBridge', sync: 'registerSyncBridge'
     };
     const bridgeFiles = new Map(Object.entries(bridges).map(([name, method]) => [
         path.join(root, 'electron', 'bridges', `${name}.js`),
-        { [method]: () => registered.add(name) }
+        { [method]: options => {
+            if (name !== 'outlook') {
+                assert.equal(options.apiBase, 'studyhub://app');
+                assert.equal(options.fetchImpl, runtime.fetch);
+            }
+            registered.add(name);
+        } }
     ]));
     vm.runInNewContext(fs.readFileSync(entry, 'utf8'), {
         __dirname: path.dirname(entry), process, console, setTimeout, clearTimeout,
@@ -47,17 +58,28 @@ test('Electron package entry starts the server, registers bridges and loads its 
             if (name === 'electron') return electron;
             if (name === 'path' || name === 'node:path') return path;
             const resolved = localRequire.resolve(name);
-            if (resolved === path.join(root, 'index.js')) { serverStarted = true; return {}; }
+            if (resolved === path.join(root, 'electron', 'app-origin.js')) return localRequire(name);
+            if (resolved === path.join(root, 'electron', 'storage-migration.js')) return { readLegacyStorage: async () => null };
+            if (resolved === path.join(root, 'electron', 'data-management.js')) return {
+                applyPendingReset: async () => null, registerDataBridge: () => registered.add('data')
+            };
+            if (resolved === path.join(root, 'electron', 'desktop.js')) return {
+                createDesktopRuntime: async () => { runtimeStarted = true; return runtime; }
+            };
             if (bridgeFiles.has(resolved)) return bridgeFiles.get(resolved);
             throw new Error(`Unexpected startup dependency: ${name}`);
         }
     }, { filename: entry });
     assert.equal(typeof ready, 'function');
     await ready();
-    assert.equal(serverStarted, true);
-    assert.deepEqual([...registered].sort(), ['iu', 'outlook', 'sync']);
+    assert.equal(runtimeStarted, true);
+    assert.equal(scheme.scheme, 'studyhub');
+    assert.equal(scheme.privileges.supportFetchAPI, true);
+    assert.equal(scheme.privileges.standard, true);
+    assert.equal(protocolHandler, runtime.handle);
+    assert.deepEqual([...registered].sort(), ['data', 'iu', 'outlook', 'sync']);
     assert.equal(windows.length, 1);
-    assert.equal(loadedUrl, 'http://localhost:8080');
+    assert.equal(loadedUrl, 'studyhub://app/');
     assert.equal(windowOptions.title, 'Smart Study Hub - CMC University');
     assert.ok(path.isAbsolute(windowOptions.icon));
     assert.ok(fs.statSync(windowOptions.icon).isFile());
