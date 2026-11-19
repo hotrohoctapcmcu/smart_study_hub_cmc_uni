@@ -57,8 +57,8 @@ Các nhóm chức năng dùng chung trang Tổng quan, trang Đồng bộ dữ l
 
 Mở [GitHub Releases](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/latest) và chọn một bản **Windows x64**:
 
-- [Portable 1.1.0 — tải về rồi mở](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.1.0/Smart-Study-Hub-1.1.0-Portable-x64.exe).
-- [Setup 1.1.0 — cài vào máy, tạo shortcut](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.1.0/Smart-Study-Hub-1.1.0-Setup-x64.exe).
+- [Portable 1.1.1 — tải về rồi mở](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.1.1/Smart-Study-Hub-1.1.1-Portable-x64.exe).
+- [Setup 1.1.1 — cài vào máy, tạo shortcut](https://github.com/hotrohoctapcmcu/smart_study_hub_cmc_uni/releases/download/v1.1.1/Smart-Study-Hub-1.1.1-Setup-x64.exe).
 
 Electron, backend, giao diện và SQLite đã nằm trong gói. Người dùng không cần Git, Node.js, npm hoặc chạy terminal. Mở **Đồng bộ dữ liệu** để kết nối tài khoản trường của mình; cần Internet cho đồng bộ, AI và tài nguyên OCR tải qua mạng. Bản phát hành không chứa tài khoản hoặc dữ liệu sinh viên của máy phát triển.
 
