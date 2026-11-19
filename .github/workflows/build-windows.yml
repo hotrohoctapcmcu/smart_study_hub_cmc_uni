@@ -1,0 +1,73 @@
+name: Build Windows app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            Frontend/package-lock.json
+
+      - name: Install test and frontend dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm --prefix Frontend ci --no-audit --no-fund
+
+      - name: Test IU synchronization and packaged runtime
+        run: >
+          node --test
+          CRWEB/tests/architecture.test.js
+          CRWEB/tests/iu-student-portal.test.js
+          API/tests/iu-curriculum.test.cjs
+          API/tests/iu-credits-refresh.test.cjs
+          tests/API/test-iu-restore.js
+          tests/API/test-iu-auth-expiry.js
+          tests/API/test-exam-sync-window.js
+          tests/packaged-runtime.cjs
+          tests/timetable-history.cjs
+
+      - name: Build Windows Setup and Portable
+        run: npm run dist:win
+
+      - name: Verify installers and write SHA-256 checksums
+        shell: pwsh
+        run: |
+          $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
+          $installers = @(
+            "Smart-Study-Hub-$version-Setup-x64.exe"
+            "Smart-Study-Hub-$version-Portable-x64.exe"
+          )
+          $checksums = foreach ($name in $installers) {
+            $file = Get-Item -LiteralPath (Join-Path 'release' $name) -ErrorAction Stop
+            if ($file.Length -eq 0) { throw "Empty installer: $name" }
+            $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $name"
+          }
+          $checksums | Set-Content -LiteralPath 'release/SHA256SUMS.txt' -Encoding ascii
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: smart-study-hub-windows-x64
+          path: |
+            release/Smart-Study-Hub-*-Setup-x64.exe
+            release/Smart-Study-Hub-*-Portable-x64.exe
+            release/SHA256SUMS.txt
+          if-no-files-found: error
+          compression-level: 0

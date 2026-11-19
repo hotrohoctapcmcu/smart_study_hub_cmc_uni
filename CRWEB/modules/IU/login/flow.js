@@ -13,7 +13,7 @@
  *  - Cac ham phu: window.js (openLoginWindow/loadAndWait/portalAuthState/
  *    waitForPortalAuth/safeGetURL/destroyWindow/sleep), cookies.js
  *    (readIuCookies/clearSession), pagescript.js (clickMsSignInScript),
- *    constants.js (IU_URL/MS_LOGIN_URL).
+ *    constants.js (IU_URL).
  *  - Phan loai host (isMsLoginHost/isSignedInHost/isCmcHost) doi chieu voi
  *    cac domain that: login.microsoftonline.com, office.com, iu.cmcu.edu.vn.
  *
@@ -23,7 +23,7 @@
  *   // jar = { map, cookie, count, url }
  */
 
-const { IU_URL, MS_LOGIN_URL } = require("./constants");
+const { IU_URL, IU_ORIGIN, portalFromUrl } = require("./constants");
 const { clickMsSignInScript } = require("./pagescript");
 const {
     getIuWindow,
@@ -44,25 +44,21 @@ function hostOf(url) {
         return "";
     }
 }
-function isMsLoginHost(host) {
-    return /microsoftonline\.com$|login\.live\.com$|login\.microsoft\.com$|aadcdn\.|\.sts\.|okta|adfs/i.test(host);
-}
 function isSignedInHost(host) {
     return /(^|\.)office\.com$|(^|\.)office365\.com$|(^|\.)microsoft365\.com$|(^|\.)cloud\.microsoft$|(^|\.)outlook\.office\.com$|(^|\.)my(applications|apps)\.microsoft\.com$|(^|\.)portal\.office\.com$/i.test(host);
 }
-function isCmcHost(host) {
-    return /cmcu\.edu\.vn$/i.test(host);
-}
-function looksLikeLogin(url) {
-    return /login|signin|sign-in|microsoftonline|adfs|\.sts\.|okta/i.test(String(url || ""));
-}
-
 // Bấm thử nút SSO trong trang (nếu portal render nút). Không ném lỗi.
 async function tryClickSso(win) {
     await sleep(700);
+    if (!safeGetURL(win, "").startsWith(IU_ORIGIN + "/")) return false;
     await win.webContents
         .executeJavaScript(`(${clickMsSignInScript.toString()})()`, true)
         .catch(() => false);
+}
+
+function readWindowCookies(win) {
+    const portal = portalFromUrl(safeGetURL(win, ""));
+    return portal ? readIuCookies(portal) : { map: {}, cookie: "", count: 0 };
 }
 
 /**
@@ -70,8 +66,7 @@ async function tryClickSso(win) {
  *
  * Luồng:
  *  1. Đã đăng nhập từ trước (session persist còn) -> mở ẨN IU, SSO im lặng, trả cookie ngay.
- *  2. Chưa đăng nhập -> mở HIỆN trang Microsoft để sinh viên chọn tài khoản,
- *     sau đó tự điều hướng sang IU + tự bấm "Sign in using Microsoft".
+ *  2. Chưa đăng nhập -> hiện trang đăng nhập của IU và mở SSO Microsoft.
  *
  * @param {object} [opts]
  * @param {number} [opts.timeoutMs=180000] — thời gian chờ người dùng đăng nhập.
@@ -99,7 +94,7 @@ async function performLogin(opts = {}) {
 
     // Đã ở sẵn IU và còn phiên -> trả cookie luôn.
     if (await portalAuthState(win)) {
-        const jar = await readIuCookies();
+        const jar = await readWindowCookies(win);
         if (jar.count > 0) {
             if (!opts.keepOpen && win && !win.isDestroyed()) win.hide();
             return { ...jar, url: safeGetURL(win) };
@@ -109,7 +104,7 @@ async function performLogin(opts = {}) {
     // Mở IU ẩn để thử SSO im lặng bằng phiên Microsoft cũ.
     await loadAndWait(win, IU_URL, 8000);
     if (await portalAuthState(win)) {
-        const jar = await readIuCookies();
+        const jar = await readWindowCookies(win);
         if (jar.count > 0) {
             if (!opts.keepOpen && !win.isDestroyed()) win.hide();
             return { ...jar, url: safeGetURL(win) };
@@ -119,10 +114,6 @@ async function performLogin(opts = {}) {
     // Chưa vào được -> cần người dùng đăng nhập Microsoft.
     const hidden = opts.hidden === true; // mặc định HIỆN để người dùng thao tác
     if (!hidden) { win.show(); win.focus(); }
-    const cur = safeGetURL(win, "");
-    if (!isMsLoginHost(hostOf(cur)) && !looksLikeLogin(cur)) {
-        await loadAndWait(win, MS_LOGIN_URL);
-    }
     // Thử tự bấm nút SSO (nếu trang portal render nút), rồi chờ người dùng làm nốt.
     await tryClickSso(win);
 
@@ -135,26 +126,23 @@ async function performLogin(opts = {}) {
         // Microsoft đã xong (tới office.com) mà chưa sang IU -> tự đưa sang IU.
         const url = safeGetURL(win, "");
         const host = hostOf(url);
-        if ((isSignedInHost(host) || isCmcHost(host)) && !(await portalAuthState(win))) {
-            if (!isCmcHost(host) || looksLikeLogin(url)) {
-                await loadAndWait(win, IU_URL);
-                await tryClickSso(win);
-            }
+        if (isSignedInHost(host)) {
+            await loadAndWait(win, IU_URL);
+            await tryClickSso(win);
         }
         if (await portalAuthState(win)) { authed = true; break; }
         await sleep(800);
     }
     if (!authed) {
-        // Hết giờ nhưng vẫn để cửa sổ cho người dùng đăng nhập tiếp, không đóng.
         throw Object.assign(
-            new Error("Hết thời gian chờ đăng nhập IU. Hãy đăng nhập Microsoft trong cửa sổ vừa mở rồi gọi lại loginIU()."),
+            new Error("Hết thời gian chờ đăng nhập IU. Hãy kết nối lại và hoàn tất đăng nhập Microsoft."),
             { code: "LOGIN_TIMEOUT" }
         );
     }
 
     // Vào được IU -> chốt SSO lần cuối rồi đọc cookie.
     await waitForPortalAuth(win, 15000);
-    const jar = await readIuCookies();
+    const jar = await readWindowCookies(win);
     if (!opts.keepOpen && !win.isDestroyed()) win.hide(); // ẩn đi, GIỮ session cho lần sau
     return { ...jar, url: safeGetURL(win) };
 }

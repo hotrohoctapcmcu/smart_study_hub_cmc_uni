@@ -156,4 +156,4 @@ function layData(resp) {
     return resp;
 }
 
-module.exports = { goiIU, layData };
+module.exports = { goiIU, layData, fetchIU };

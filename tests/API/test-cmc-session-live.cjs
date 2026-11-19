@@ -23,7 +23,8 @@ app.whenReady().then(async () => {
             win.loadURL(IU_URL),
             new Promise((_, reject) => { deadline = setTimeout(() => reject(new Error("IU_TIMEOUT")), 20000); })
         ]);
-        const authenticated = await win.webContents.executeJavaScript("Boolean(window.edu && window.edu.system && window.edu.system.userId)");
+        const { waitForPortalAuth } = require("../../CRWEB/modules/IU/login/window");
+        const authenticated = await waitForPortalAuth(win, 5000);
         if (!authenticated) {
             console.log(JSON.stringify({ cmcSession: "unavailable", reason: "Phiên IU cục bộ chưa đăng nhập hoặc đã hết hạn." }));
             return;
@@ -31,11 +32,22 @@ app.whenReady().then(async () => {
         const iu = require("../../CRWEB/modules/IU");
         const identifiers = await iu.laySession(win);
         // Portal localStorage can restore auth before issuing fresh cookies.
-        const jar = await require('../../CRWEB/modules/IU/login/cookies').readIuCookies();
+        const jar = await require('../../CRWEB/modules/IU/login/cookies').readIuCookies(
+            identifiers.portal === 'sinhvien' ? 'sinhvien' : 'legacy'
+        );
         const cookieHeader = jar.cookie;
         const profile = await iu.layHoSoSinhVien(identifiers, cookieHeader);
         console.log(JSON.stringify({ cmcSession: "authenticated", profileRead: Boolean(profile && Object.keys(profile).length) }));
-        if (process.argv.includes("--inspect-curriculum")) {
+        if (process.argv.includes("--inspect-curriculum") && identifiers.portal === "sinhvien") {
+            const { data, thatBai } = await iu.layDuLieuChuongTrinh(identifiers, cookieHeader);
+            const academic = data.IU.goc_hoc_tap;
+            console.log(JSON.stringify({ curriculum: {
+                fetched: academic.chuong_trinh_fetched,
+                totalCredits: academic.chuong_trinh?.tong_tin_chi,
+                courseCount: academic.chuong_trinh_hoc_tap.reduce((count, term) => count + term.hoc_phan.length, 0),
+                warnings: thatBai.length,
+            } }));
+        } else if (process.argv.includes("--inspect-curriculum")) {
             const { goiIU } = require("../../CRWEB/modules/IU/data/client");
             const programs = await goiIU(identifiers, cookieHeader, "LayThongTinChuongTrinhHoc");
             const selected = Array.isArray(programs.data) ? programs.data[0] : null;

@@ -3,8 +3,8 @@
 /**
  * session.js — Tu lay ID phien sau khi login.
  *
- * NHIEM VU: 1 ham duy nhat laySession(win) -> { userId, chucNangId,
- * nguoiHocId, iM, appId, tokenJWT }. Khong dung payload, khong ma hoa, khong goi mang.
+ * laySession(win) nhận diện cổng sinh viên mới qua URL sau khi đăng nhập.
+ * Cổng ASPX cũ dùng thông tin edu.system để xây payload như trước.
  *
  * NGUON DU LIEU (bien edu.system tren trang web da login):
  *  - userId     <- edu.system.userId            (server cap luc login)
@@ -28,10 +28,14 @@
  */
 
 const { IM_MAC_DINH } = require("../crypto");
+const { portalFromUrl } = require("../login/constants");
 
 async function laySession(win) {
     // BrowserWindow cua Electron — doc truc tiep tu trang web.
     if (win && win.webContents && typeof win.webContents.executeJavaScript === "function") {
+        const portal = portalFromUrl(win.webContents.getURL());
+        if (portal === "sinhvien") return { portal };
+        if (portal !== "legacy") throw new Error("Cửa sổ chưa ở trang sinh viên IU.");
         const raw = await win.webContents.executeJavaScript(
             "(() => { try { return JSON.stringify({ " +
             "userId: (window.edu && edu.system && edu.system.userId) || '', " +

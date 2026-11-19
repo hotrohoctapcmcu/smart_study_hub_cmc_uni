@@ -43,15 +43,12 @@ function clickMsSignInScript() {
     return false;
 }
 
-// Kiểm tra đã đăng nhập IU thật chưa (nhìn URL, không chỉ nhìn domain).
 function portalAuthStateScript() {
-    try {
-        var href = location.href || "";
-        if (/login\.microsoftonline\.com|login\.live\.com/i.test(href)) return false;
-        return /cmcu\.edu\.vn/i.test(location.hostname) && !/login|signin|sign-in/i.test(href);
-    } catch (e) {
-        return false;
+    if (location.origin !== "https://iu.cmcu.edu.vn") return false;
+    if (/^\/sinhvien\/congsinhvien(?:\/|$)/.test(location.pathname)) {
+        return !!document.querySelector('a[href="/sinhvien/congsinhvien/thoikhoabieu/lichhoc"]');
     }
+    return /^\/congthongtin\//i.test(location.pathname) && !!(window.edu && window.edu.system && window.edu.system.userId);
 }
 
 // Phát hiện trang lỗi Microsoft (chạy trong page context, ES5).

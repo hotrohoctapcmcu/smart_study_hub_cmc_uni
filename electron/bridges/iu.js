@@ -8,8 +8,8 @@
  * Luồng tự động (không copy cookie tay):
  *   1. iu:login  — mở cửa sổ SSO IU riêng (partition persist:cmc-portal, giữ
  *      phiên như IU vẫn làm) bằng loginIU({ keepOpen:false }). Login xong
- *      đọc cookie (readIuCookies) + laySession(win) từ edu.system, POST thẳng
- *      /api/v1/sync/iu/session về API. Đóng cửa sổ IU sau khi xong.
+ *      nhận cookie và loại cổng IU từ cửa sổ đã đăng nhập rồi gửi phiên
+ *      về /api/v1/sync/iu/session.
  *   2. iu:pull   — gọi POST /api/v1/sync/iu/pull (server tự dùng cookie đã lưu
  *      kéo IU + lưu DB). Bridge không chạm vào dữ liệu, chỉ chuyển tiếp
  *      kết quả về renderer.
@@ -75,7 +75,7 @@ function registerIuBridge({ fetchImpl = globalThis.fetch, apiBase = 'studyhub://
     // eslint-disable-next-line global-require
     const { laySession } = require("../../CRWEB/modules/IU/payload");
     const { openLoginWindow, loadAndWait, waitForPortalAuth } = require('../../CRWEB/modules/IU/login/window');
-    const { IU_URL } = require('../../CRWEB/modules/IU/login/constants');
+    const { IU_URL, LEGACY_IU_URL } = require('../../CRWEB/modules/IU/login/constants');
     let restoring = null;
 
     // Rehydrate RAM API session after app restart using only the already saved
@@ -87,17 +87,22 @@ function registerIuBridge({ fetchImpl = globalThis.fetch, apiBase = 'studyhub://
             if (current?.connected) return { ok: true, connected: true, restored: false };
             const existing = getIuWindow();
             if (existing?.isVisible()) return { ok: true, connected: false, reason: 'login_in_progress' };
-            const previous = await readIuCookies();
-            if (!previous.count) return { ok: true, connected: false, reason: 'session_required' };
+            const hasStudentCookies = (await readIuCookies()).count > 0;
+            const hasLegacyCookies = (await readIuCookies('legacy')).count > 0;
+            if (!hasStudentCookies && !hasLegacyCookies) return { ok: true, connected: false, reason: 'session_required' };
             const win = existing || openLoginWindow(null, { hidden: true });
             try {
-                await loadAndWait(win, IU_URL, 20000);
-                if (!await waitForPortalAuth(win, 5000)) return { ok: true, connected: false, reason: 'session_required' };
-                const session = await laySession(win);
-                const jar = await readIuCookies();
-                if (!jar.count) return { ok: true, connected: false, reason: 'session_required' };
-                await postJson('/sync/iu/session', { session, cookie: jar.cookie });
-                return { ok: true, connected: true, restored: true };
+                const targets = [hasStudentCookies && IU_URL, hasLegacyCookies && LEGACY_IU_URL].filter(Boolean);
+                for (const url of targets) {
+                    await loadAndWait(win, url, 20000);
+                    if (!await waitForPortalAuth(win, 5000)) continue;
+                    const session = await laySession(win);
+                    const jar = await readIuCookies(session.portal === 'sinhvien' ? 'sinhvien' : 'legacy');
+                    if (!jar.count) continue;
+                    await postJson('/sync/iu/session', { session, cookie: jar.cookie });
+                    return { ok: true, connected: true, restored: true };
+                }
+                return { ok: true, connected: false, reason: 'session_required' };
             } finally {
                 // A background restoration window must not keep the app alive
                 // after its main window closes. Explicit login windows are owned

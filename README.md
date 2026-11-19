@@ -260,6 +260,7 @@ Chi tiết trách nhiệm và công việc theo từng giai đoạn nằm trong 
 | [Sprint 3](docs/SPRINT_3.md) | Các luồng AI học tập và tích hợp tổng thể. |
 | [Sprint 4](docs/SPRINT_4.md) | Củng cố kiến trúc, sửa lỗi tích hợp/dữ liệu và chuẩn hóa bản bàn giao. |
 | [Sprint 5](docs/SPRINT_5.md) | Desktop không mở cổng localhost, xóa dữ liệu theo lựa chọn và giữ lịch sử qua học kỳ. |
+| [Sprint 6](docs/SPRINT_6.md) | Chuyển luồng đồng bộ IU sang cổng sinh viên và tự động đóng gói Windows trên GitHub Actions. |
 
 ## Phát triển và đóng góp
 

@@ -1,0 +1,142 @@
+{
+  "timetablePage": {
+    "initialStart": "16/11/2026",
+    "initialEnd": "22/11/2026",
+    "initialDate": "18/11/2026",
+    "initialEvents": [
+      {
+        "id": "event-1",
+        "classId": "class-1",
+        "classListId": "section-1",
+        "type": "class",
+        "date": "18/11/2026",
+        "subjectName": "Sample Computing",
+        "className": "SAMPLE-01",
+        "roomName": "R101",
+        "teacher": "Sample Teacher",
+        "startHour": 9,
+        "startMinute": 45,
+        "endHour": 11,
+        "endMinute": 15
+      }
+    ],
+    "initialNoDetail": []
+  },
+  "calendarDays": {
+    "success": true,
+    "days": {
+      "18/11/2026": {
+        "classes": 1,
+        "exams": 0
+      }
+    },
+    "complete": true
+  },
+  "examPage": {
+    "periods": [
+      {
+        "id": "period-1",
+        "name": "2026_2027_1"
+      },
+      {
+        "id": "period-2",
+        "name": "2026_2027_2"
+      }
+    ],
+    "initialPeriodId": "period-1",
+    "initialData": {
+      "personal": [
+        {
+          "subjectCode": "SAMPLE101",
+          "subjectName": "Sample Computing",
+          "date": "23/11/2026",
+          "timeRange": "8:15 - 9:45",
+          "startTime": "08:15",
+          "endTime": "09:45",
+          "examForm": "Sample form",
+          "roomName": "R102"
+        }
+      ],
+      "general": []
+    }
+  },
+  "profilePage": {
+    "student": {
+      "fullName": "Sample Student",
+      "birthDate": "15/03/2005",
+      "studentCode": "TEST0001",
+      "major": "Sample Engineering",
+      "managingClass": "SAMPLE01"
+    },
+    "initialFields": []
+  },
+  "gradePage": {
+    "programs": [
+      {
+        "id": "program-1",
+        "name": "Sample Engineering"
+      }
+    ],
+    "initialProgramId": "program-1",
+    "initialPeriodId": "period-1",
+    "initialTranscript": {
+      "scores": [
+        {
+          "subjectCode": "SAMPLE101",
+          "subjectName": "Sample Computing",
+          "credits": "3",
+          "attempt": "1",
+          "examAttempt": "1",
+          "score10": "8.5",
+          "score4": "3.5",
+          "scoreLetter": "B+",
+          "evaluation": "Dat",
+          "year": "2026_2027",
+          "semester": "1"
+        }
+      ],
+      "failedSubjects": [],
+      "totalStats": {
+        "totalCreditsProgram": "126"
+      }
+    },
+    "initialBlocks": {
+      "summary": [
+        {
+          "code": "BASE",
+          "name": "Sample block",
+          "totalCredits": "10",
+          "required": "6",
+          "cumulative": "3"
+        }
+      ]
+    },
+    "initialRegistration": {
+      "current": []
+    },
+    "initialConduct": {
+      "bySemester": []
+    }
+  },
+  "curriculumPage": {
+    "programs": [
+      {
+        "id": "program-1",
+        "name": "Sample Engineering",
+        "totalCredits": "126"
+      }
+    ],
+    "initialProgramId": "program-1",
+    "initialData": {
+      "subjects": [
+        {
+          "subjectCode": "SAMPLE101",
+          "subjectName": "Sample Computing",
+          "knowledgeBlock": "Sample block",
+          "creditsStudy": "3",
+          "plannedSemester": "2026_2027_1(1)"
+        }
+      ]
+    }
+  }
+}

@@ -1,23 +1,21 @@
 "use strict";
 
-/**
- * constants.js — Hang so dia chi + phien luu tru cua cong IU.
- *
- * NHIEM VU: giu 3 hang so dung chung cho ca cum login.
- *
- * NGUON DU LIEU:
- *  - IU_URL ("https://iu.cmcu.edu.vn/congthongtin/Index.aspx"): trang portal
- *    chinh, trich tu luan sync trong
- *    thoiGianBieu/src/main/sync/browserLogin.js + index.js (MS_LOGIN_URL,
- *    luong SSO Microsoft 1 lan).
- *  - MS_LOGIN_URL ("https://www.office.com/"): trang dang nhap Microsoft de
- *    nguoi dung chon tai khoan truong khi phien cu het han.
- *  - CMC_PARTITION ("persist:cmc-portal"): ten partition Electron giu phien
- *    dang nhap (cookie, localStorage). Dong cua so van GIU session cho lan sau.
- */
-
-const IU_URL = "https://iu.cmcu.edu.vn/congthongtin/Index.aspx";
+const IU_ORIGIN = "https://iu.cmcu.edu.vn";
+const STUDENT_PATH = "/sinhvien/congsinhvien";
+const IU_URL = IU_ORIGIN + STUDENT_PATH;
+const LEGACY_IU_URL = IU_ORIGIN + "/congthongtin/Index.aspx";
+const STUDENT_API_URL = IU_ORIGIN + "/sinhvien/api/";
 const MS_LOGIN_URL = "https://www.office.com/";
 const CMC_PARTITION = "persist:cmc-portal";
 
-module.exports = { IU_URL, MS_LOGIN_URL, CMC_PARTITION };
+function portalFromUrl(url) {
+    let current;
+    try { current = new URL(url); } catch { return null; }
+    if (current.origin !== IU_ORIGIN) return null;
+    const path = current.pathname;
+    if (path === STUDENT_PATH || path.startsWith(STUDENT_PATH + "/")) return "sinhvien";
+    if (/^\/congthongtin\//i.test(path)) return "legacy";
+    return null;
+}
+
+module.exports = { IU_ORIGIN, STUDENT_PATH, IU_URL, LEGACY_IU_URL, STUDENT_API_URL, MS_LOGIN_URL, CMC_PARTITION, portalFromUrl };

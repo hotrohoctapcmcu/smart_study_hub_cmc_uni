@@ -7,10 +7,10 @@
  *
  * Gom 5 cum, moi cum 1 nhiem vu:
  *   login/    Dang nhap portal IU bang SSO Microsoft (Electron), tra cookie.
- *   payload/  Lay ID phien + dung object payload request (chua ma hoa).
- *   crypto/   Ma hoa request (AE) va giai ma response (AD) cua portal.
+ *   payload/  Nhan dien phien va dung payload cho cong ASPX cu.
+ *   crypto/   Ma hoa request (AE) va giai ma response (AD) cua cong cu.
  *   capture/  Bat response API tu cua so da dang nhap (Chrome DevTools Protocol).
- *   data/     Goi portal IU TRUC TIEP + map ve schema { IU: {...} } (khong database).
+ *   data/     Goi dung cong theo phien va map ve schema { IU: {...} }.
  *
  * Moi ham data/* truy van portal va tra du lieu MOI NHAT trong RAM
  * (object/array) — khong cache, khong JSON cu, khong database.
